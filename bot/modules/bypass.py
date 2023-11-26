@@ -474,7 +474,7 @@ async def direct(_, message):
             else:
                 uname = f'<code>{message.from_user.first_name}</code>'
             if uname is not None:
-                cc = f'\n<b>🙎🏻‍♂️ Tugas_Oleh :</b> {uname} <code>({message.from_user.id})</code>'
+                cc = f'\n<b>🙎🏻‍♂️ Tugas_Oleh :</b> {uname}'
             mess3 = f"<b>🌐 <u>Link Sumber</u>: </b>\n<code>{link}</code>\n\n<b>🔄 <u>Hasil Bypass</u>: </b>\n{res}\n\n<b>🕐 Waktu: </b> <code>{ms}s</code>" 
             buttons = ButtonMaker()
             buttons.ubutton("❤️ Donate For Pikabot", "https://telegra.ph/Pikabot-Donate-10-01", "footer")

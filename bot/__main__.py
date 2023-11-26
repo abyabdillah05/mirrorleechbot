@@ -70,7 +70,8 @@ from .modules import (
     users_settings, 
     bot_settings, 
     speedtest,
-    bypass
+    bypass,
+    query
 )
 
 def get_quotes():
@@ -161,51 +162,47 @@ async def stats(_, message):
     # Neofetch
     neofetch = check_output(
         ["neofetch --shell_version off --stdout"], shell=True).decode()
-    stats = f"""
-<pre languange='bash'><code>{neofetch}</code>
-<b>CPU</b>
-<b>Cores        :</b> <code>{p_core}</code>
-<b>Logical      :</b> <code>{t_core}</code>
-<b>Frequency    :</b> <code>{freqcurrent}</code>
-<code>[{progress_bar(cpuUsage)}] {cpuUsage}%</code>
+    stats = f'''
+<b>𝐏𝐈𝐊𝐀𝐁𝐎𝐓 𝐒𝐓𝐀𝐓𝐒</b>
+<pre languange="python"><code>{neofetch}</code></pre>
+<b>┌┤🤖 Status Bot:</b>
+<b>├Username     :</b> <code>@{bot.me.username}</code>
+<b>├Waktu Bot    :</b> <code>{currentTime}</code>
+<b>├Waktu Mesin  :</b> <code>{osUptime}</code>
+<b>└Diperbarui   :</b> <code>{last_commit}</code>
 
-<b>RAM</b> 
-<b>Terpakai     :</b> <code>{mem_u}</code>
-<b>Tersedia     :</b> <code>{mem_a}</code>
-<b>Total        :</b> <code>{mem_t}</code>
-<code>[{progress_bar(mem_p)}] {mem_p}%</code>
+<b>┌┤🖥️ CPU:</b>
+<b>├Cores        :</b> <code>{p_core}</code>
+<b>├Logical      :</b> <code>{t_core}</code>
+<b>└┤</b><code>[{progress_bar(cpuUsage)}] {cpuUsage}%</code>
 
-<b>Penyimpanan</b> 
-<b>Terpakai     :</b> <code>{used}</code>
-<b>Tersedia     :</b> <code>{free}</code>
-<b>Total        :</b> <code>{total}</code>
-<code>[{progress_bar(disk)}] {disk}%</code>
+<b>┌┤💽 RAM:</b> 
+<b>├Total        :</b> <code>{mem_t}</code>
+<b>├Tersedia     :</b> <code>{mem_a}</code>
+<b>└┤</b><code>[{progress_bar(mem_p)}] {mem_p}%</code>
 
-<b>Jaringan</b>
-<b>Total Unduh  :</b> <code>{recv}</code>
-<b>Total Unggah :</b> <code>{sent}</code>
+<b>┌┤💾 Penyimpanan:</b> 
+<b>├Total        :</b> <code>{total}</code>
+<b>├Tersedia     :</b> <code>{free}</code>
+<b>└┤</b><code>[{progress_bar(disk)}] {disk}%</code>
 
-<b>Versi</b>
-<b>Aria2c       :</b> <code>v{arv}</code>
-<b>FFMPEG       :</b> <code>v{ffv}</code>
-<b>Google Api   :</b> <code>v{gav}</code>
-<b>MegaSDK      :</b> <code>v{msv}</code>
-<b>P7Zip        :</b> <code>v{p7v}</code>
-<b>Pyro         :</b> <code>v{prv}</code>
-<b>Rclone       :</b> <code>{rcv}</code>
-<b>Qbittorrent  :</b> <code>{qbv}</code>
-<b>YT-DLP       :</b> <code>v{ytv}</code>
+<b>┌┤🌐 Jaringan:</b>
+<b>├Total Unduh  :</b> <code>{recv}</code>
+<b>└Total Unggah :</b> <code>{sent}</code>
 
-<b>Lainnya</b>
-<b>Username     :</b> <code>@{bot.me.username}</code>
-<b>Waktu Bot    :</b> <code>{currentTime}</code>
-<b>Waktu Mesin  :</b> <code>{osUptime}</code>
-<b>Diperbarui   :</b> <code>{last_commit}</code>
+<b>┌┤📦 Versi Package:</b>
+<b>├Aria2c       :</b> <code>v{arv}</code>
+<b>├FFMPEG       :</b> <code>v{ffv}</code>
+<b>├Google Api   :</b> <code>v{gav}</code>
+<b>├MegaSDK      :</b> <code>v{msv}</code>
+<b>├P7Zip        :</b> <code>v{p7v}</code>
+<b>├Pyro         :</b> <code>v{prv}</code>
+<b>├Rclone       :</b> <code>{rcv}</code>
+<b>├Qbittorrent  :</b> <code>{qbv}</code>
+<b>└YT-DLP       :</b> <code>v{ytv}</code>
 
-<b>Quotes       :</b> 
-<code>{get_quotes()}</code>
-</pre>
-"""
+<blockquote><code>{get_quotes()}</code></blockquote>
+'''
     await sendMessage(
         message, 
         stats
@@ -213,34 +210,51 @@ async def stats(_, message):
 
 
 async def start(client, message):
+    if message.from_user.username:
+        uname = f'@{message.from_user.username}'
+    else:
+        uname = f'<a href="tg://user?id={message.from_user.id}">{message.from_user.first_name}</a>'
     buttons = ButtonMaker()
     buttons.ubutton(
-        "Owner", "https://t.me/save_usdt")
-    buttons.ubutton("Channel", "https://t.me/arakurumi")
+        "👤 Owner", "https://t.me/XRofikX")
+    buttons.ubutton("🌟 Channel", "https://t.me/pikachukocak")
     reply_markup = buttons.build_menu(2)
     if await CustomFilters.authorized(client, message):
-        start_string = f"""
-<b>Mirror Tautan Lambat menjadi Tautan Cepat!</b>
+        start_string = f'''
+<b>Hai {uname}, Pik4bot disini, saya bisa mirror link atau file anda ke google drive atau leech ke telegram, saya juga bisa membypass beberapa shortlink.</b>
 
 <b>Note :</b>
-Selalu backup File setelah Mirror untuk menghindari Drive terhapus!
+Segera download atau backup file anda setelah mirror, karena drive akan dihapus secara berkala !
 
 Ketik <code>/{BotCommands.HelpCommand[0]}</code> untuk mendapatkan list perintah yang tersedia!
 
-Enjoy :D
-"""
-        await sendMessage(
-            message, 
-            start_string, 
-            reply_markup
-        )
+Enjoy 😉
+'''
+        await sendMessage(message, start_string, reply_markup)
     else:
-        await sendMessage(
-            message, 
-            "<b>Tidak ada izin!</b>\nGabung Grup/Channel untuk menggunakan Bot!\n\n<b>Note :</b>\nJika Group ini mengaktifkan Topik, Kirim perintah di Topik yang diizinkan!", 
-            reply_markup
-        )
+        await sendMessage(message, f"Hai {uname}, sayang sekali anda bukan <code>authorized user</code>, anda belum bisa menggunakan bot ini di PM.\n\nSilahkan gunakan bot ini hanya di grup, cek channel yang ada dibawah untuk link grupnya !", reply_markup)
 
+async def donate(_, message):
+        path = 'https://telegra.ph/file/e8394bf92c06092433a75.png'
+        buttons = ButtonMaker()
+        buttons.ubutton(
+        "👤 Owner", "https://t.me/XRofikX")
+        donate_message = f'''
+👋Hai, jika kalian merasa terbantu dengan bot ini, saya akan sangat berterimakasih jika kalian mau memberikan sedikit donasi untuk keperluan server dan google drive. 
+
+Semua donasi saya akan gunakan 100% untuk kebutuhan bot, dan tidak akan mengambil keuntungan sedikitpun dari bot ini.
+
+<u>Kalian bisa memberikan donasi dari link dibawah ya:</u>
+• Gopay or Dana: 081237313284
+• Saweria: https://saweria.co/peekachu
+• Ko-Fi: https://ko-fi.com/pikabot
+
+Jika kalian sudah melakukan donasi, silahkan pm ke owner untuk buktinya ya, nanti kalian bisa tambahkan bot ini ke grup pribadi kalian atau bisa menggunakannya di PM.
+
+<blockquote>♥️ Terimakasih yang sudah Donasi !!</blockquote>
+'''
+        await message.reply_photo(photo=path, reply_to_message_id=message.id,
+                                                 caption=donate_message, reply_markup=buttons.build_menu(1), disable_notification=True)
 
 async def restart(_, message):
     restart_message = await sendMessage(
@@ -319,11 +333,16 @@ help_string = f"""
 """
 
 
-async def bot_help(_, message):
-    await sendMessage(
-        message, 
-        help_string
-    )
+async def bot_help(client, message):
+    buttons = ButtonMaker()
+    user_id = message.from_user.id
+    buttons.ibutton('Mirror', f'pika {user_id} guide mirror')
+    buttons.ibutton('Leech', f'pika {user_id} guide leech')
+    buttons.ibutton('Torrent', f'pika {user_id} guide torrent')
+    buttons.ibutton('Ytdlp', f'pika {user_id} guide ytdlp')
+    buttons.ibutton('Lainnya', f'pika {user_id} guide other')
+    buttons.ibutton('⬇️ Tutup', f'pika {user_id} close', 'footer')
+    await sendMessage(message, f"Silahkan pilih jenis bantuan yang anda perlukan !", buttons.build_menu(2))
 
 
 async def restart_notification():
@@ -444,6 +463,14 @@ async def main():
     )
     bot.add_handler(
         MessageHandler(
+            donate, 
+            filters=command(
+                BotCommands.DonateCommand
+            )
+        )
+    )
+    bot.add_handler(
+        MessageHandler(
             log, 
             filters=command(
                 BotCommands.LogCommand
@@ -482,6 +509,7 @@ async def main():
             ) & CustomFilters.authorized
         )
     )
+    
     LOGGER.info(f"Bot Started! => @{bot.me.username}")
     signal(SIGINT, exit_clean_up)
 
