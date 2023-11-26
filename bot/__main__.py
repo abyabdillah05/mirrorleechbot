@@ -69,7 +69,8 @@ from .modules import (
     eval, 
     users_settings, 
     bot_settings, 
-    speedtest
+    speedtest,
+    bypass
 )
 
 def get_quotes():
