@@ -3,6 +3,7 @@ from aiofiles.os import path as aiopath, listdir, makedirs
 from html import escape
 from aioshutil import move
 from asyncio import sleep, Event, gather
+from time import time
 
 from bot import (
     bot,
@@ -31,7 +32,7 @@ from bot.helper.telegram_helper.message_utils import (
     delete_status,
     update_status_message,
 )
-from bot.helper.ext_utils.status_utils import get_readable_file_size
+from bot.helper.ext_utils.status_utils import get_readable_file_size, get_readable_time
 from bot.helper.ext_utils.bot_utils import sync_to_async
 from bot.helper.ext_utils.links_utils import is_gdrive_id
 from bot.helper.ext_utils.task_manager import start_from_queued
@@ -112,6 +113,7 @@ class TaskListener(TaskConfig):
             download = task_dict[self.mid]
             self.name = download.name()
             gid = download.gid()
+            self.extra_details = {'startTime': time()}
         LOGGER.info(f"Download completed: {self.name}")
 
         if multi_links:
@@ -234,18 +236,23 @@ class TaskListener(TaskConfig):
             and DATABASE_URL
         ):
             await DbManger().rm_complete_task(self.message.link)
-        msg = f"<b>Nama :</b> <code>{escape(self.name)}</code>"
-        msg += f"\n\n<b>Ukuran :</b> <code>{get_readable_file_size(size)}</code>"
+        msg = f"<blockquote><b>📄 Nama :</b> <code>{escape(self.name)}</code></blockquote>"
+        msg += f"\n<b>┌📦 Ukuran :</b> <code>{get_readable_file_size(size)}</code>"
         LOGGER.info(f"Task Done: {self.name}")
         if self.isLeech:
-            msg += f"\n\n<b>Jumlah File :</b> <code>{folders}</code>"
+            msg += f"\n<b>├📑 Jumlah File :</b> <code>{folders}</code>"
+            msg += f"\n<b>└⏱ Waktu</b>: {get_readable_time(time() - self.extra_details['startTime'])}"
             if mime_type != 0:
-                msg += f"\n\n<b>File Rusak :</b> <code>{mime_type}</code>"
-            msg += f'\n\n<b>Oleh :</b> {self.tag}\n\n'
+                msg += f"\n\n<b>❗️ File Rusak :</b> <code>{mime_type}</code>"
+            msg += f'\n\n<b>👤 Leech_Oleh :</b> {self.tag}\n\n'
             if not files:
                 await sendMessage(self.message, msg)
             else:
                 fmsg = ""
+                buttons = ButtonMaker()
+                buttons.ubutton("♻️ Leech Dump Channel", "https://t.me/+pXpR1L9BVoQ5N2Vl")
+                buttons.ubutton("❤️ Support For Pikabot", "https://telegra.ph/Pikabot-Donate-10-01", "footer")
+                button = buttons.build_menu(1)
                 for index, (link, name) in enumerate(files.items(), start=1):
                     fmsg += f"<b>{index:02d}.</b> <a href='{link}'>{name}</a>\n"
                     if len(fmsg.encode() + msg.encode()) > 4000:
@@ -253,7 +260,7 @@ class TaskListener(TaskConfig):
                         await sleep(1)
                         fmsg = ""
                 if fmsg != "":
-                    await sendMessage(self.message, msg + fmsg)
+                    await sendMessage(self.message, msg + fmsg, button)
             if self.seed:
                 if self.newDir:
                     await clean_target(self.newDir)
@@ -262,11 +269,52 @@ class TaskListener(TaskConfig):
                         non_queued_up.remove(self.mid)
                 await start_from_queued()
                 return
-        else:
-            msg += f"\n\n<b>Tipe :</b> <code>{mime_type}</code>"
+            
+    #hapus
+            msg += f'\n<b>├🗂 Tipe :</b> {mime_type}'
+            msg += f'\n<b>└⏱ Waktu</b>: {get_readable_time(time() - self.extra_details["startTime"])}'
             if mime_type == "Folder":
-                msg += f"\n\n<b>Jumlah Folder :</b> <code>{folders}</code>"
-                msg += f"\n\n<b>Jumlah File :</b> <code>{files}</code>"
+                msg += f'\n\n<b>┌📂 SubFolders :</b> <code>{folders}</code>'
+                msg += f'\n<b>└📄 Files :</b> <code>{files}</code>'
+            if link or rclonePath and config_dict['RCLONE_SERVE_URL'] and not private:
+                buttons = ButtonMaker()
+                if link:
+                    buttons.ubutton("☁️ Link Cloud", link)
+                if rclonePath:
+                    msg += f'\n\n<b>📁 Path :</b> <code>{rclonePath}</code>'
+                if rclonePath and (RCLONE_SERVE_URL := config_dict['RCLONE_SERVE_URL']) and not private:
+                        remote, path = rclonePath.split(':', 1)
+                        url_path = rutils.quote(f'{path}')
+                        share_url = f'{RCLONE_SERVE_URL}/{remote}/{url_path}'
+                        if mime_type == "Folder":
+                            share_url += '/'
+                        buttons.ubutton("🔗 Rclone Link", share_url)
+                if not rclonePath and dir_id:
+                    INDEX_URL = ''
+                    if private:
+                        INDEX_URL = self.user_dict['index_url'] if self.user_dict.get('index_url') else ''
+                    elif config_dict['INDEX_URL']:
+                        INDEX_URL = config_dict['INDEX_URL']
+                    if INDEX_URL:
+                        share_url = f'{INDEX_URL}findpath?id={dir_id}'
+                        buttons.ubutton("⚡ Link Index", share_url)
+                        if mime_type.startswith(('image', 'video', 'audio')):
+                            share_urls = f'{INDEX_URL}findpath?id={dir_id}&view=true'
+                            buttons.ubutton("🎬 Lihat Media", share_urls)
+                buttons.ubutton("❤️ Suppport For Pikabot", "https://telegra.ph/Pikabot-Donate-10-01", "footer")
+                button = buttons.build_menu(2)
+            else:
+                msg += f'\n\n<b>📁 Path :</b> <code>{rclonePath}</code>'
+                button = None
+            msg += f'\n\n<b>👤 Tugas_Oleh :</b> {self.tag}'
+    
+
+        else:
+            msg += f"\n<b>├🗂 Tipe :</b> <code>{mime_type}</code>"
+            msg += f'\n<b>└⏱ Waktu</b>: {get_readable_time(time() - self.extra_details["startTime"])}'
+            if mime_type == "Folder":
+                msg += f"\n\n<b>┌📂 Jumlah Folder :</b> <code>{folders}</code>"
+                msg += f"\n\n<b>└📄 Jumlah File :</b> <code>{files}</code>"
             if (
                 link
                 or rclonePath
@@ -277,7 +325,7 @@ class TaskListener(TaskConfig):
                 if link:
                     buttons.ubutton("☁️ Cloud Link", link)
                 if rclonePath:
-                    msg += f"\n\n<b>Path :</b> <code>{rclonePath}</code>"
+                    msg += f"\n\n<b>📁 Path :</b> <code>{rclonePath}</code>"
                 if (
                     rclonePath
                     and (RCLONE_SERVE_URL := config_dict["RCLONE_SERVE_URL"])
@@ -304,12 +352,12 @@ class TaskListener(TaskConfig):
                         buttons.ubutton("⚡ Index Link", share_url)
                         if mime_type.startswith(("image", "video", "audio")):
                             share_urls = f"{INDEX_URL}findpath?id={dir_id}&view=true"
-                            buttons.ubutton("🌐 View Link", share_urls)
+                            buttons.ubutton("🎬 Lihat Media", share_urls)
                 button = buttons.build_menu(2)
             else:
-                msg += f"\n\n<b>Path :</b> <code>{rclonePath}</code>"
+                msg += f"\n\n<b>📁 Path :</b> <code>{rclonePath}</code>"
                 button = None
-            msg += f"\n\n<b>Oleh :</b> {self.tag}"
+            msg += f"\n\n<b>👤 Tugas_Oleh :</b> {self.tag}"
             await sendMessage(self.message, msg, button)
             # Log Chat
             LOG_CHAT_ID = None

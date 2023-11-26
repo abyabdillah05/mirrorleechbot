@@ -22,6 +22,7 @@ from bot.helper.ext_utils.bot_utils import (
 )
 from bot.helper.mirror_utils.download_utils.yt_dlp_download import YoutubeDLHelper
 from bot.helper.telegram_helper.bot_commands import BotCommands
+from bot.helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.listeners.task_listener import TaskListener
 from bot.helper.ext_utils.status_utils import get_readable_file_size, get_readable_time
@@ -383,11 +384,16 @@ class YtDlp(TaskListener):
         LOGGER.info(f"YT-DLP: {self.link}")
 
         if not is_url(self.link):
-            await sendMessage(
-                self.message, 
-                f"<b>Hai {self.tag} !</b>\n<b>Sepertinya perintah yang kamu gunakan tidak tepat. Buka tautan berikut untuk mendapatkan bantuan!</b>", 
-                COMMAND_USAGE["yt"]
-            )
+            user_id = self.message.from_user.id
+            buttons = ButtonMaker()
+            if self.message.from_user.username:
+                user = f"@{self.message.from_user.username}"
+            else:
+                user = f"{self.message.from_user.first_name}"
+            buttons.ibutton('Bantuan YT-Dlp', f'pika {user_id} guide ytdlp')
+            await sendMessage(self.message, f"Hai {user}, Link tidak ditemukan atau perintah anda salah, silahkan klik tombol bantuan dibawah untuk melihat bantuan yt-DLP.", 
+                buttons.build_menu(1)
+                )
             self.removeFromSameDir()
             return
 

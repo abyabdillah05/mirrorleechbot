@@ -83,7 +83,7 @@ async def get_telegraph_list(telegraph_content):
     path = [
         (
             await telegraph.create_page(
-                title="Pencari KQRM Bot", content=content
+                title="Pencarian oleh Pikabot", content=content
             )
         )["path"]
         for content in telegraph_content
@@ -91,7 +91,7 @@ async def get_telegraph_list(telegraph_content):
     if len(path) > 1:
         await telegraph.edit_telegraph(path, telegraph_content)
     buttons = ButtonMaker()
-    buttons.ubutton("🔎 Lihat", f"https://telegra.ph/{path[0]}")
+    buttons.ubutton("🔎 Lihat Hasil", f"https://telegra.ph/{path[0]}")
     return buttons.build_menu(1)
 
 

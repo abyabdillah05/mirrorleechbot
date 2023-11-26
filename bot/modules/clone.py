@@ -135,11 +135,16 @@ class Clone(TaskListener):
         self.run_multi(input_list, "", Clone)
 
         if len(self.link) == 0:
-            await sendMessage(
-                self.message, 
-                f"<b>Hai {self.tag} !</b>\n<b>Sepertinya perintah yang kamu gunakan tidak tepat. Buka tautan berikut untuk mendapatkan bantuan!</b>", 
-                COMMAND_USAGE["clone"]
-            )
+            user_id = self.message.from_user.id
+            buttons = ButtonMaker()
+            if self.message.from_user.username:
+                user = f"@{self.message.from_user.username}"
+            else:
+                user = f"{self.message.from_user.first_name}"
+            buttons.ibutton('Bantuan Clone', f'pika {user_id} guide other')
+            await sendMessage(self.message, f"Hai {user}, Link tidak ditemukan atau perintah anda salah, silahkan klik tombol bantuan dibawah untuk melihat bantuan.", 
+                buttons.build_menu(1)
+                )
             return
 
         try:

@@ -144,7 +144,7 @@ class gdUpload(GoogleDriveHelper):
         # File body description
         file_metadata = {
             "name": file_name,
-            "description": "Uploaded by KQRM",
+            "description": "Uploaded by Pikabot",
             "mimeType": mime_type,
         }
         if dest_id is not None:

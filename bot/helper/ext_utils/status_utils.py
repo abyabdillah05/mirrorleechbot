@@ -94,11 +94,11 @@ def speed_string_to_bytes(size_text: str):
 
 
 def get_progress_bar_string(pct):
-    pct = float(pct.strip("%"))
+    pct = float(pct.strip('%'))
     p = min(max(pct, 0), 100)
-    cFull = int(p // 8)
-    p_str = "■" * cFull
-    p_str += "□" * (12 - cFull)
+    cFull = int(p // 10)
+    p_str = '■' * cFull
+    p_str += '□' * (10 - cFull)
     return f"[{p_str}]"
 
 
@@ -135,43 +135,45 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1):
     ):
         tstatus = task.status()
         if task.listener.isPrivateChat: 
-            msg += f"<blockquote><code>PRIVATE 🤓</code></blockquote>"
+            msg += f"<b>📄 Nama :</b> <blockquote><b>PRIVATE TASK 🔐</b></blockquote>"
         else: 
-            msg += f"<blockquote><code>{escape(f'{task.name()}')}</code></blockquote>"
+            msg += f"<b>📄 Nama :</b> <blockquote><code>{escape(f'{task.name()}')}</code></blockquote>"
         msg += f"\n<b>┌┤{get_progress_bar_string(task.progress())} <code>{task.progress()}</code>├┐</b>"
         if task.listener.isSuperChat:
-            msg += f"\n<b>├ Status :</b> <a href='{task.listener.message.link}'>{tstatus}</a>"
+            msg += f"\n<b>├⌛️ Status :</b> <a href='{task.listener.message.link}'>{tstatus}</a>"
         else:
-            msg += f"\n<b>├ Status :</b> <code>{tstatus}</code>"
+            msg += f"\n<b>├⌛️ Status :</b> <code>{tstatus}</code>"
         if tstatus not in [
             MirrorStatus.STATUS_SPLITTING,
             MirrorStatus.STATUS_SEEDING,
             MirrorStatus.STATUS_SAMVID,
         ]:
-            msg += f"\n<b>├ Proses :</b> <code>{task.processed_bytes()}</code> dari <code>{task.size()}</code>"
-            msg += f"\n<b>├ Perkiraan :</b> <code>{task.eta()}</code>"
-            msg += f"\n<b>├ Kecepatan :</b> <code>{task.speed()}</code>"
+            msg += f"\n<b>├📦 Ukuran :</b> {task.size()}"
+            msg += f"\n<b>├🪫 Diproses :</b> <code>{task.processed_bytes()}</code>"
+            msg += f"\n<b>├⏰ Estimasi :</b> <code>{task.eta()}</code>"
+            msg += f"\n<b>├⚡️ Kecepatan :</b> <code>{task.speed()}</code>"
             if hasattr(task, "seeders_num"):
                 try:
-                    msg += f"\n<b>├ Seeders :</b> <code>{task.seeders_num()}</code>"
-                    msg += f"\n<b>├ Leechers :</b> <code>{task.leechers_num()}</code>"
+                    msg += f"\n<b>├🌱 Seeders :</b> <code>{task.seeders_num()}</code>"
+                    msg += f"\n<b>├🐌 Leechers :</b> <code>{task.leechers_num()}</code>"
                 except:
                     pass
         elif tstatus == MirrorStatus.STATUS_SEEDING:
-            msg += f"\n<b>├ Rasio : </b> <code>{task.ratio()}</code>"
-            msg += f"\n<b>├ Waktu : </b> <code>{task.seeding_time()}</code>"
-            msg += f"\n<b>├ Ukuran : </b> <code>{task.size()}</code>"
-            msg += f"\n<b>├ Diupload : </b> <code>{task.uploaded_bytes()}</code>"
-            msg += f"\n<b>├ Kecepatan : </b> <code>{task.seed_speed()}</code>"
+            msg += f"\n<b>├🧲 Ratio :</b> <code>{task.ratio()}</code>"
+            msg += f"\n<b>├⏲ Waktu :</b> <code>{task.seeding_time()}</code>"
+            msg += f"\n<b>├📦 Ukuran :</b> <code>{task.size()}</code>"
+            msg += f"\n<b>├🆙 Diupload :</b> <code>{task.uploaded_bytes()}</code>"
+            msg += f"\n<b>├⚡️ Kecepatan :</b> <code>{task.seed_speed()}</code>"
         else:
-            msg += f"\n<b>├ Ukuran : </b> <code>{task.size()}</code>"
+            msg += f"\n<b>├📦 Ukuran :</b> <code>{task.size()}</code>"
         if task.listener.isPrivateChat: 
-            msg += f"\n<b>├ ID :</b> <code>PRIVATE</code>"
-            msg += f"\n<b>├ User :</b> <code>PRIVATE</code>" 
+            #msg += f"\n<b>├ ID :</b> <code>PRIVATE</code>"
+            msg += f"\n<b>├👨‍💻 User : <b>Anonymous 👻</b>" 
         else:
-            msg += f"\n<b>├ ID :</b> <code>{task.listener.user_id}</code>"
-            msg += f"\n<b>├ User :</b> <code>{task.listener.user.first_name}</code>"
-        msg += f"\n<b>└</b> <code>/{BotCommands.CancelTaskCommand[0]} {task.gid()}</code>\n\n"
+            #msg += f"\n<b>├ ID :</b> <code>{task.listener.user_id}</code>"
+            user = f'<a href="tg://user?id={task.listener.user.id}">{task.listener.user.first_name}</a>'
+            msg += f"\n<b>├👨‍💻 User :</b> <code>{task.listener.user.first_name}</code>"
+        msg += f"\n<b>└🚫 Stop :</b> <code>/{BotCommands.CancelTaskCommand[0]} {task.gid()}</code>\n\n"
 
     if len(msg) == 0 and status == "All":
         return None, None
@@ -179,7 +181,7 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1):
         msg = f"<b>Tidak ada tugas</b> <code>{status}</code>!\n\n"
     buttons = ButtonMaker()
     if not is_user:
-        buttons.ibutton("👀", "status 0 ov", position="header")
+        buttons.ibutton("🤖", "status 0 ov", position="header")
     if len(tasks) > STATUS_LIMIT:
         msg += f"<b>Step :</b> <code>{page_step}</code>"
         msg += f"\n<b>Halaman :</b> <code>{page_no}/{pages}</code>"
@@ -195,7 +197,8 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1):
                 buttons.ibutton(label, f"status {sid} st {status_value}")
     buttons.ibutton("♻️", f"status {sid} ref", position="header")
     button = buttons.build_menu(8)
-    msg += f"\n<b>🅲🄿🆄 :</b> <code>{cpu_percent()}%</code> | <b>🆁🄰🅼 :</b> <code>{virtual_memory().percent}%</code>"
-    msg += f"\n<b>🆃🅳🅻 :</b> <code>{get_readable_file_size(net_io_counters().bytes_recv)}</code> | <b>🆃🆄🅻 :</b> <code>{get_readable_file_size(net_io_counters().bytes_sent)}</code>"
-    msg += f"\n<b>🅳🅸🆂🅺 :</b> <code>{get_readable_file_size(disk_usage(config_dict['DOWNLOAD_DIR']).free)}</code> | <b>🆃🅸🅼🅴 :</b> <code>{get_readable_time(time() - botStartTime)}</code>"
+    msg += f"\n<b><b>──────❪ 𝑷𝒊𝒌𝒂𝒃𝒐𝒕 ❫──────</b>"
+    msg += f"\n<b>CPU :</b> <code>{cpu_percent()}%</code> | <b>RAM :</b> <code>{virtual_memory().percent}%</code>"
+    #msg += f"\n<b>🆃🅳🅻 :</b> <code>{get_readable_file_size(net_io_counters().bytes_recv)}</code> | <b>🆃🆄🅻 :</b> <code>{get_readable_file_size(net_io_counters().bytes_sent)}</code>"
+    msg += f"\n<b>FREE :</b> <code>{get_readable_file_size(disk_usage(config_dict['DOWNLOAD_DIR']).free)}</code> | <b>UPT :</b> <code>{get_readable_time(time() - botStartTime)}</code>"
     return msg, button

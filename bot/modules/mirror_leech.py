@@ -29,6 +29,7 @@ from bot.helper.mirror_utils.download_utils.gd_download import add_gd_download
 from bot.helper.mirror_utils.download_utils.qbit_download import add_qb_torrent
 from bot.helper.mirror_utils.download_utils.mega_download import add_mega_download
 from bot.helper.mirror_utils.download_utils.rclone_download import add_rclone_download
+from bot.helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.mirror_utils.download_utils.direct_link_generator import (
     direct_link_generator,
 )
@@ -282,11 +283,16 @@ class Mirror(TaskListener):
             and not is_rclone_path(self.link)
             and not is_gdrive_id(self.link)
         ):
-            await sendMessage(
-                self.message, 
-                f"<b>Hai {self.tag} !</b>\n<b>Sepertinya perintah yang kamu gunakan tidak tepat. Buka tautan berikut untuk mendapatkan bantuan!</b>", 
-                COMMAND_USAGE["main"]
-            )
+            user_id = self.message.from_user.id
+            buttons = ButtonMaker()
+            if self.message.from_user.username:
+                user = f"@{self.message.from_user.username}"
+            else:
+                user = f"{self.message.from_user.first_name}"
+            buttons.ibutton('Bantuan Mirror-Leech', f'pika {user_id} guide home')
+            await sendMessage(self.message, f"Hai {user}, Link tidak ditemukan atau perintah anda salah, silahkan klik tombol bantuan dibawah untuk melihat bantuan.", 
+                buttons.build_menu(1)
+                )
             self.removeFromSameDir()
             return
 
