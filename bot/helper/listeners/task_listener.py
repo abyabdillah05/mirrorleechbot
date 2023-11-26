@@ -269,44 +269,6 @@ class TaskListener(TaskConfig):
                         non_queued_up.remove(self.mid)
                 await start_from_queued()
                 return
-            
-    #hapus
-            msg += f'\n<b>├🗂 Tipe :</b> {mime_type}'
-            msg += f'\n<b>└⏱ Waktu</b>: {get_readable_time(time() - self.extra_details["startTime"])}'
-            if mime_type == "Folder":
-                msg += f'\n\n<b>┌📂 SubFolders :</b> <code>{folders}</code>'
-                msg += f'\n<b>└📄 Files :</b> <code>{files}</code>'
-            if link or rclonePath and config_dict['RCLONE_SERVE_URL'] and not private:
-                buttons = ButtonMaker()
-                if link:
-                    buttons.ubutton("☁️ Link Cloud", link)
-                if rclonePath:
-                    msg += f'\n\n<b>📁 Path :</b> <code>{rclonePath}</code>'
-                if rclonePath and (RCLONE_SERVE_URL := config_dict['RCLONE_SERVE_URL']) and not private:
-                        remote, path = rclonePath.split(':', 1)
-                        url_path = rutils.quote(f'{path}')
-                        share_url = f'{RCLONE_SERVE_URL}/{remote}/{url_path}'
-                        if mime_type == "Folder":
-                            share_url += '/'
-                        buttons.ubutton("🔗 Rclone Link", share_url)
-                if not rclonePath and dir_id:
-                    INDEX_URL = ''
-                    if private:
-                        INDEX_URL = self.user_dict['index_url'] if self.user_dict.get('index_url') else ''
-                    elif config_dict['INDEX_URL']:
-                        INDEX_URL = config_dict['INDEX_URL']
-                    if INDEX_URL:
-                        share_url = f'{INDEX_URL}findpath?id={dir_id}'
-                        buttons.ubutton("⚡ Link Index", share_url)
-                        if mime_type.startswith(('image', 'video', 'audio')):
-                            share_urls = f'{INDEX_URL}findpath?id={dir_id}&view=true'
-                            buttons.ubutton("🎬 Lihat Media", share_urls)
-                buttons.ubutton("❤️ Suppport For Pikabot", "https://telegra.ph/Pikabot-Donate-10-01", "footer")
-                button = buttons.build_menu(2)
-            else:
-                msg += f'\n\n<b>📁 Path :</b> <code>{rclonePath}</code>'
-                button = None
-            msg += f'\n\n<b>👤 Tugas_Oleh :</b> {self.tag}'
     
 
         else:
