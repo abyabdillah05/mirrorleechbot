@@ -218,9 +218,9 @@ class TgUploader:
 
     async def upload(self, o_files, m_size, size):
         await self._user_settings()
-        #res = await self._msg_to_reply()
-        #if not res:
-        #    return
+        res = await self._msg_to_reply()
+        if not res:
+            return
         if self._listener.user_dict.get("excluded_extensions", False):
             extension_filter = self._listener.user_dict["excluded_extensions"]
         elif "excluded_extensions" not in self._listener.user_dict:
