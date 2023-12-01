@@ -486,6 +486,11 @@ async def auto_yt(client, message):
     urls = re.findall(r"https?://[^\s]+", text)
     if urls:
         yturl = urls[0]
+    text_before_url = text.split(yturl, 1)[0].strip()
+        
+    if text_before_url:
+            return None
+    
     msg = f"<b>Link YT-Dlp terdeteksi, silahkan tunggu sebentar...</b>"
     send = await sendMessage(message, msg)
     await sleep(3)

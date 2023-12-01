@@ -1,5 +1,6 @@
 import base64
 import urllib3
+import requests
 
 from hashlib import sha256
 from http.cookiejar import MozillaCookieJar
@@ -207,6 +208,8 @@ def direct_link_generator(link: str):
         return link if domain == "static.romsget.io" else romsget(link)
     elif "hexupload.net" in domain:
         return hexupload(link)
+    elif 'pling.com' in domain:
+        return pling_bypass(link)
     # Add AllDebrid supported link here
     elif any(
         x in domain
@@ -1853,3 +1856,31 @@ def hexupload(url):
         except:
             session.close()
             raise DirectDownloadLinkException(f"ERROR: Link File tidak ditemukan!")
+        
+def pling_bypass(url):
+    try:
+        id_url = re.search(r"https?://(store.kde.org|www.pling.com)\/p\/(\d+)", url)[2]
+        link = f"https://www.pling.com/p/{id_url}/loadFiles"
+        res = requests.get(link)
+        json_dic_files = res.json().pop("files")
+        msg = f"**Source Link** :\n`{url}`\n**Direct Link :**\n"
+        mss = "<b>Pling Direct Link :</b>\n"
+        
+        for i in json_dic_files:
+            file_name = i["name"]
+            file_url = unquote(i["url"])
+            file_size = get_readable_file_size(int(i["size"]))
+            
+            msg_line = f'**→ [{file_name}]({file_url}) ({file_size})**'
+            mss_line = f"📄 <a href='{file_url}'>{file_name}</a> ({file_size})\n"
+            
+            msg += "\n" + msg_line
+            mss += "<br>" + mss_line
+            err = f"Link Pling yang anda coba mirror salah, silahkan bypass terlebih dahulu dengan command <code>/bypass</code> dan pastikan linknya tidak mengarah ke sourceforge atau hosting yang lain."
+        
+        if len(mss) > 4000:
+            return msg
+        else:
+            return mss
+    except Exception as e:
+        return err
