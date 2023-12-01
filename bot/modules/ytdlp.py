@@ -285,6 +285,7 @@ class YtDlp(TaskListener):
         self.options = options
         self.sameDir = sameDir
         self.bulk = bulk
+        self.yturl = yturl
 
     @new_task
     async def newEvent(self):
