@@ -22,7 +22,7 @@ from re import match as re_match, sub as re_sub
 from natsort import natsorted
 from aioshutil import copy
 
-from bot import config_dict, GLOBAL_EXTENSION_FILTER, user
+from bot import config_dict, GLOBAL_EXTENSION_FILTER, bot, user
 from bot.helper.ext_utils.files_utils import clean_unwanted, is_archive, get_base_name
 from bot.helper.ext_utils.bot_utils import sync_to_async
 from bot.helper.ext_utils.media_utils import (
@@ -55,10 +55,15 @@ class TgUploader:
         self._up_path = ""
         self._lprefix = ""
         self._media_group = False
+        self._forwardChatId = None
+        self._forwardThreadId = None
 
-    async def _upload_progress(self, current, total):
+    async def _upload_progress(self, current, _):
         if self._is_cancelled:
-            if self._listener.userTransmission:
+            if (
+                self._listener.userTransmission
+                or self._listener.session == "user"
+            ):
                 user.stop_transmission()
             else:
                 self._listener.client.stop_transmission()
@@ -72,11 +77,42 @@ class TgUploader:
             if "media_group" not in self._listener.user_dict
             else False
         )
+        
         self._lprefix = self._listener.user_dict.get("lprefix") or (
             config_dict["LEECH_FILENAME_PREFIX"]
             if "lprefix" not in self._listener.user_dict
             else ""
         )
+        
+        self._forwardChatId = self._listener.user_dict.get("leech_dest")
+        if not self._forwardChatId:
+            self._forwardChatId = self._listener.message.chat.id
+            self._forwardThreadId = (
+                self._listener.message.message_thread_id
+                if self._listener.message.chat.is_forum
+                else None
+            )
+            
+        if not isinstance(self._forwardChatId, int):
+            if ":" in self._forwardChatId:
+                self.__forwardChatId = self._forwardChatId
+                self._forwardChatId = self.__forwardChatId.split(":")[0]
+                self._forwardThreadId = self.__forwardChatId.split(":")[1]
+                
+        if (
+            self._forwardChatId
+            and not isinstance(self._forwardChatId, int)
+            and self._forwardChatId.isdigit()
+        ):
+            self._forwardChatId = int(self._forwardChatId)
+                
+        if (
+            self._forwardThreadId
+            and not isinstance(self._forwardThreadId, int)
+            and self._forwardThreadId.isdigit()
+        ):
+            self._forwardThreadId = int(self._forwardThreadId)
+        
         if not await aiopath.exists(self._thumb):
             self._thumb = None
 
@@ -88,12 +124,16 @@ class TgUploader:
                 else self._listener.message.text.lstrip("/")
             )
             try:
-                if self._listener.userTransmission:
+                if (
+                    self._listener.userTransmission
+                    or self._listener.session == "user"
+                ):
                     self._sent_msg = await user.send_message(
                         chat_id=self._listener.upDest,
                         text=msg,
                         disable_web_page_preview=True,
                         disable_notification=True,
+                        message_thread_id=self._listener.threadId
                     )
                 else:
                     self._sent_msg = await self._listener.client.send_message(
@@ -101,11 +141,15 @@ class TgUploader:
                         text=msg,
                         disable_web_page_preview=True,
                         disable_notification=True,
+                        message_thread_id=self._listener.threadId
                     )
             except Exception as e:
                 await self._listener.onUploadError(str(e))
                 return False
-        elif self._listener.userTransmission:
+        elif (
+            self._listener.userTransmission
+            or self._listener.session == "user"
+        ):
             self._sent_msg = await user.get_messages(
                 chat_id=self._listener.message.chat.id, message_ids=self._listener.mid
             )
@@ -197,6 +241,18 @@ class TgUploader:
                     quote=True,
                     disable_notification=True,
                 ))[-1]
+                # Send ScreenShots to ForwardChatId
+                try:
+                    if self._forwardChatId != "":
+                        await bot.send_media_group(
+                            chat_id=self._forwardChatId,
+                            media=inputs,
+                            disable_notification=True,
+                            message_thread_id=self._forwardThreadId,
+                            reply_to_message_id=self._listener.mid
+                        )
+                except Exception as e:
+                    LOGGER.error(f"Failed when forward message => {e}")
                 for m in outputs:
                     await aioremove(m)
 
@@ -218,9 +274,9 @@ class TgUploader:
 
     async def upload(self, o_files, m_size, size):
         await self._user_settings()
-        res = await self._msg_to_reply()
-        if not res:
-            return
+        # res = await self._msg_to_reply()
+        # if not res:
+        #     return
         if self._listener.user_dict.get("excluded_extensions", False):
             extension_filter = self._listener.user_dict["excluded_extensions"]
         elif "excluded_extensions" not in self._listener.user_dict:
@@ -238,6 +294,14 @@ class TgUploader:
                     continue
                 try:
                     f_size = await aiopath.getsize(self._up_path)
+                    # Force uploads below 2GB using Bot session and above 2GB using User session
+                    if f_size > 2147483648:
+                        self._listener.session = "user"
+                    else:
+                        self._listener.session = "bot"
+                    res = await self._msg_to_reply()
+                    if not res:
+                        return
                     if self._listener.seed and file_ in o_files and f_size in m_size:
                         continue
                     self._total_files += 1
@@ -265,6 +329,7 @@ class TgUploader:
                                         await self._send_media_group(subkey, key, msgs)
                     self._last_msg_in_group = False
                     self._last_uploaded = 0
+                    LOGGER.info(f"Leech Started: {self._listener.name} | Using: {self._listener.session.upper()} Session")
                     await self._upload_file(cap_mono, file_)
                     if self._is_cancelled:
                         return
@@ -306,12 +371,12 @@ class TgUploader:
             await clean_unwanted(self._path)
         if self._total_files == 0:
             await self._listener.onUploadError(
-                "No files to upload. In case you have filled EXTENSION_FILTER, then check if all files have those extensions or not."
+                "Tidak ada file untuk diunggah ke telegram!"
             )
             return
         if self._total_files <= self._corrupted:
             await self._listener.onUploadError(
-                "Files Corrupted or unable to upload. Check logs!"
+                "Ekstensi file ini diblokir oleh bot!"
             )
             return
         LOGGER.info(f"Leech Completed: {self._listener.name}")
@@ -461,6 +526,20 @@ class TgUploader:
                 and await aiopath.exists(thumb)
             ):
                 await aioremove(thumb)
+            if (
+                not self._is_cancelled
+                and not self._is_corrupted
+            ):
+                try:
+                    if self._forwardChatId != "":
+                        await bot.copy_message(
+                            chat_id=self._forwardChatId, 
+                            from_chat_id=self._sent_msg.chat.id, 
+                            message_id=self._sent_msg.id, 
+                            message_thread_id=self._forwardThreadId
+                        )
+                except Exception as e:
+                    LOGGER.error(f"Failed when forward message => {e}")
         except FloodWait as f:
             LOGGER.warning(str(f))
             await sleep(f.value)
@@ -492,4 +571,4 @@ class TgUploader:
     async def cancel_task(self):
         self._is_cancelled = True
         LOGGER.info(f"Cancelling Upload: {self._listener.name}")
-        await self._listener.onUploadError("your upload has been stopped!")
+        await self._listener.onUploadError("Unggahan dibatalkan oleh User!")
