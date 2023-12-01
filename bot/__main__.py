@@ -183,15 +183,16 @@ async def stats(_, message):
 <b>└Total Unggah :</b> <code>{sent}</code>
 
 <b>┌┤📦 Versi Package:</b>
-<b>├Aria2c       :</b> <code>v{arv}</code>
-<b>├FFMPEG       :</b> <code>v{ffv}</code>
-<b>├Google Api   :</b> <code>v{gav}</code>
-<b>├MegaSDK      :</b> <code>v{msv}</code>
-<b>├P7Zip        :</b> <code>v{p7v}</code>
-<b>├Pyro         :</b> <code>v{prv}</code>
-<b>├Rclone       :</b> <code>{rcv}</code>
-<b>├Qbittorrent  :</b> <code>{qbv}</code>
-<b>└YT-DLP       :</b> <code>v{ytv}</code>
+<b>├Aria2c       :</b> <code>v{Version.ar}</code>
+<b>├FFMPEG       :</b> <code>v{Version.ff}</code>
+<b>├Google Api   :</b> <code>v{Version.ga}</code>
+<b>├MegaSDK      :</b> <code>v{Version.ms}</code>
+<b>├P7Zip        :</b> <code>v{Version.p7}</code>
+<b>├Pyro         :</b> <code>v{Version.pr}</code>
+<b>├Python       :</b> <code>v{Version.py}</code>
+<b>├Rclone       :</b> <code>{Version.rc}</code>
+<b>├Qbittorrent  :</b> <code>{Version.qb}</code>
+<b>└YT-DLP       :</b> <code>v{Version.yt}</code>
 
 <blockquote><code>{get_quotes()}</code></blockquote>
 '''

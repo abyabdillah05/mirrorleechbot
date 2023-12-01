@@ -15,18 +15,18 @@ from bot.helper.telegram_helper.button_build import ButtonMaker
 SIZE_UNITS = ["B", "KB", "MB", "GB", "TB", "PB"]
 
 class MirrorStatus:
-    STATUS_DOWNLOADING = "Unduh"
-    STATUS_UPLOADING = "Unggah"
-    STATUS_QUEUEDL = "AntriDownload"
-    STATUS_QUEUEUP = "AntriUpload"
-    STATUS_PAUSED = "Henti"
-    STATUS_ARCHIVING = "Arsip"
-    STATUS_EXTRACTING = "Ekstrak"
-    STATUS_CLONING = "Clone"
-    STATUS_SEEDING = "Seed"
-    STATUS_SPLITTING = "Bagi"
-    STATUS_CHECKING = "Cek"
-    STATUS_SAMVID = "SampleVideo"
+    STATUS_DOWNLOADING = "📥 Mengunduh..."
+    STATUS_UPLOADING = "📤 Mengunggah..."
+    STATUS_QUEUEDL = "⌛️ Antrian Download..."
+    STATUS_QUEUEUP = "⏳ Antrian Upload..."
+    STATUS_PAUSED = "⛔️Dihentikan."
+    STATUS_ARCHIVING = "📦 Mengarsip..."
+    STATUS_EXTRACTING = "🗂️ Mengekstrak..."
+    STATUS_CLONING = "📑 Mengclone..."
+    STATUS_SEEDING = "🧲 Mengeseed..."
+    STATUS_SPLITTING = "📚 Membagi..."
+    STATUS_CHECKING = "📝 Mengecek..."
+    STATUS_SAMVID = "🎞️ SampleVideo"
      
 STATUS_VALUES = [
     ("ALL", "All"),
@@ -94,11 +94,11 @@ def speed_string_to_bytes(size_text: str):
 
 
 def get_progress_bar_string(pct):
-    pct = float(pct.strip('%'))
+    pct = float(pct.strip("%"))
     p = min(max(pct, 0), 100)
-    cFull = int(p // 10)
-    p_str = '■' * cFull
-    p_str += '□' * (10 - cFull)
+    cFull = int(p // 8)
+    p_str = "■" * cFull
+    p_str += "□" * (12 - cFull)
     return f"[{p_str}]"
 
 
@@ -135,14 +135,14 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1):
     ):
         tstatus = task.status()
         if task.listener.isPrivateChat: 
-            msg += f"<b>📄 Nama :</b> <blockquote><b>PRIVATE TASK 🔐</b></blockquote>"
+            msg += f"<b>🔐 Nama :</b> <blockquote><b>Tugas Pribadi..</b></blockquote>"
         else: 
             msg += f"<b>📄 Nama :</b> <blockquote><code>{escape(f'{task.name()}')}</code></blockquote>"
-        msg += f"\n<b>┌┤{get_progress_bar_string(task.progress())} <code>{task.progress()}</code>├┐</b>"
+        msg += f"\n<b>┌┤{get_progress_bar_string(task.progress())}</b>"
         if task.listener.isSuperChat:
-            msg += f"\n<b>├⌛️ Status :</b> <a href='{task.listener.message.link}'>{tstatus}</a>"
+            msg += f"\n<b>├</b> <a href='{task.listener.message.link}'><b>{tstatus}</b> <code>{task.progress()}</code></a>"
         else:
-            msg += f"\n<b>├⌛️ Status :</b> <code>{tstatus}</code>"
+            msg += f"\n<b>├ {tstatus}</b> <code>{task.progress()}</code>"
         if tstatus not in [
             MirrorStatus.STATUS_SPLITTING,
             MirrorStatus.STATUS_SEEDING,
@@ -166,14 +166,14 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1):
             msg += f"\n<b>├⚡️ Kecepatan :</b> <code>{task.seed_speed()}</code>"
         else:
             msg += f"\n<b>├📦 Ukuran :</b> <code>{task.size()}</code>"
-        if task.listener.isPrivateChat: 
+        #if task.listener.isPrivateChat: 
             #msg += f"\n<b>├ ID :</b> <code>PRIVATE</code>"
-            msg += f"\n<b>├👨‍💻 User : <b>Anonymous 👻</b>" 
-        else:
+            #msg += f"\n<b>├👨‍💻 User : <b>Anonymous 👻</b>" 
+        #else:
             #msg += f"\n<b>├ ID :</b> <code>{task.listener.user_id}</code>"
-            user = f'<a href="tg://user?id={task.listener.user.id}">{task.listener.user.first_name}</a>'
-            msg += f"\n<b>├👨‍💻 User :</b> <code>{task.listener.user.first_name}</code>"
-        msg += f"\n<b>└🚫 Stop :</b> <code>/{BotCommands.CancelTaskCommand[0]} {task.gid()}</code>\n\n"
+        user = f'<a href="tg://user?id={task.listener.user.id}">{task.listener.user.first_name}</a>'
+        msg += f"\n<b>├👨‍💻 User :</b> <b>{user}</b>"
+        msg += f"\n<b>└🚫 Stop :</b> <code>/{BotCommands.CancelTaskCommand[0]} {task.gid()}</code>\n"
 
     if len(msg) == 0 and status == "All":
         return None, None
