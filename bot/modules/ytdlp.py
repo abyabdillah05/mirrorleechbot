@@ -1,10 +1,12 @@
 from pyrogram.handlers import MessageHandler, CallbackQueryHandler
+from pyrogram import filters
 from pyrogram.filters import command, regex, user
 from asyncio import wait_for, Event, wrap_future
 from aiohttp import ClientSession
 from yt_dlp import YoutubeDL
 from functools import partial
 from time import time
+import re
 
 from bot import DOWNLOAD_DIR, bot, config_dict, LOGGER
 from bot.helper.telegram_helper.message_utils import (
@@ -266,6 +268,7 @@ class YtDlp(TaskListener):
         _=None,
         isLeech=False,
         sameDir=None,
+        yturl=None,
         bulk=None,
         multiTag=None,
         options="",
@@ -321,7 +324,10 @@ class YtDlp(TaskListener):
         self.name = args["-n"]
         self.upDest = args["-up"]
         self.rcf = args["-rcf"]
-        self.link = args["link"]
+        if self.yturl:
+            self.link = self.yturl
+        else:
+            self.link = args["link"]
         self.compress = args["-z"]
         self.thumb = args["-t"]
         self.splitSize = args["-sp"]
@@ -471,6 +477,19 @@ async def ytdl(client, message):
 async def ytdlleech(client, message):
     YtDlp(client, message, isLeech=True).newEvent()
 
+async def auto_yt(client, message):
+    text = message.text
+    urls = re.findall(r"https?://[^\s]+", text)
+    if urls:
+        yturl = urls[0]
+    msg = f"<b>Link YT-Dlp terdeteksi, silahkan tunggu sebentar...</b>"
+    send = await sendMessage(message, msg)
+    await sleep(3)
+    await deleteMessage(send)
+    YtDlp(client, message, yturl=yturl, isLeech=True).newEvent()
+
+ytregex = r"(https?://(?:www\.)?(?:instagram\.com/(?:tv/|reel/)|[a-zA-Z0-9.-]*tiktok\.com/|youtu\.be/|youtube\.com/(?:shorts/|watch\?)|m\.youtube\.com/(?:shorts/|watch\?)|twitter\.com/|music\.youtube\.com/|facebook\.com/|x\.com/|www\.facebook\.com/|fb\.me/|m\.facebook\.com/)[^\s]+)"
+
 
 bot.add_handler(
     MessageHandler(
@@ -487,3 +506,4 @@ bot.add_handler(
         ) & CustomFilters.authorized,
     )
 )
+bot.add_handler(MessageHandler(auto_yt, filters=CustomFilters.authorized & filters.regex(f"{ytregex}")))

@@ -135,9 +135,9 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1):
     ):
         tstatus = task.status()
         if task.listener.isPrivateChat: 
-            msg += f"<blockquote><b>🔐 Nama : Tugas Pribadi..</b></blockquote>"
+            msg += f"<blockquote><b>🔐 Nama :</b> <code>Private Task</code></b></blockquote>"
         else: 
-            msg += f"<b>📄 Nama :</b> <blockquote><code>{escape(f'{task.name()}')}</code></blockquote>"
+            msg += f"<blockquote><b>📄 Nama :</b> <code>{escape(f'{task.name()}')}</code></blockquote>"
         msg += f"\n<b>┌┤{get_progress_bar_string(task.progress())}<code>{task.progress()}</code></b>"
         if task.listener.isSuperChat:
             msg += f"\n<b>├⌛️ Status :</b> <a href='{task.listener.message.link}'><b>{tstatus}</b></a>"
