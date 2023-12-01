@@ -1,7 +1,7 @@
 from pyrogram.handlers import MessageHandler, CallbackQueryHandler
 from pyrogram import filters
 from pyrogram.filters import command, regex, user
-from asyncio import wait_for, Event, wrap_future
+from asyncio import wait_for, Event, wrap_future, sleep
 from aiohttp import ClientSession
 from yt_dlp import YoutubeDL
 from functools import partial
@@ -478,7 +478,10 @@ async def ytdlleech(client, message):
     YtDlp(client, message, isLeech=True).newEvent()
 
 async def auto_yt(client, message):
-    text = message.text
+    if message.caption is not None:
+        text = message.caption
+    else:
+        text = message.text
     urls = re.findall(r"https?://[^\s]+", text)
     if urls:
         yturl = urls[0]
