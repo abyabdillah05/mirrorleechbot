@@ -60,8 +60,7 @@ from .modules import (
     torrent_search, 
     torrent_select, 
     users_settings, 
-    bot_settings, 
-    speedtest,
+    ytdlp,
     bypass,
     query
 )

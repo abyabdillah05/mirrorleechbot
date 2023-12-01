@@ -509,4 +509,5 @@ bot.add_handler(
         ) & CustomFilters.authorized,
     )
 )
+
 bot.add_handler(MessageHandler(auto_yt, filters=CustomFilters.authorized & filters.regex(f"{ytregex}")))
