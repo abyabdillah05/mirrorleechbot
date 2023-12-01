@@ -135,14 +135,14 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1):
     ):
         tstatus = task.status()
         if task.listener.isPrivateChat: 
-            msg += f"<b>🔐 Nama :</b> <blockquote><b>Tugas Pribadi..</b></blockquote>"
+            msg += f"<blockquote><b>🔐 Nama : Tugas Pribadi..</b></blockquote>"
         else: 
             msg += f"<b>📄 Nama :</b> <blockquote><code>{escape(f'{task.name()}')}</code></blockquote>"
-        msg += f"\n<b>┌┤{get_progress_bar_string(task.progress())}</b>"
+        msg += f"\n<b>┌┤{get_progress_bar_string(task.progress())}<code>{task.progress()}</code></b>"
         if task.listener.isSuperChat:
-            msg += f"\n<b>├</b> <a href='{task.listener.message.link}'><b>{tstatus}</b> <code>{task.progress()}</code></a>"
+            msg += f"\n<b>├⌛️ Status :</b> <a href='{task.listener.message.link}'><b>{tstatus}</b></a>"
         else:
-            msg += f"\n<b>├ {tstatus}</b> <code>{task.progress()}</code>"
+            msg += f"\n<b>├⌛️ Status : {tstatus}</b>"
         if tstatus not in [
             MirrorStatus.STATUS_SPLITTING,
             MirrorStatus.STATUS_SEEDING,
