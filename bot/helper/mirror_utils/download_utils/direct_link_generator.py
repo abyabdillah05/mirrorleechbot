@@ -1,6 +1,7 @@
 import base64
 import urllib3
 import requests
+import re
 
 from hashlib import sha256
 from http.cookiejar import MozillaCookieJar
@@ -8,7 +9,7 @@ from json import loads
 from os import path
 from re import findall, match, search
 from time import sleep
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, urlparse, unquote
 from uuid import uuid4
 from bs4 import BeautifulSoup
 from cloudscraper import create_scraper
@@ -19,7 +20,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 from bot import config_dict
-from bot.helper.ext_utils.status_utils import speed_string_to_bytes, get_readable_time
+from bot.helper.ext_utils.status_utils import speed_string_to_bytes, get_readable_time, get_readable_file_size
 from bot.helper.ext_utils.links_utils import is_share_link
 from bot.helper.ext_utils.exceptions import DirectDownloadLinkException
 from bot.helper.ext_utils.help_messages import PASSWORD_ERROR_MESSAGE
@@ -1882,5 +1883,5 @@ def pling_bypass(url):
             return msg
         else:
             return mss
-    except Exception as e:
+    except Exception:
         return err
