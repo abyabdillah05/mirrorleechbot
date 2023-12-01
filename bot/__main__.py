@@ -24,7 +24,6 @@ from datetime import datetime
 
 from bot import (
     bot, 
-    user,
     botStartTime, 
     LOGGER, 
     Interval, 
@@ -33,15 +32,7 @@ from bot import (
     INCOMPLETE_TASK_NOTIFIER, 
     scheduler, 
     config_dict, 
-    arv, 
-    ffv, 
-    gav, 
-    msv, 
-    p7v, 
-    prv, 
-    rcv, 
-    qbv, 
-    ytv
+    Version
 )
 from .helper.ext_utils.files_utils import clean_all, exit_clean_up
 from .helper.ext_utils.bot_utils import cmd_exec, sync_to_async, initiate_help_messages
@@ -54,19 +45,20 @@ from .helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.listeners.aria2_listener import start_aria2_listener
 from .modules import (
     authorize, 
+    bot_settings, 
+    cancel_task, 
     clone, 
+    eval, 
     gd_count, 
     gd_delete, 
-    cancel_task, 
     gd_search, 
     mirror_leech, 
+    rss, 
+    shell, 
+    speedtest,
     status, 
     torrent_search, 
     torrent_select, 
-    ytdlp, 
-    rss, 
-    shell, 
-    eval, 
     users_settings, 
     bot_settings, 
     speedtest,
@@ -270,8 +262,6 @@ async def restart(_, message):
             intvl.cancel()
     await clean_all()
     proc1 = await create_subprocess_exec("pkill", "-9", "-f", "gunicorn|chrome|firefox|opera|edge")
-    if user:
-        await user.stop()
     proc2 = await create_subprocess_exec("python3", "update.py")
     await gather(proc1.wait(), proc2.wait())
     async with aiopen(".restartmsg", "w") as f:

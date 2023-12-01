@@ -1,6 +1,6 @@
 from tzlocal import get_localzone
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from pyrogram import Client as tgClient, enums, __version__ as prv
+from pyrogram import Client as tgClient, enums, __version__
 from pymongo import MongoClient
 from asyncio import Lock
 from dotenv import load_dotenv, dotenv_values
@@ -33,7 +33,7 @@ getLogger("urllib3").setLevel(INFO)
 getLogger("requests").setLevel(INFO)
 getLogger("qbittorrentapi").setLevel(INFO)
 getLogger("pyrogram").setLevel(ERROR)
-getLogger("gunicorn").setLevel(ERROR)
+getLogger("httpx").setLevel(ERROR)
 
 botStartTime = time()
 
@@ -46,6 +46,14 @@ basicConfig(
 )
 
 LOGGER = getLogger(__name__)
+
+aria2 = ariaAPI(
+    ariaClient(
+        host="http://localhost", 
+        port=6800, 
+        secret=""
+    )
+)
 
 load_dotenv("config.env", override=True)
 
@@ -65,20 +73,32 @@ non_queued_dl = set()
 non_queued_up = set()
 multi_tags = set()
 
+class Version:
+    ar = ""
+    ff = ""
+    ga = ""
+    ms = ""
+    p7 = ""
+    pr = ""
+    py = ""
+    rc = ""
+    qb = ""
+    yt = ""
+
 # Version Check
 try:
-    arv = check_output(["chrome --v"], shell=True).decode().split("\n")[0].split(" ")[2] 
-    ffv = check_output(["opera -version | grep 'ffmpeg version' | sed -e 's/ffmpeg version //' -e 's/[^0-9.].*//'"], shell=True).decode().replace("\n", "")
-    gav = check_output(["pip show google-api-python-client | grep Version"], shell=True).decode().split(" ", 1)[1].replace("\n", "")
-    msv = check_output(["pip show megasdk | grep Version"], shell=True).decode().split(" ", 1)[1].replace("\n", "")
-    p7v = check_output(["7z | grep Version"], shell=True).decode().split(" ")[2]
-    prv = prv
-    rcv = check_output(["edge --version"], shell=True).decode().split("\n")[0].split(" ")[1]
-    qbv = check_output(["firefox --version"], shell=True).decode().split(" ", 1)[1].replace("\n", "")
-    ytv = check_output(["yt-dlp --version"], shell=True).decode().split("\n")[0]
+    Version.ar = check_output(["chrome --v"], shell=True).decode().split("\n")[0].split(" ")[2] 
+    Version.ff = check_output(["opera -version | grep 'ffmpeg version' | sed -e 's/ffmpeg version //' -e 's/[^0-9.].*//'"], shell=True).decode().replace("\n", "")
+    Version.ga = check_output(["pip show google-api-python-client | grep Version"], shell=True).decode().split(" ", 1)[1].replace("\n", "")
+    Version.ms = check_output(["pip show megasdk | grep Version"], shell=True).decode().split(" ", 1)[1].replace("\n", "")
+    Version.p7 = check_output(["7z | grep Version"], shell=True).decode().split(" ")[2]
+    Version.pr = __version__
+    Version.py = check_output(["python --version"], shell=True).decode().split()[-1]
+    Version.rc = check_output(["edge --version"], shell=True).decode().split("\n")[0].split(" ")[1]
+    Version.qb = check_output(["firefox --version"], shell=True).decode().split(" ", 1)[1].replace("\n", "")
+    Version.yt = check_output(["yt-dlp --version"], shell=True).decode().split("\n")[0]
 except Exception as e:
     LOGGER.warning(f"Failed when get apps version! : {e}")
-    arv, ffv, gav, msv, p7v, prv, rcv, qbv, ytv = "", "", "", "", "", "", "", "", ""
 
 try:
     if bool(environ.get("_____REMOVE_THIS_LINE_____")):
@@ -499,25 +519,25 @@ if ospath.exists("list_drives.txt"):
             else:
                 INDEX_URLS.append("")
 
-log_info("Running Web Server...")
+log_info("Set up Web Server...")
 Popen(
     f"gunicorn web.wserver:app --bind 0.0.0.0:{BASE_URL_PORT} --worker-class gevent", 
     shell=True
     )
 
-log_info("Running QBittorrent...")
+log_info("Set up QBittorrent...")
 srun(["firefox", "-d", f"--profile={getcwd()}"])
 if not ospath.exists(".netrc"):
     with open(".netrc", "w"):
         pass
-srun(["chmod", "600", ".netrc"])
-srun(["cp", ".netrc", "/root/.netrc"])
 
-log_info("Running Aria2...")
-srun(["chmod", "+x", "aria.sh"])
-srun("./aria.sh", shell=True)
+log_info("Set up Netrc...")
+srun("chmod 600 .netrc && cp .netrc /root/.netrc", shell=True)
 
-log_info("Set Up Service Accounts...")
+log_info("Set up Aria2...")
+srun("chmod +x aria.sh && ./aria.sh", shell=True)
+
+log_info("Set up Service Accounts...")
 if ospath.exists("accounts.zip"):
     if ospath.exists("accounts"):
         srun(["rm", "-rf", "accounts"])
@@ -528,17 +548,8 @@ if not ospath.exists("accounts"):
     log_warning("Service Accounts not found!")
     config_dict["USE_SERVICE_ACCOUNTS"] = False
 
-aria2 = ariaAPI(
-    ariaClient(
-        host="http://localhost", 
-        port=6800, 
-        secret=""
-    )
-)
-
-log_info("Set Up auto Alive...")
+log_info("Set up auto Alive...")
 Popen(["python3", "alive.py"])
-
 
 def get_client():
     return qbClient(host="localhost", port=8090)
@@ -559,13 +570,6 @@ aria2c_global = [
     "server-stat-of"
 ]
 
-if not aria2_options:
-    aria2_options = aria2.client.get_global_option()
-else:
-    a2c_glo = {op: aria2_options[op]
-               for op in aria2c_global if op in aria2_options}
-    aria2.set_global_options(a2c_glo)
-
 qb_client = get_client()
 if not qbit_options:
     qbit_options = dict(qb_client.app_preferences())
@@ -580,7 +584,7 @@ else:
             del qb_opt[k]
     qb_client.app_set_preferences(qb_opt)
 
-log_info("Creating client from BOT_TOKEN")
+log_info("Creating client from BOT_TOKEN...")
 bot = tgClient(
     "bot", 
     TELEGRAM_API, 
@@ -595,3 +599,9 @@ bot_loop = bot.loop
 
 scheduler = AsyncIOScheduler(timezone=str(
     get_localzone()), event_loop=bot_loop)
+
+if not aria2_options:
+    aria2_options = aria2.client.get_global_option()
+else:
+    a2c_glo = {op: aria2_options[op] for op in aria2c_global if op in aria2_options}
+    aria2.set_global_options(a2c_glo)

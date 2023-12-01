@@ -66,7 +66,10 @@ def direct_link_generator(link: str):
     elif "gofile.io" in domain:
         return gofile(link)
     elif "send.cm" in domain:
-        return send_cm(link)
+        if len(config_dict['ALLDEBRID_API']) == 0:
+            return send_cm(link)
+        else:
+            return alldebrid(link)
     elif "easyupload.io" in domain:
         return easyupload(link)
     elif "streamvid.net" in domain:
