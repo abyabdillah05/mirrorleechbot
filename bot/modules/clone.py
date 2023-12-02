@@ -3,6 +3,7 @@ from pyrogram.filters import command
 from secrets import token_urlsafe
 from asyncio import gather
 from json import loads
+from time import time
 
 from bot import LOGGER, task_dict, task_dict_lock, bot
 from bot.helper.mirror_utils.gdrive_utils.clone import gdClone
@@ -62,6 +63,7 @@ class Clone(TaskListener):
         self.sameDir = sameDir
         self.bulk = bulk
         self.isClone = True
+        self.extra_details = {'startTime': time()}
 
     @new_task
     async def newEvent(self):
