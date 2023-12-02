@@ -276,7 +276,7 @@ class TaskListener(TaskConfig):
             msg += f'\n<b>└⏱ Waktu</b>: {get_readable_time(time() - self.extra_details["startTime"])}'
             if mime_type == "Folder":
                 msg += f"\n\n<b>┌📂 Jumlah Folder :</b> <code>{folders}</code>"
-                msg += f"\n\n<b>└📄 Jumlah File :</b> <code>{files}</code>"
+                msg += f"\n<b>└📄 Jumlah File :</b> <code>{files}</code>"
             if (
                 link
                 or rclonePath
@@ -315,6 +315,7 @@ class TaskListener(TaskConfig):
                         if mime_type.startswith(("image", "video", "audio")):
                             share_urls = f"{INDEX_URL}findpath?id={dir_id}&view=true"
                             buttons.ubutton("🎬 Lihat Media", share_urls)
+                buttons.ubutton("❤️ Suppport For Pikabot", "https://telegra.ph/Pikabot-Donate-10-01", "footer")
                 button = buttons.build_menu(2)
             else:
                 msg += f"\n\n<b>📁 Path :</b> <code>{rclonePath}</code>"
