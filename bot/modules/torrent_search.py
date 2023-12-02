@@ -129,7 +129,7 @@ async def _search(key, site, message, method):
         await sync_to_async(client.auth_log_out)
     link = await _getResult(search_results, key, message, method)
     buttons = ButtonMaker()
-    buttons.ubutton("🔎 VIEW", link)
+    buttons.ubutton("🔎 Lihat Hasil", link)
     button = buttons.build_menu(1)
     await editMessage(message, msg, button)
 
@@ -200,7 +200,7 @@ async def _getResult(search_results, key, message, method):
     path = [
         (
             await telegraph.create_page(
-                title="Pencari KQRM Bot", content=content
+                title="Pencarian Pikabot", content=content
             )
         )["path"]
         for content in telegraph_content

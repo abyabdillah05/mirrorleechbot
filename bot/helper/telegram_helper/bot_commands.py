@@ -20,7 +20,7 @@ class _BotCommands:
         self.CancelAllCommand = [f"cancelall{CMD_SUFFIX}", f"ca{CMD_SUFFIX}"]
         self.ListCommand = [f"list{CMD_SUFFIX}", f"li{CMD_SUFFIX}"]
         self.SearchCommand = [f"search{CMD_SUFFIX}", f"se{CMD_SUFFIX}"]
-        self.StatusCommand = [f"status{CMD_SUFFIX}", f"sta{CMD_SUFFIX}"]
+        self.StatusCommand = [f"status{CMD_SUFFIX}", f"s{CMD_SUFFIX}"]
         self.UsersCommand = [f"users{CMD_SUFFIX}", f"us{CMD_SUFFIX}"]
         self.AuthorizeCommand = [f"authorize{CMD_SUFFIX}", f"au{CMD_SUFFIX}"]
         self.UnAuthorizeCommand = [
