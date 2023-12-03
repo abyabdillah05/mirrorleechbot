@@ -101,6 +101,7 @@ OTHER_HELP = f"""
 • /stats = Melihat spesifikasi server bot
 • /ping = Cek respon bot
 • /speedtest = Cek speed koneksi server bot
+• /mediainfo = Untuk melihat info dari file atau media
 • /donate = Fitur unggulan hehe :)
 """
 
