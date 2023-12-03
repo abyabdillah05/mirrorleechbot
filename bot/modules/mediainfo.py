@@ -51,7 +51,7 @@ async def gen_mediainfo(message, link=None, media=None, mmsg=None):
     finally:
         await aioremove(des_path)
     link_id = (await telegraph.create_page(title='Pikabot MediaInfo', content=tc))["path"]
-    link_end = f"https://graph.org/{link_id}"
+    link_end = f"https://telegra.ph/{link_id}"
     buttons = ButtonMaker()
     buttons.ubutton("👁️ Lihat MediaInfo", f"{link_end}", "footer")
     button = buttons.build_menu(1)
