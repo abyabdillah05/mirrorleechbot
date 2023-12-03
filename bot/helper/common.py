@@ -288,8 +288,10 @@ class TaskConfig:
                 if self.threadId.isdigit():
                     self.threadId = int(self.threadId)
 
-            self.as_doc = self.user_dict.get("as_doc", False) or (
-                config_dict["AS_DOCUMENT"] if "as_doc" not in self.user_dict else False
+            self.as_doc = (
+                self.user_dict.get("as_doc", False)
+                or config_dict["AS_DOCUMENT"]
+                and "as_doc" not in self.user_dict
             )
 
             if is_telegram_link(self.thumb):

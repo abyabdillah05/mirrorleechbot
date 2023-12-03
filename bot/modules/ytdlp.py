@@ -324,7 +324,7 @@ class YtDlp(TaskListener):
         self.select = args["-s"]
         self.name = args["-n"]
         self.upDest = args["-up"]
-        self.rcf = args["-rcf"]
+        self.rcFlags = args["-rcf"]
         if self.yturl:
             self.link = self.yturl
         else:
