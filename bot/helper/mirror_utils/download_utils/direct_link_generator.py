@@ -35,9 +35,21 @@ def direct_link_generator(link: str):
     domain = urlparse(link).hostname
     if not domain:
         raise DirectDownloadLinkException("ERROR: URL Salah!")
-    if "youtube.com" in domain or "youtu.be" in domain:
+    if any(
+        x in domain
+        for x in [
+            "youtube.com",
+            "youtu.be",
+            "instagram.com",
+            "tiktok.com",
+            "facebook.com",
+        ]
+    ):
         raise DirectDownloadLinkException(
-            "ERROR: Gunakan perintah YT-DLP untuk mengunduh Youtube!")
+            "ERROR: Gunakan perintah <code>/ytdl</code> untuk mengunduh link ini, atau <code>/ytdlleech</code> untuk leech!")
+    elif "devuploads.com" in domain:
+        raise DirectDownloadLinkException(
+            "ERROR: Devuploads tidak bisa dimirror, ngeyel bnget si gus !")
     elif "mediafire.com" in domain:
         return mediafire(link)
     elif "uptobox.com" in domain:
