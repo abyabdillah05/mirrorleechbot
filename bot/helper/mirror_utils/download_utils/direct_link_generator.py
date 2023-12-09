@@ -241,8 +241,6 @@ def direct_link_generator(link: str):
             "desfichiers.com",
             "dfichiers.com",
             "dl4free.com",
-            "drop.download",
-            "dropapk.to",
             "dropgalaxy.in",
             "fastbit.cc",
             "file-upload.com",
