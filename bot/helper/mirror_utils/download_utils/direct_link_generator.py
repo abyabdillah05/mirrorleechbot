@@ -1115,7 +1115,7 @@ def gofile(url):
         if _json["status"] in "error-passwordWrong":
             raise DirectDownloadLinkException("ERROR: Password salah!")
         if _json["status"] in "error-notFound":
-            raise DirectDownloadLinkException("ERROR: Link File tidak ditemukan!")
+            raise DirectDownloadLinkException("ERROR: Link File tidak ditemukan! \n Pastikan anda tidak menggunakan direct link untuk gofile, gunakan link <code>https://gofile.io/xxxxxx</code>")
         if _json["status"] in "error-notPublic":
             raise DirectDownloadLinkException("ERROR: Folder tidak dapat diunduh!")
 
