@@ -245,12 +245,12 @@ function s_validate() {
           src="https://telegra.ph/file/43af672249c94053356c7.jpg"
           alt="logo"
         />
-        <a href="https://t.me/save_usdt">
+        <a href="https://t.me/XrofikX">
           <h2 class="name">Bittorrent Selection</h2>
         </a>
       </div>
       <div class="social">
-        <a href="https://t.me/arakurumi"><i class="fab fa-telegram"></i></a>
+        <a href="https://t.me/pikachukocak"><i class="fab fa-telegram"></i></a>
       </div>
     </header>
     <div id="sticks">
@@ -636,12 +636,12 @@ section span{
           src="https://telegra.ph/file/43af672249c94053356c7.jpg"
           alt="logo"
         />
-        <a href="https://t.me/save_usdt">
+        <a href="https://t.me/XrofikX">
           <h2 class="name">Bittorrent Selection</h2>
         </a>
       </div>
       <div class="social">
-        <a href="https://t.me/arakurumi"><i class="fab fa-telegram"></i></a>
+        <a href="https://t.me/pikachukocak"><i class="fab fa-telegram"></i></a>
       </div>
     </header>
     <section>
