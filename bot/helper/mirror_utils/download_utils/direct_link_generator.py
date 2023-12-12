@@ -201,6 +201,8 @@ def direct_link_generator(link: str):
         raise DirectDownloadLinkException(f"ERROR: R.I.P {domain}")
     elif "mp4upload.com" in domain:
         return mp4upload(link)
+    elif bool(match(r"https?://bigota\.d\.miui\.com/\S+", link)):
+        return bigota(link)
     elif "androiddatahost.com" in domain:
         return androiddatahost(link)
     elif "apkadmin.com" in domain or "sharemods.com" in domain:
@@ -1897,3 +1899,10 @@ def pling_bypass(url):
             return mss
     except Exception:
         return err
+
+def bigota(url):
+    if 'airtel' not in url:
+        link_baru = url.replace('https://bigota.d.miui.com/', 'https://airtel.bigota.d.miui.com/')
+        return link_baru
+    else:
+        return url
