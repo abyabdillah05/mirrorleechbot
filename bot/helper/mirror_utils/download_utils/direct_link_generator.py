@@ -1901,8 +1901,6 @@ def pling_bypass(url):
         return err
 
 def bigota(url):
-    if 'airtel' not in url:
-        link_baru = url.replace('https://bigota.d.miui.com/', 'https://airtel.bigota.d.miui.com/')
-        return link_baru
-    else:
-        return url
+
+    direct_link = re.sub(r"https://bigota\.d\.miui\.com", "https://airtel.bigota.d.miui.com", url)
+    return direct_link
