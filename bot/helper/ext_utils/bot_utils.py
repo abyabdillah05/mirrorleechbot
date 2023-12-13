@@ -185,3 +185,8 @@ def new_thread(func):
         return future.result() if wait else future
 
     return wrapper
+
+def bigota(url):
+
+    direct_link = re.sub(r"https://bigota\.d\.miui\.com", "https://airtel.bigota.d.miui.com", url)
+    return direct_link
