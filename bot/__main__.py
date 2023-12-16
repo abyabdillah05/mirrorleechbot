@@ -51,7 +51,6 @@ from .modules import (
     gd_count, 
     gd_delete, 
     gd_search, 
-    help, 
     mirror_leech, 
     rss, 
     shell, 
