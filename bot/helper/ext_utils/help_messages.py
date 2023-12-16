@@ -113,8 +113,8 @@ Gunakan /help untuk cek command yang lain.
 """
 
 PASSWORD_ERROR_MESSAGE = """
-Link File ini memerlukan password!
-Tambahkan password dengan menambahkan tanda <code>::</code> setelah link dan masukan password setelah tanda!
+<b>This link requires a password!</b>
+- Insert <b>::</b> after the link and write the password after the sign.
 
 <b>Contoh :</b>
 <pre languange="bash"><code>/mirror {}::ini password</code></pre>

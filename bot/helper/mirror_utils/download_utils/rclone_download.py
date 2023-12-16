@@ -1,7 +1,6 @@
 from asyncio import gather
 from json import loads
 from secrets import token_urlsafe
-from html import escape
 
 from bot import task_dict, task_dict_lock, queue_dict_lock, non_queued_dl, LOGGER
 from bot.helper.ext_utils.bot_utils import cmd_exec
@@ -20,29 +19,11 @@ async def add_rclone_download(listener, path):
         config_path = "rclone.conf"
 
     remote, listener.link = listener.link.split(":", 1)
-    listener.link = escape(listener.link.strip("/"))
+    listener.link = listener.link.strip("/")
 
-    cmd1 = [
-        "edge",
-        "lsjson",
-        "--fast-list",
-        "--stat",
-        "--no-mimetype",
-        "--no-modtime",
-        "--config",
-        config_path,
-        f"{remote}:{listener.link}",
-    ]
-    cmd2 = [
-        "edge",
-        "size",
-        "--fast-list",
-        "--json",
-        "--config",
-        config_path,
-        f"{remote}:{listener.link}",
-    ]
-    res1, res2 = await gather(cmd_exec(cmd1), cmd_exec(cmd2))
+    cmd1 = f'edge lsjson --fast-list --stat --no-mimetype --no-modtime --config {config_path} "{remote}:{listener.link}"'
+    cmd2 = f'edge size --fast-list --json --config {config_path} "{remote}:{listener.link}"'
+    res1, res2 = await gather(cmd_exec(cmd1, shell=True), cmd_exec(cmd2, shell=True))
     if res1[2] != res2[2] != 0:
         if res1[2] != -9:
             err = res1[1] or res2[1]
