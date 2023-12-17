@@ -440,16 +440,10 @@ class YtDlp(TaskListener):
             result = await sync_to_async(extract_info, self.link, options)
         except Exception as e:
             error = str(e).replace("<", " ").replace(">", " ")
-            user_id = self.message.from_user.id
-            buttons = ButtonMaker()
-            if self.message.from_user.username:
-                user = f"@{self.message.from_user.username}"
-            else:
-                user = f"{self.message.from_user.first_name}"
-            buttons.ibutton('Bantuan YT-Dlp', f'pika {user_id} guide ytdlp')
-            await sendMessage(self.message, f"Hai {user}, Link tidak ditemukan atau perintah anda salah, silahkan klik tombol bantuan dibawah untuk melihat bantuan yt-DLP.", 
-                buttons.build_menu(1)
-                )
+            await sendMessage(
+                self.message, 
+                f"<b>Hai {self.tag} !</b>\n<b>Tugasmu dihentikan karena :</b>\n<code>{error}</code>"
+            )
             self.removeFromSameDir()
             return
         finally:
