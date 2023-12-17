@@ -686,30 +686,15 @@ Check all yt-dlp api options from this <a href='https://github.com/yt-dlp/yt-dlp
         await deleteMessage(message)
 
 
-async def send_users_settings(bot, message):
+async def send_users_settings(_, message):
     if user_data:
-        # msg = ""
-        # for u, d in user_data.items():
-        #     kmsg = f"\n<b>{u}:</b>\n"
-        #     if vmsg := "".join(
-        #         f"{k}: <code>{v}</code>\n" for k, v in d.items() if f"{v}"
-        #     ):
-        #         msg += kmsg + vmsg
-        no = 0
-        msg = "<b>Pengaturan Users/Groups</b>"
-        for item, value in (user_data or {}).items():
-            no += 1
-            try:
-                user = await bot.get_users(item)
-            except IndexError:
-                user = None
-            if user:
-                msg += f"\n<b>{no}. User :</b> <a href='tg://user?id={item}'>{(user.first_name or '')} {(user.last_name or '')}</a>"
-            else:
-                msg += f"\n<b>{no}. Chat :</b> {item}"
-            for iset, vset in (value or {}).items():
-                msg += f"\n   - <b>{iset}</b> : <code>{vset}</code>"
-            msg += "\n"
+        msg = ""
+        for u, d in user_data.items():
+            kmsg = f"\n<b>{u}:</b>\n"
+            if vmsg := "".join(
+                f"{k}: <code>{v}</code>\n" for k, v in d.items() if f"{v}"
+            ):
+                msg += kmsg + vmsg
 
         msg_ecd = msg.encode()
         if len(msg_ecd) > 4000:
@@ -719,7 +704,7 @@ async def send_users_settings(bot, message):
         else:
             await sendMessage(message, msg)
     else:
-        await sendMessage(message, "<b>Semua User menggunakan Pengaturan Default!</b>")
+        await sendMessage(message, "No users data!")
 
 
 bot.add_handler(
