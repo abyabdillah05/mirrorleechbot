@@ -47,9 +47,19 @@ def direct_link_generator(link: str):
     ):
         raise DirectDownloadLinkException(
             "ERROR: Gunakan perintah <code>/ytdl</code> untuk mengunduh link ini, atau <code>/ytdlleech</code> untuk leech!")
-    elif "devuploads.com" in domain:
+    elif any(
+        x in domain
+        for x in [
+            "devuploads.com",
+            "get.pixelexperience.org",
+            "arrowos.net"
+        ]
+    ):
         raise DirectDownloadLinkException(
-            "ERROR: Devuploads tidak bisa dimirror, ngeyel bnget si gus !")
+            "ERROR: Situs Devuploads, Pixelexperience, dan ArrowOS tidak bisa dimirror")
+    elif "drive.usercontent.google.com" in domain:
+        raise DirectDownloadLinkException(
+            "ERROR: Ini bukan link drive publik, gunakan <code>drive.google.com</code>")
     elif "mediafire.com" in domain:
         return mediafire(link)
     elif "uptobox.com" in domain:
@@ -201,14 +211,14 @@ def direct_link_generator(link: str):
         raise DirectDownloadLinkException(f"ERROR: R.I.P {domain}")
     elif "mp4upload.com" in domain:
         return mp4upload(link)
-    elif bool(match(r"https?://bigota\.d\.miui\.com/\S+", link)):
+    elif re.match(r"https://(bigota|hugeota)\.d\.miui\.com/\S+", link):
         return bigota(link)
     elif "androiddatahost.com" in domain:
         return androiddatahost(link)
     elif "apkadmin.com" in domain or "sharemods.com" in domain:
         return apkadmin(link)
-    elif "sourceforge" in domain:
-        return sourceforge(link)
+    #elif "sourceforge" in domain:
+    #    return sourceforge(link)
     elif "androidfilehost.com" in link:
         return androidfilehost(link)
     elif "tusfiles.net" in domain or "tusfiles.com" in domain:
@@ -1902,5 +1912,5 @@ def pling_bypass(url):
 
 def bigota(url):
 
-    direct_link = re.sub(r"https://bigota\.d\.miui\.com", "https://airtel.bigota.d.miui.com", url)
+    direct_link = re.sub(r"https://(bigota|hugeota)\.d\.miui\.com", "https://airtel.bigota.d.miui.com", url)
     return direct_link

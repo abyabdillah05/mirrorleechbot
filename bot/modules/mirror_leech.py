@@ -318,12 +318,18 @@ class Mirror(TaskListener):
             and not is_gdrive_id(self.link)
         ):
             content_type = await get_content_type(self.link)
-            if content_type is None or "application/zip" and "bigota" in self.link or re_match(r"text/html|text/plain", content_type):
+            if content_type is None or "application/zip" and "bigota" in self.link or "application/zip" and "hugeota" in self.link or re_match(r"text/html|text/plain", content_type) or "sourceforge.net" in self.link:
                 if "uptobox" in self.link:
                     ddl = await sendMessage(
                         self.message,
                         f"<b>Generating Uptobox Direct Link (±30s) :</b>\n<code>{self.link}</code>"
                     )
+                elif "sourceforge.net" in self.link:
+                    ddl = await sendMessage(
+                        self.message,
+                        f"<b><b>❗️ Jika speed download lambat, silahkan ganti server download pada sourceforgenya</b>\n\n<a href='https://t.me/pikachukocak/21'><b>• Cara Ubah Server SF</b></a></code>"
+                    )
+                    await sleep(5)
                 else:
                     ddl = await sendMessage(
                         self.message,
@@ -358,6 +364,9 @@ class Mirror(TaskListener):
         elif is_gdrive_link(self.link) or is_gdrive_id(self.link):
             await add_gd_download(self, path)
         elif is_mega_link(self.link):
+            asu = await sendMessage(self.message, f"<b>❗️Kuota download mega terbatas, hanya 5GB/6Jam, jangan download file mega ditas 5GB !!\nJika task stuck, artinya kuota habis, tunggu 6 jam lagi.</b>\n\n<i>⏱️ Mirror akan dimulai dalam 25 detik</i>")
+            await sleep(25)
+            await deleteMessage(asu)
             await add_mega_download(self, f"{path}/")
         elif self.isQbit:
             await add_qb_torrent(self, path, ratio, seed_time)
