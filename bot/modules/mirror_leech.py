@@ -318,7 +318,7 @@ class Mirror(TaskListener):
             and not is_gdrive_id(self.link)
         ):
             content_type = await get_content_type(self.link)
-            if content_type is None or "application/zip" and "bigota" in self.link or "application/zip" and "hugeota" in self.link or re_match(r"text/html|text/plain", content_type) or "sourceforge.net" in self.link:
+            if content_type is None or "application/zip" and "bigota" in self.link or "application/zip" and "hugeota" in self.link or re_match(r"text/html|text/plain", content_type) or "sourceforge.net" in self.link or "filelions" in self.link:
                 if "uptobox" in self.link:
                     ddl = await sendMessage(
                         self.message,
