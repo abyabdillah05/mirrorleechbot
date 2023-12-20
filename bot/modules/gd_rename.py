@@ -6,7 +6,7 @@ from bot import bot, LOGGER
 from bot.helper.telegram_helper.message_utils import auto_delete_message, sendMessage
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.bot_commands import BotCommands
-from bot.helper.mirror_utils.gdrive_utlis.rename import gdRename
+from bot.helper.mirror_utils.gdrive_utils.rename import gdRename
 from bot.helper.ext_utils.bot_utils import sync_to_async, new_task
 from bot.helper.ext_utils.links_utils import is_gdrive_link
 

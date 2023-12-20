@@ -12,8 +12,10 @@ from bot import (
 from bot.helper.mirror_utils.gdrive_utils.search import gdSearch
 from bot.helper.ext_utils.files_utils import get_base_name
 from bot.helper.ext_utils.bot_utils import sync_to_async, get_telegraph_list
+from bot.helper.ext_utils.status_utils import get_readable_file_size
 from bot.helper.ext_utils.links_utils import is_gdrive_id
 
+MEGA_LIMIT = "5"
 
 async def stop_duplicate_check(listener):
     if (
@@ -133,3 +135,14 @@ async def start_from_queued():
             if queued_dl:
                 for mid in list(queued_dl.keys()):
                     await start_dl_from_queued(mid)
+
+
+async def limit_checker(size, listener, isTorrent=False, isMega=False, isDriveLink=False, isYtdlp=False):
+    limit_exceeded = ''
+    if isMega:
+        limit = 4 * 1024**3
+        if size > limit:
+            limit_exceeded = f'Limit download mega: {get_readable_file_size(limit)}'
+    
+    if limit_exceeded:
+        return f"<b>Task anda dibatalkan karena diatas batas limit download !</b>\n\n<b>{limit_exceeded}.\nUkuran file anda: {get_readable_file_size(size)}"
