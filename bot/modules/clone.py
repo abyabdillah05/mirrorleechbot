@@ -37,6 +37,7 @@ from bot.helper.mirror_utils.download_utils.direct_link_generator import (
 from bot.helper.mirror_utils.rclone_utils.transfer import RcloneTransferHelper
 from bot.helper.mirror_utils.status_utils.rclone_status import RcloneStatus
 from bot.helper.listeners.task_listener import TaskListener
+from bot.helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.ext_utils.task_manager import stop_duplicate_check
 
 
@@ -275,7 +276,16 @@ class Clone(TaskListener):
                     flink, size, files, folders, mime_type, destination
                 )
         else:
-            await sendMessage(self.message, CLONE_HELP_MESSAGE)
+            user_id = self.message.from_user.id
+            buttons = ButtonMaker()
+            if self.message.from_user.username:
+                user = f"@{self.message.from_user.username}"
+            else:
+                user = f"{self.message.from_user.first_name}"
+            buttons.ibutton('Tombol Bantuan', f'pika {user_id} guide home')
+            await sendMessage(self.message, f"Hai {user}, Perintah clone hanya untuk link google drive, silahkan klik tombol dibawah untuk melihat perintah yang lain.", 
+                buttons.build_menu(1)
+                )
 
 
 async def clone(client, message):

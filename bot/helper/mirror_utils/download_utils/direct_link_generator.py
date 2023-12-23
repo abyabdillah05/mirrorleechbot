@@ -1344,8 +1344,8 @@ def streamvid(url: str):
             raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}")
         if quality_defined:
             data = {}
-            if not (inputs := html.xpath("//form[@id='F1']//input")):
-                raise DirectDownloadLinkException("ERROR: Input tidak ditemukan!")
+            if not (inputs := html.xpath('//form[@id="F1"]//input')):
+                raise DirectDownloadLinkException("ERROR: Tidak ada input ditemukan")
             for i in inputs:
                 if key := i.get("name"):
                     data[key] = i.get("value")
@@ -1353,21 +1353,33 @@ def streamvid(url: str):
                 html = HTML(session.post(url, data=data).text)
             except Exception as e:
                 raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}")
-            if not (script := html.xpath("//script[contains(text(),'document.location.href')]/text()")):
-                if error := html.xpath("//div[@class='alert alert-danger'][1]/text()[2]"):
+            if not (
+                script := html.xpath(
+                    '//script[contains(text(),"document.location.href")]/text()'
+                )
+            ):
+                if error := html.xpath(
+                    '//div[@class="alert alert-danger"][1]/text()[2]'
+                ):
                     raise DirectDownloadLinkException(f"ERROR: {error[0]}")
-                raise DirectDownloadLinkException("ERROR: Link File tidak ditemukan!")
-            if directLink:=findall(r"document\.location\.href='(.*)'", script[0]):
+                raise DirectDownloadLinkException(
+                    "ERROR: Direct link tidak ditemukan!"
+                )
+            if directLink := findall(r'document\.location\.href="(.*)"', script[0]):
                 return directLink[0]
-            raise DirectDownloadLinkException("ERROR: Link File tidak ditemukan!")
-        elif (qualities_urls := html.xpath("//div[@id='dl_versions']/a/@href")) and (qualities := html.xpath("//div[@id='dl_versions']/a/text()[2]")):
-            error = "\nProvide a quality to download the video\nAvailable Quality:"
+            raise DirectDownloadLinkException(
+                "ERROR: Direct link tidak ditemukan!"
+            )
+        elif (qualities_urls := html.xpath('//div[@id="dl_versions"]/a/@href')) and (
+            qualities := html.xpath('//div[@id="dl_versions"]/a/text()[2]')
+        ):
+            error = "\n<b>Silahkan pilih kualitas video:</b>\n\n<b>Kualitas yang tersedia:</b>"
             for quality_url, quality in zip(qualities_urls, qualities):
-                error += f"\n{quality.strip()} <code>{quality_url}</code>"
-            raise DirectDownloadLinkException(f"{error}")
-        elif error:= html.xpath("//div[@class='not-found-text']/text()"):
+                error += f"\n<b>{quality.strip()}</b> <code>{quality_url}</code>"
+            raise DirectDownloadLinkException(f"ERROR: {error}")
+        elif error := html.xpath('//div[@class="not-found-text"]/text()'):
             raise DirectDownloadLinkException(f"ERROR: {error[0]}")
-        raise DirectDownloadLinkException("ERROR: Link File tidak ditemukan!")
+        raise DirectDownloadLinkException("ERROR: File tidak ditemukan atau sudah dihapus.")
 
 
 def easyupload(url):
