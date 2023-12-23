@@ -318,7 +318,7 @@ class Mirror(TaskListener):
             and not is_gdrive_id(self.link)
         ):
             content_type = await get_content_type(self.link)
-            if content_type is None or "application/zip" and "bigota" in self.link or "application/zip" and "hugeota" in self.link or re_match(r"text/html|text/plain", content_type) or "sourceforge.net" in self.link:
+            if content_type is None or "application/zip" and "bigota" in self.link or "application/zip" and "hugeota" in self.link or re_match(r"text/html|text/plain", content_type) or "sourceforge.net" in self.link or "filelions" in self.link:
                 if "uptobox" in self.link:
                     ddl = await sendMessage(
                         self.message,
@@ -364,8 +364,8 @@ class Mirror(TaskListener):
         elif is_gdrive_link(self.link) or is_gdrive_id(self.link):
             await add_gd_download(self, path)
         elif is_mega_link(self.link):
-            asu = await sendMessage(self.message, f"<b>❗️Kuota download mega terbatas, hanya 5GB/6Jam, jangan download file mega ditas 5GB !!\nJika task stuck, artinya kuota habis, tunggu 6 jam lagi.</b>\n\n<i>⏱️ Mirror akan dimulai dalam 25 detik</i>")
-            await sleep(25)
+            asu = await sendMessage(self.message, f"<b>❗️Kuota download mega hanya 5GB/6Jam, \nJika task stuck, artinya kuota habis, tunggu 6 jam lagi.</b>\n\n<i>⏱️ Mirror akan dimulai dalam 15 detik</i>")
+            await sleep(15)
             await deleteMessage(asu)
             await add_mega_download(self, f"{path}/")
         elif self.isQbit:

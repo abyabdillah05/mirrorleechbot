@@ -21,7 +21,7 @@ from bot.helper.ext_utils.bot_utils import sync_to_async
 from bot.helper.ext_utils.links_utils import get_mega_link_type
 from bot.helper.mirror_utils.status_utils.mega_download_status import MegaDownloadStatus
 from bot.helper.mirror_utils.status_utils.queue_status import QueueStatus
-from bot.helper.ext_utils.task_manager import is_queued, stop_duplicate_check
+from bot.helper.ext_utils.task_manager import is_queued, stop_duplicate_check, limit_checker
 
 
 class MegaAppListener(MegaListener):
@@ -172,6 +172,9 @@ async def add_mega_download(listener, path):
 
     gid = token_urlsafe(8)
     size = api.getSize(node)
+    if limit_exceeded := await limit_checker(size, listener, isMega=True):
+        await sendMessage(listener.message, limit_exceeded)
+        return
 
     add_to_queue, event = await is_queued(listener.mid)
     if add_to_queue:

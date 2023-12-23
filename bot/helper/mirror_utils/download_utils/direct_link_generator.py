@@ -1469,8 +1469,8 @@ def filelions_and_streamwish(url):
         raise DirectDownloadLinkException(f"ERROR: {_res['msg']}")
     result = _res["result"]
     if not result["versions"]:
-        raise DirectDownloadLinkException("ERROR: Versi tidak ditemukan!")
-    error = "\n<b>Pilih kualitas Video :</b>\n<b>Kualitas yang tersedia :</b>"
+        raise DirectDownloadLinkException("ERROR: File tidak ditemukan!")
+    error = "\n<b>Silahkan pilih dulu kualitas Video :</b>\n\n<b>Kualitas yang tersedia :</b>"
     for version in result["versions"]:
         if quality == version["name"]:
             return version["url"]
@@ -1483,7 +1483,7 @@ def filelions_and_streamwish(url):
         elif version["name"] == "h":
             error += f"\n<b>HD</b>"
         error +=f": <code>{url}_{version['name']}</code>"
-    raise DirectDownloadLinkException(f"{error}")
+    raise DirectDownloadLinkException(f"ERROR: {error}")
 
 
 def streamhub(url):

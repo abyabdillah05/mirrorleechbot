@@ -185,7 +185,7 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1):
     if len(tasks) > STATUS_LIMIT:
         msg += f"<b>Step :</b> <code>{page_step}</code>"
         msg += f"\n<b>Halaman :</b> <code>{page_no}/{pages}</code>"
-        msg += f"\n<b>Total Tugas :</b> <code>{tasks_no}</code>\n\n"
+        msg += f"\n<b>Total Tugas :</b> <code>{tasks_no}</code>\n"
         buttons.ibutton("⏪", f"status {sid} pre", position="header")
         buttons.ibutton("⏩", f"status {sid} nex", position="header")
         if tasks_no > 30:
@@ -197,7 +197,7 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1):
                 buttons.ibutton(label, f"status {sid} st {status_value}")
     buttons.ibutton("♻️", f"status {sid} ref", position="header")
     button = buttons.build_menu(8)
-    msg += f"<b>──────❪ 𝑷𝒊𝒌𝒂𝒃𝒐𝒕 ❫──────</b>"
+    msg += f"<b>──────❪ <a href='https://t.me/pikachukocak'>𝑷𝒊𝒌𝒂𝒃𝒐𝒕</a> ❫──────</b>"
     msg += f"\n<b>CPU :</b> <code>{cpu_percent()}%</code> | <b>RAM :</b> <code>{virtual_memory().percent}%</code>"
     #msg += f"\n<b>🆃🅳🅻 :</b> <code>{get_readable_file_size(net_io_counters().bytes_recv)}</code> | <b>🆃🆄🅻 :</b> <code>{get_readable_file_size(net_io_counters().bytes_sent)}</code>"
     msg += f"\n<b>FREE :</b> <code>{get_readable_file_size(disk_usage(config_dict['DOWNLOAD_DIR']).free)}</code> | <b>UPT :</b> <code>{get_readable_time(time() - botStartTime)}</code>"
