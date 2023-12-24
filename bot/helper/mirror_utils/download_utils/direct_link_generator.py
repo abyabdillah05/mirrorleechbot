@@ -60,7 +60,7 @@ def direct_link_generator(link: str):
     elif "drive.usercontent.google.com" in domain:
         raise DirectDownloadLinkException(
             "ERROR: Ini bukan link drive publik, gunakan <code>drive.google.com</code>")
-    elif re.match(r"https://www\.mediafire\.com/\S+", link):
+    elif re.match(r"https?://www\.mediafire\.com/\S+", link):
         return mediafire(link)
     elif ".mediafire.com" in domain:
         raise DirectDownloadLinkException(
@@ -215,7 +215,7 @@ def direct_link_generator(link: str):
         raise DirectDownloadLinkException(f"ERROR: R.I.P {domain}")
     elif "mp4upload.com" in domain:
         return mp4upload(link)
-    elif re.match(r"https://(bigota|hugeota)\.d\.miui\.com/\S+", link):
+    elif re.match(r"https?://(bigota|hugeota)\.d\.miui\.com/\S+", link):
         return bigota(link)
     elif "androiddatahost.com" in domain:
         return androiddatahost(link)
@@ -1929,5 +1929,5 @@ def pling_bypass(url):
 
 def bigota(url):
 
-    direct_link = re.sub(r"https://(bigota|hugeota)\.d\.miui\.com", "https://airtel.bigota.d.miui.com", url)
+    direct_link = re.sub(r"https?://(bigota|hugeota)\.d\.miui\.com", "https://airtel.bigota.d.miui.com", url)
     return direct_link
