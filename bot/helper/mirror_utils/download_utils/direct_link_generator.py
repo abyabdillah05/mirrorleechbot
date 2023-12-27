@@ -1929,5 +1929,5 @@ def pling_bypass(url):
 
 def bigota(url):
 
-    direct_link = re.sub(r"https?://(bigota|hugeota)\.d\.miui\.com", "https://airtel.bigota.d.miui.com", url)
+    direct_link = re.sub(r"https?://(bigota|hugeota)\.d\.miui\.com", "https://ks3orig.bigota.d.miui.com", url)
     return direct_link

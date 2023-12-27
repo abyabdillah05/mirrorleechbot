@@ -324,12 +324,6 @@ class Mirror(TaskListener):
                         self.message,
                         f"<b>Generating Uptobox Direct Link (±30s) :</b>\n<code>{self.link}</code>"
                     )
-                elif "sourceforge.net" in self.link:
-                    ddl = await sendMessage(
-                        self.message,
-                        f"<b><b>❗️ Jika speed download lambat, silahkan ganti server download pada sourceforgenya</b>\n\n<a href='https://t.me/pikachukocak/21'><b>• Cara Ubah Server SF</b></a></code>"
-                    )
-                    await sleep(5)
                 else:
                     ddl = await sendMessage(
                         self.message,
