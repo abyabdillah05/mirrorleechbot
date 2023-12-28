@@ -357,10 +357,6 @@ async def sync_jdownloader():
                 await create_subprocess_exec("7z", "a", "cfg.zip", "/JDownloader/cfg")
             ).wait()
             await DbManger().update_private_file("cfg.zip")
-            while True:
-                isCollecting = await sync_to_async(jdownloader.device.linkgrabber.is_collecting)
-                if not isCollecting:
-                    break
             await jdownloader.start()
 
 
