@@ -45,17 +45,18 @@ def direct_link_generator(link: str):
         ]
     ):
         raise DirectDownloadLinkException(
-            "ERROR: Gunakan perintah <code>/ytdl</code> untuk mengunduh link ini, atau <code>/ytdlleech</code> untuk leech!")
+            "ERROR: Gunakan perintah YT-Dlp, <code>/ytdl</code> atau <code>/ytdlleech</code> untuk mirror/leech dari situs ini !")
     elif any(
         x in domain
         for x in [
             "devuploads.com",
-            "get.pixelexperience.org",
-            "arrowos.net"
+            "get.pixelexperience.org"
+            "mega.nz",
+            "mega.co.nz"
         ]
     ):
         raise DirectDownloadLinkException(
-            "ERROR: Situs Devuploads, Pixelexperience, dan ArrowOS tidak bisa dimirror")
+            "ERROR: Gunakan perintah JDownloader, <code>/jmirror</code> atau <code>/jleech</code> untuk download/leech file dari situs ini")
     elif "drive.usercontent.google.com" in domain:
         raise DirectDownloadLinkException(
             "ERROR: Ini bukan link drive publik, gunakan <code>drive.google.com</code>")
