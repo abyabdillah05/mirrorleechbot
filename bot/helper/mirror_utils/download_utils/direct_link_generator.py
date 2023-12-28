@@ -6,7 +6,7 @@ import re
 from hashlib import sha256
 from http.cookiejar import MozillaCookieJar
 from json import loads
-from os import path
+from os import path as ospath
 from re import findall, match, search
 from time import sleep
 from urllib.parse import parse_qs, urlparse, unquote
@@ -15,7 +15,6 @@ from bs4 import BeautifulSoup
 from cloudscraper import create_scraper
 from lxml.etree import HTML
 from requests import Session, post
-from requests import session as req_session
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
@@ -28,7 +27,7 @@ from bot.helper.ext_utils.help_messages import PASSWORD_ERROR_MESSAGE
 
 _caches = {}
 
-user_agent  = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0"
+user_agent  = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0"
 
 def direct_link_generator(link: str):
     """ direct links generator """
@@ -97,6 +96,8 @@ def direct_link_generator(link: str):
             return send_cm(link)
         else:
             return alldebrid(link)
+    elif "tmpsend.com" in domain:
+        return tmpsend(link)
     elif "easyupload.io" in domain:
         return easyupload(link)
     elif "streamvid.net" in domain:
@@ -492,9 +493,9 @@ def mediafireFolder(url):
             folders = _folder_content["folders"]
             for folder in folders:
                 if folderPath:
-                    newFolderPath = path.join(folderPath, folder["name"])
+                    newFolderPath = ospath.join(folderPath, folder["name"])
                 else:
-                    newFolderPath = path.join(folder["name"])
+                    newFolderPath = ospath.join(folder["name"])
                 __get_content(folder["folderkey"], newFolderPath)
             __get_content(folderKey, folderPath, "files")
         else:
@@ -506,7 +507,7 @@ def mediafireFolder(url):
                 item["filename"] = file["filename"]
                 if not folderPath:
                     folderPath = details["title"]
-                item["path"] = path.join(folderPath)
+                item["path"] = ospath.join(folderPath)
                 item["url"] = _url
                 if "size" in file:
                     size = file["size"]
@@ -748,7 +749,7 @@ def uploadee(url):
 
 
 def terabox(url):
-    if not path.isfile("terabox.txt"):
+    if not ospath.isfile("terabox.txt"):
         raise DirectDownloadLinkException("ERROR: Cookies (terabox.txt) tidak ditemukan!")
     try:
         jar = MozillaCookieJar("terabox.txt")
@@ -790,11 +791,11 @@ def terabox(url):
                 if not folderPath:
                     if not details["title"]:
                         details["title"] = content["server_filename"]
-                        newFolderPath = path.join(details["title"])
+                        newFolderPath = ospath.join(details["title"])
                     else:
-                        newFolderPath = path.join(details["title"], content["server_filename"])
+                        newFolderPath = ospath.join(details["title"], content["server_filename"])
                 else:
-                    newFolderPath = path.join(folderPath, content["server_filename"])
+                    newFolderPath = ospath.join(folderPath, content["server_filename"])
                 __fetch_links(session, content["path"], newFolderPath)
             else:
                 if not folderPath:
@@ -804,7 +805,7 @@ def terabox(url):
                 item = {
                     "url": content["dlink"],
                     "filename": content["server_filename"],
-                    "path" : path.join(folderPath),
+                    "path" : ospath.join(folderPath),
                 }
                 if "size" in content:
                     size = content["size"]
@@ -1059,9 +1060,9 @@ def linkBox(url:str):
         for content in contents:
             if content["type"] == "dir" and "url" not in content:
                 if not folderPath:
-                    newFolderPath = path.join(details["title"], content["name"])
+                    newFolderPath = ospath.join(details["title"], content["name"])
                 else:
-                    newFolderPath = path.join(folderPath, content["name"])
+                    newFolderPath = ospath.join(folderPath, content["name"])
                 if not details["title"]:
                     details["title"] = content["name"]
                 __fetch_links(session, content["id"], newFolderPath)
@@ -1072,7 +1073,7 @@ def linkBox(url:str):
                 if (sub_type := content.get("sub_type")) and not filename.endswith(sub_type):
                     filename += f".{sub_type}"
                 item = {
-                    "path": path.join(folderPath),
+                    "path": ospath.join(folderPath),
                     "filename": filename,
                     "url": content["url"],
                 }
@@ -1146,15 +1147,15 @@ def gofile(url):
                 if not content["public"]:
                     continue
                 if not folderPath:
-                    newFolderPath = path.join(details["title"], content["name"])
+                    newFolderPath = ospath.join(details["title"], content["name"])
                 else:
-                    newFolderPath = path.join(folderPath, content["name"])
+                    newFolderPath = ospath.join(folderPath, content["name"])
                 __fetch_links(content["id"], newFolderPath)
             else:
                 if not folderPath:
                     folderPath = details["title"]
                 item = {
-                    "path": path.join(folderPath),
+                    "path": ospath.join(folderPath),
                     "filename": content["name"],
                     "url": content["link"],
                 }
@@ -1278,7 +1279,7 @@ def send_cm(url):
         folders = __collectFolders(html_text)
         for folder in folders:
             _html = HTML(cf_bypass(folder["folder_link"]))
-            __writeContents(_html, path.join(folderPath, folder["folder_name"]))
+            __writeContents(_html, ospath.join(folderPath, folder["folder_name"]))
         files = __getFiles(html_text)
         for file in files:
             if not (link := __getFile_link(file["file_id"])):
@@ -1307,6 +1308,17 @@ def send_cm(url):
     if len(details["contents"]) == 1:
         return (details["contents"][0]["url"], details["header"])
     return details
+
+
+def tmpsend(url):
+    match = search(r"https://tmpsend.com/(\w+)$", url)
+    if match:
+        file_id = match.group(1)
+        header = f"Referer: https://tmpsend.com/thank-you?d={file_id}"
+        download_link = f"https://tmpsend.com/download?d={file_id}"
+        return download_link, header
+    else:
+        raise DirectDownloadLinkException("ERROR: Direct Link tidak ditemukan!")
 
 
 def doods(url: str):
@@ -1575,7 +1587,7 @@ def pake(url: str) -> str:
                 details["title"] = f"{req['data']['title']}.mp4"
 
                 item = {
-                    "path": path.join(details["title"]),
+                    "path": ospath.join(details["title"]),
                     "filename": details["title"],
                     "url": f"https://dd-cdn.pakai.eu.org/download?url={req['data']['direct_link']}&title={details['title']}.mp4",
                 }
@@ -1602,12 +1614,13 @@ def mp4upload(url):
             if not data:
                 session.close()
                 raise DirectDownloadLinkException("ERROR: Link File tidak ditemukan!")
-            post = session.post(url, 
-                                data=data, 
-                                headers={
-                                    "User-Agent": user_agent, 
-                                    "Referer": "https://www.mp4upload.com/"
-                                }).text
+            post = session.post(
+                url, 
+                data=data, 
+                headers={
+                    "User-Agent": user_agent, 
+                    "Referer": "https://www.mp4upload.com/"
+                }).text
             soup = BeautifulSoup(post, "lxml")
             inputs = soup.find_all("form", {"name": "F1"})[0].find_all("input")
             data = {input.get("name"): input.get("value").replace(" ", "") for input in inputs}
@@ -1647,15 +1660,16 @@ def apkadmin(url: str) -> str:
             soup = BeautifulSoup(req, "lxml")
             op = soup.find("input", {"name": "op"})["value"]
             ids = soup.find("input", {"name": "id"})["value"]
-            post = session.post(url, 
-                                data={
-                                    "op": op,
-                                    "id": ids,
-                                    "rand": " ",
-                                    "referer": " ",
-                                    "method_free": " ",
-                                    "method_premium": " ",
-                                }).text
+            post = session.post(
+                url, 
+                data={
+                    "op": op,
+                    "id": ids,
+                    "rand": " ",
+                    "referer": " ",
+                    "method_free": " ",
+                    "method_premium": " ",
+                }).text
             soup = BeautifulSoup(post, "lxml")
             link = soup.find("div", {"class": "text text-center"})
             direct_link = link.find("a")["href"]
@@ -1761,17 +1775,18 @@ def pandafiles(url):
     with create_scraper() as session:
         try:
             file_id = search(r"(?://|\.)(pandafiles\.com)/([0-9a-zA-Z]+)", url)[2]
-            post = session.post(url, 
-                               headers={
-                                   "User-Agent": user_agent
-                                }, 
-                               data={
-                                   "op": "download2", 
-                                   "usr_login": "", 
-                                   "id": file_id, 
-                                   "referer": url, 
-                                   "method_free": "Free Download"
-                               }).content
+            post = session.post(
+                url, 
+                headers={
+                    "User-Agent": user_agent
+                }, 
+                data={
+                    "op": "download2", 
+                    "usr_login": "", 
+                    "id": file_id, 
+                    "referer": url, 
+                    "method_free": "Free Download"
+                }).content
             soup = BeautifulSoup(post)
             direct_link = soup.find("div", {"id": "direct_link"}).find("a")["href"]
             return direct_link
@@ -1783,10 +1798,11 @@ def pandafiles(url):
 def uploadhaven(url):
     with Session() as session:
         try:
-            req = session.get(url,
-                              headers={
-                                  "User-Agent": user_agent
-                              }).text
+            req = session.get(
+                url,
+                headers={
+                    "User-Agent": user_agent
+                }).text
             soup = BeautifulSoup(req, "lxml")
             d = soup.find("div", {"class": "alert alert-danger col-md-12"})
             if d is not None:
@@ -1855,10 +1871,11 @@ def romsget(url):
                 dlid = soup.find("button", {"data-callback": "onDLSubmit"}).get("dlid")
             except:
                 dlid = soup.find("div", {"data-callback": "onDLSubmit"}).get("dlid")
-            post = session.post("https://www.romsget.io" + upos, 
-                               data={
-                                   meid: dlid
-                                }).text
+            post = session.post(
+                "https://www.romsget.io" + upos, 
+                data={
+                    meid: dlid
+                }).text
             soup = BeautifulSoup(post, "html.parser")
             udl = soup.find("form", {"name": "redirected"}).get("action")
             prm = soup.find("input", {"name": "attach"}).get("value")

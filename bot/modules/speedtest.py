@@ -1,8 +1,10 @@
 from speedtest import Speedtest
-from pyrogram.handlers import MessageHandler
 from pyrogram.filters import command
+from pyrogram.handlers import MessageHandler
 
 from bot import bot, LOGGER
+from bot.helper.ext_utils.bot_utils import new_task
+from bot.helper.ext_utils.status_utils import get_readable_file_size
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.telegram_helper.message_utils import (
@@ -11,8 +13,6 @@ from bot.helper.telegram_helper.message_utils import (
     deleteMessage, 
     editMessage
 )
-from bot.helper.ext_utils.bot_utils import new_task
-from bot.helper.ext_utils.status_utils import get_readable_file_size
 
 
 @new_task

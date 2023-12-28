@@ -15,7 +15,7 @@ class gdCount(GoogleDriveHelper):
             file_id = self.getIdFromUrl(link, user_id)
         except (KeyError, IndexError):
             return (
-                "<b>Google Drive ID tidak ditemukan!</b>",
+                "Google Drive ID tidak ditemukan!",
                 None,
                 None,
                 None,
@@ -36,7 +36,7 @@ class gdCount(GoogleDriveHelper):
                     self.use_sa = False
                     LOGGER.error("File not found. Trying with token.pickle...")
                     return self.count(link, user_id)
-                msg = "<b>File tidak ditemukan!</b>"
+                msg = "File tidak ditemukan!"
             else:
                 msg = f"Error :\n{err}"
         return msg, None, None, None, None

@@ -16,7 +16,7 @@ def get_download(gid, old_info=None):
 class Aria2Status:
     def __init__(self, listener, gid, seeding=False, queued=False):
         self._gid = gid
-        self._download = get_download(gid)
+        self._download = None
         self.listener = listener
         self.queued = queued
         self.start_time = 0
@@ -90,7 +90,6 @@ class Aria2Status:
         return self._gid
 
     async def cancel_task(self):
-        self._update()
         await sync_to_async(self._update)
         if self._download.seeder and self.seeding:
             LOGGER.info(f"Cancelling Seed: {self.name()}")

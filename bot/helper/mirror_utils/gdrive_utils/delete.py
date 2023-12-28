@@ -14,14 +14,14 @@ class gdDelete(GoogleDriveHelper):
         try:
             file_id = self.getIdFromUrl(link, user_id)
         except (KeyError, IndexError):
-            return "<b>Google Drive ID tidak ditemukan!</b>"
+            return "Google Drive ID tidak ditemukan!"
         self.service = self.authorize()
         msg = ""
         try:
             self.service.files().delete(
                 fileId=file_id, supportsAllDrives=True
             ).execute()
-            msg = "<b>File berhasil dihapus!</b>"
+            msg = "File berhasil dihapus!"
             LOGGER.info(f"Delete Result: {msg}")
         except HttpError as err:
             if "File not found" in str(err) or "insufficientFilePermissions" in str(
@@ -32,7 +32,7 @@ class gdDelete(GoogleDriveHelper):
                     self.use_sa = False
                     LOGGER.error("File not found. Trying with token.pickle...")
                     return self.deletefile(link, user_id)
-                err = "<b>File tidak ditemukan atau tidak ada izin untuk melakukan!</b>"
+                err = "File tidak ditemukan atau tidak ada izin untuk melakukan!"
             LOGGER.error(f"Delete Result: {err}")
             msg = str(err)
         return msg

@@ -5,33 +5,6 @@ from aioshutil import move
 from asyncio import sleep, Event, gather
 from time import time
 
-from bot import (
-    bot,
-    Interval,
-    aria2,
-    DOWNLOAD_DIR,
-    task_dict,
-    task_dict_lock,
-    LOGGER,
-    DATABASE_URL,
-    config_dict,
-    non_queued_up,
-    non_queued_dl,
-    queued_up,
-    queued_dl,
-    queue_dict_lock,
-)
-from bot.helper.ext_utils.files_utils import (
-    get_path_size,
-    clean_download,
-    clean_target,
-    join_files,
-)
-from bot.helper.telegram_helper.message_utils import (
-    sendMessage,
-    delete_status,
-    update_status_message,
-)
 from bot.helper.ext_utils.status_utils import get_readable_file_size, get_readable_time
 from bot.helper.ext_utils.bot_utils import sync_to_async
 from bot.helper.ext_utils.links_utils import is_gdrive_id
@@ -46,6 +19,33 @@ from bot.helper.mirror_utils.rclone_utils.transfer import RcloneTransferHelper
 from bot.helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.ext_utils.db_handler import DbManger
 from bot.helper.common import TaskConfig
+from bot.helper.ext_utils.files_utils import (
+    get_path_size,
+    clean_download,
+    clean_target,
+    join_files,
+)
+from bot.helper.telegram_helper.message_utils import (
+    sendMessage,
+    delete_status,
+    update_status_message,
+)
+from bot import (
+    bot,
+    Intervals,
+    aria2,
+    DOWNLOAD_DIR,
+    task_dict,
+    task_dict_lock,
+    LOGGER,
+    DATABASE_URL,
+    config_dict,
+    non_queued_up,
+    non_queued_dl,
+    queued_up,
+    queued_dl,
+    queue_dict_lock,
+)
 
 
 class TaskListener(TaskConfig):
@@ -54,10 +54,10 @@ class TaskListener(TaskConfig):
 
     async def clean(self):
         try:
-            if Interval:
-                for intvl in list(Interval.values()):
+            if st := Intervals["status"]:
+                for intvl in list(st.values()):
                     intvl.cancel()
-            Interval.clear()
+            Intervals["status"].clear()
             await gather(sync_to_async(aria2.purge), delete_status())
         except:
             pass

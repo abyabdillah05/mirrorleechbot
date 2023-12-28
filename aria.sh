@@ -4,6 +4,6 @@ chrome --allow-overwrite=true --auto-file-renaming=true --bt-enable-lpd=true --b
        --rpc-max-request-size=1024M --max-connection-per-server=16 --max-concurrent-downloads=1000 --split=10 \
        --seed-ratio=0 --check-integrity=true --continue=true --daemon=true --disk-cache=50M --force-save=true \
        --min-split-size=10M --follow-torrent=mem --check-certificate=false --optimize-concurrent-downloads=true \
-       --http-accept-gzip=true --max-file-not-found=0 --max-tries=20  --peer-id-prefix=-qB4540- --reuse-uri=true \
-       --content-disposition-default-utf8=true --user-agent=Wget/1.12 --peer-agent=qBittorrent/4.5.4 --quiet=true \
+       --http-accept-gzip=true --max-file-not-found=0 --max-tries=20  --peer-id-prefix=-qB4550- --reuse-uri=true \
+       --content-disposition-default-utf8=true --user-agent=Wget/1.12 --peer-agent=qBittorrent/4.5.5 --quiet=true \
        --summary-interval=0 --max-upload-limit=1K

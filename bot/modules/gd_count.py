@@ -41,7 +41,7 @@ async def countNode(_, message):
         )
         await deleteMessage(msg)
         if mime_type is None:
-            await sendMessage(message, name)
+            await sendMessage(message, f"<b>{name}</b>")
             return
         msg = f"<b>Nama :</b> <code>{name}</code>"
         msg += f"\n\n<b>Ukuran :</b> <code>{get_readable_file_size(size)}</code>"

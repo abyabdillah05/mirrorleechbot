@@ -1,3 +1,8 @@
+from requests import get
+from pymongo import MongoClient
+from subprocess import run as srun
+from os import path, environ, remove
+from dotenv import load_dotenv, dotenv_values
 from logging import (
     FileHandler,
     StreamHandler,
@@ -6,17 +11,13 @@ from logging import (
     error as log_error,
     info as log_info,
 )
-from requests import get
-from pymongo import MongoClient
-from subprocess import run as srun
-from dotenv import load_dotenv, dotenv_values
-from os import path as ospath, environ, remove
 
-if ospath.exists("log.txt"):
+
+if path.exists("log.txt"):
     with open("log.txt", "r+") as f:
         f.truncate(0)
 
-if ospath.exists("rlog.txt"):
+if path.exists("rlog.txt"):
     remove("rlog.txt")
 
 basicConfig(
@@ -27,7 +28,7 @@ basicConfig(
     level=INFO,
 )
 
-if not ospath.exists("config.env"):
+if not path.exists("config.env"):
     CONFIG_FILE_URL = environ.get("CONFIG_FILE_URL", "")
     if len(CONFIG_FILE_URL) != 0:
         try:
@@ -85,7 +86,7 @@ if UPSTREAM_BRANCH is None:
     UPSTREAM_BRANCH = "master"
     
 if UPSTREAM_REPO is not None:
-    if ospath.exists(".git"):
+    if path.exists(".git"):
         srun(["rm", "-rf", ".git"])
 
     update = srun(
