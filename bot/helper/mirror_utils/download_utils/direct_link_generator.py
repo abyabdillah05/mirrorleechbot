@@ -6,8 +6,8 @@ import re
 from hashlib import sha256
 from http.cookiejar import MozillaCookieJar
 from json import loads
-from os import path as ospath
-from re import findall, match, search, sub
+from os import path
+from re import findall, match, search
 from time import sleep
 from urllib.parse import parse_qs, urlparse, unquote
 from uuid import uuid4
@@ -51,9 +51,7 @@ def direct_link_generator(link: str):
         x in domain
         for x in [
             "devuploads.com",
-            "get.pixelexperience.org",
-            "mega.nz",
-            "mega.co.nz"
+            "get.pixelexperience.org"
         ]
     ):
         raise DirectDownloadLinkException(
@@ -495,9 +493,9 @@ def mediafireFolder(url):
             folders = _folder_content["folders"]
             for folder in folders:
                 if folderPath:
-                    newFolderPath = ospath.join(folderPath, folder["name"])
+                    newFolderPath = path.join(folderPath, folder["name"])
                 else:
-                    newFolderPath = ospath.join(folder["name"])
+                    newFolderPath = path.join(folder["name"])
                 __get_content(folder["folderkey"], newFolderPath)
             __get_content(folderKey, folderPath, "files")
         else:
@@ -509,7 +507,7 @@ def mediafireFolder(url):
                 item["filename"] = file["filename"]
                 if not folderPath:
                     folderPath = details["title"]
-                item["path"] = ospath.join(folderPath)
+                item["path"] = path.join(folderPath)
                 item["url"] = _url
                 if "size" in file:
                     size = file["size"]
@@ -751,7 +749,7 @@ def uploadee(url):
 
 
 def terabox(url):
-    if not ospath.isfile("terabox.txt"):
+    if not path.isfile("terabox.txt"):
         raise DirectDownloadLinkException("ERROR: Cookies (terabox.txt) tidak ditemukan!")
     try:
         jar = MozillaCookieJar("terabox.txt")
@@ -793,11 +791,11 @@ def terabox(url):
                 if not folderPath:
                     if not details["title"]:
                         details["title"] = content["server_filename"]
-                        newFolderPath = ospath.join(details["title"])
+                        newFolderPath = path.join(details["title"])
                     else:
-                        newFolderPath = ospath.join(details["title"], content["server_filename"])
+                        newFolderPath = path.join(details["title"], content["server_filename"])
                 else:
-                    newFolderPath = ospath.join(folderPath, content["server_filename"])
+                    newFolderPath = path.join(folderPath, content["server_filename"])
                 __fetch_links(session, content["path"], newFolderPath)
             else:
                 if not folderPath:
@@ -807,7 +805,7 @@ def terabox(url):
                 item = {
                     "url": content["dlink"],
                     "filename": content["server_filename"],
-                    "path" : ospath.join(folderPath),
+                    "path" : path.join(folderPath),
                 }
                 if "size" in content:
                     size = content["size"]
@@ -1062,9 +1060,9 @@ def linkBox(url:str):
         for content in contents:
             if content["type"] == "dir" and "url" not in content:
                 if not folderPath:
-                    newFolderPath = ospath.join(details["title"], content["name"])
+                    newFolderPath = path.join(details["title"], content["name"])
                 else:
-                    newFolderPath = ospath.join(folderPath, content["name"])
+                    newFolderPath = path.join(folderPath, content["name"])
                 if not details["title"]:
                     details["title"] = content["name"]
                 __fetch_links(session, content["id"], newFolderPath)
@@ -1075,7 +1073,7 @@ def linkBox(url:str):
                 if (sub_type := content.get("sub_type")) and not filename.endswith(sub_type):
                     filename += f".{sub_type}"
                 item = {
-                    "path": ospath.join(folderPath),
+                    "path": path.join(folderPath),
                     "filename": filename,
                     "url": content["url"],
                 }
@@ -1149,15 +1147,15 @@ def gofile(url):
                 if not content["public"]:
                     continue
                 if not folderPath:
-                    newFolderPath = ospath.join(details["title"], content["name"])
+                    newFolderPath = path.join(details["title"], content["name"])
                 else:
-                    newFolderPath = ospath.join(folderPath, content["name"])
+                    newFolderPath = path.join(folderPath, content["name"])
                 __fetch_links(content["id"], newFolderPath)
             else:
                 if not folderPath:
                     folderPath = details["title"]
                 item = {
-                    "path": ospath.join(folderPath),
+                    "path": path.join(folderPath),
                     "filename": content["name"],
                     "url": content["link"],
                 }
@@ -1281,7 +1279,7 @@ def send_cm(url):
         folders = __collectFolders(html_text)
         for folder in folders:
             _html = HTML(cf_bypass(folder["folder_link"]))
-            __writeContents(_html, ospath.join(folderPath, folder["folder_name"]))
+            __writeContents(_html, path.join(folderPath, folder["folder_name"]))
         files = __getFiles(html_text)
         for file in files:
             if not (link := __getFile_link(file["file_id"])):
@@ -1589,7 +1587,7 @@ def pake(url: str) -> str:
                 details["title"] = f"{req['data']['title']}.mp4"
 
                 item = {
-                    "path": ospath.join(details["title"]),
+                    "path": path.join(details["title"]),
                     "filename": details["title"],
                     "url": f"https://dd-cdn.pakai.eu.org/download?url={req['data']['direct_link']}&title={details['title']}.mp4",
                 }

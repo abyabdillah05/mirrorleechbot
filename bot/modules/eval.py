@@ -44,12 +44,12 @@ async def send(msg, message):
 
 
 @new_task
-async def evaluate(_, message):
+async def evaluate(client, message):
     await send(await sync_to_async(do, eval, message), message)
 
 
 @new_task
-async def execute(_, message):
+async def execute(client, message):
     await send(await sync_to_async(do, exec, message), message)
 
 

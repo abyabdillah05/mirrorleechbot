@@ -1,15 +1,14 @@
-from os import walk, path as ospath, makedirs
-from aiofiles.os import remove, path as aiopath, listdir, rmdir
+from os import walk, path as ospath
+from aiofiles.os import remove as aioremove, path as aiopath, listdir, rmdir, makedirs
 from aioshutil import rmtree as aiormtree
 from magic import Magic
 from re import split as re_split, I, search as re_search, escape
 from subprocess import run as srun
 from sys import exit as sexit
-from shutil import rmtree
 
 from .exceptions import NotSupportedExtractionArchive
 from bot import aria2, LOGGER, DOWNLOAD_DIR, get_client
-from bot.helper.ext_utils.bot_utils import sync_to_async, cmd_exec
+from bot.helper.ext_utils.bot_utils import sync_to_async, async_to_sync, cmd_exec
 
 ARCH_EXT = [
     ".tar.bz2",
@@ -75,7 +74,7 @@ async def clean_target(path):
             if await aiopath.isdir(path):
                 await aiormtree(path)
             else:
-                await remove(path)
+                await aioremove(path)
         except Exception as e:
             LOGGER.error(str(e))
 
@@ -89,21 +88,21 @@ async def clean_download(path):
             LOGGER.error(str(e))
 
 
-def clean_all():
-    aria2.remove_all(True)
-    get_client().torrents_delete(torrent_hashes="all")
+async def clean_all():
+    await sync_to_async(aria2.remove_all, True)
+    await sync_to_async(get_client().torrents_delete, torrent_hashes="all")
     try:
-        rmtree(DOWNLOAD_DIR)
+        await aiormtree(DOWNLOAD_DIR)
     except:
         pass
-    makedirs(DOWNLOAD_DIR, exist_ok=True)
+    await makedirs(DOWNLOAD_DIR, exist_ok=True)
 
 
 def exit_clean_up(signal, frame):
     try:
         LOGGER.info("Please wait, while we clean up and stop the running downloads")
-        clean_all()
-        srun(["pkill", "-9", "-f", "gunicorn|chrome|firefox|opera|edge|safari"])
+        async_to_sync(clean_all)
+        srun(["pkill", "-9", "-f", "gunicorn|chrome|firefox|opera|edge"])
         sexit(0)
     except KeyboardInterrupt:
         LOGGER.warning("Force Exiting before the cleanup finishes!")
@@ -119,7 +118,7 @@ async def clean_unwanted(path):
                 or filee.endswith(".parts")
                 and filee.startswith(".")
             ):
-                await remove(ospath.join(dirpath, filee))
+                await aioremove(ospath.join(dirpath, filee))
         if dirpath.endswith((".unwanted", "splited_files_mltb", "copied_mltb")):
             await aiormtree(dirpath)
     for dirpath, _, files in await sync_to_async(walk, path, topdown=False):
@@ -181,7 +180,7 @@ async def join_files(path):
             if code != 0:
                 LOGGER.error(f"Failed to join {final_name}, stderr: {stderr}")
                 if await aiopath.isfile(fpath):
-                    await remove(fpath)
+                    await aioremove(fpath)
             else:
                 results.append(final_name)
 
@@ -191,5 +190,5 @@ async def join_files(path):
         LOGGER.info("Join Completed!")
         for res in results:
             for file_ in files:
-                if re_search(rf"{escape(res)}\.0[0-9]+$", file_):
-                    await remove(f"{path}/{file_}")
+                if re_search(rf"{res}\.0[0-9]+$", file_):
+                    await aioremove(f"{path}/{file_}")

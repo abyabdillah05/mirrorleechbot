@@ -14,7 +14,7 @@ from bot import (
     task_dict,
     botStartTime,
     DOWNLOAD_DIR,
-    Intervals,
+    Interval,
     bot,
 )
 from bot.helper.telegram_helper.filters import CustomFilters
@@ -64,9 +64,9 @@ async def mirror_status(_, message):
         else:
             user_id = 0
             sid = message.chat.id
-            if obj := Intervals["status"].get(sid):
+            if obj := Interval.get(sid):
                 obj.cancel()
-                del Intervals["status"][sid]
+                del Interval[sid]
         await sendStatusMessage(message, user_id)
         await deleteMessage(message)
 

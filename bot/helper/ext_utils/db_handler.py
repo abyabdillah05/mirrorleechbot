@@ -136,7 +136,7 @@ class DbManger:
                 pf_bin = await pf.read()
         else:
             pf_bin = ""
-        path = path.replace(".", "__")
+        path = path.replace(".", "_")
         await self._db.settings.files.update_one(
             {"_id": bot_id}, {"$set": {path: pf_bin}}, upsert=True
         )

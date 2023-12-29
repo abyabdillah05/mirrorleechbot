@@ -2,10 +2,6 @@ from time import time
 from asyncio import Lock
 from pyrogram.enums import ChatType
 
-from bot.helper.mirror_utils.status_utils.telegram_status import TelegramStatus
-from bot.helper.mirror_utils.status_utils.queue_status import QueueStatus
-from bot.helper.telegram_helper.message_utils import sendStatusMessage
-from bot.helper.ext_utils.task_manager import is_queued, stop_duplicate_check
 from bot import (
     LOGGER,
     task_dict,
@@ -15,6 +11,10 @@ from bot import (
     bot,
     user,
 )
+from bot.helper.mirror_utils.status_utils.telegram_status import TelegramStatus
+from bot.helper.mirror_utils.status_utils.queue_status import QueueStatus
+from bot.helper.telegram_helper.message_utils import sendStatusMessage, sendMessage
+from bot.helper.ext_utils.task_manager import is_queued, stop_duplicate_check
 
 global_lock = Lock()
 GLOBAL_GID = set()
@@ -133,7 +133,7 @@ class TelegramDownloadHelper:
 
                 msg, button = await stop_duplicate_check(self._listener)
                 if msg:
-                    await self._listener.onDownloadError(msg, button)
+                    await sendMessage(self._listener.message, msg, button)
                     return
 
                 add_to_queue, event = await is_queued(self._listener.mid)

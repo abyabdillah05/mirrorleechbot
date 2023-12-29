@@ -1,8 +1,8 @@
 from logging import getLogger
 from aiofiles.os import (
-    remove,
+    remove as aioremove,
     path as aiopath,
-    rename,
+    rename as aiorename,
     makedirs,
 )
 from os import walk, path as ospath
@@ -11,9 +11,6 @@ from PIL import Image
 from pyrogram.types import InputMediaVideo, InputMediaDocument, InputMediaPhoto
 from pyrogram.errors import FloodWait, RPCError
 from asyncio import sleep
-from re import match as re_match, sub as re_sub
-from natsort import natsorted
-from aioshutil import copy
 from tenacity import (
     retry,
     wait_exponential,
@@ -21,11 +18,13 @@ from tenacity import (
     retry_if_exception_type,
     RetryError,
 )
+from re import match as re_match, sub as re_sub
+from natsort import natsorted
+from aioshutil import copy
 
 from bot import config_dict, bot, user
 from bot.helper.ext_utils.files_utils import clean_unwanted, is_archive, get_base_name
 from bot.helper.ext_utils.bot_utils import sync_to_async
-from bot.helper.telegram_helper.message_utils import deleteMessage
 from bot.helper.ext_utils.media_utils import (
     get_media_info,
     get_document_type,
@@ -33,7 +32,7 @@ from bot.helper.ext_utils.media_utils import (
     get_audio_thumb,
     take_ss,
 )
-
+from bot.helper.telegram_helper.message_utils import deleteMessage
 
 LOGGER = getLogger(__name__)
 
@@ -154,13 +153,6 @@ class TgUploader:
             self._sent_msg = await user.get_messages(
                 chat_id=self._listener.message.chat.id, message_ids=self._listener.mid
             )
-            if self._sent_msg is None:
-                self._sent_msg = await bot.send_message(
-                        chat_id=self._listener.message.chat.id,
-                        text="<b>Pesan Cmd terhapus!</b>\nJangan menghapus pesan Cmd agar tidak terjadi error!",
-                        disable_web_page_preview=True,
-                        disable_notification=True,
-                    )
         else:
             self._sent_msg = self._listener.message
         return True
@@ -180,7 +172,7 @@ class TgUploader:
                 self._up_path = await copy(self._up_path, new_path)
             else:
                 new_path = ospath.join(dirpath, f"{self._lprefix} {file_}")
-                await rename(self._up_path, new_path)
+                await aiorename(self._up_path, new_path)
                 self._up_path = new_path
         else:
             cap_mono = f"<code>{file_}</code>"
@@ -211,7 +203,7 @@ class TgUploader:
                 self._up_path = await copy(self._up_path, new_path)
             else:
                 new_path = ospath.join(dirpath, f"{name}{ext}")
-                await rename(self._up_path, new_path)
+                await aiorename(self._up_path, new_path)
                 self._up_path = new_path
         return cap_mono
 
@@ -264,7 +256,7 @@ class TgUploader:
                 except Exception as e:
                     LOGGER.error(f"Failed when forward message => {e}")
                 for m in outputs:
-                    await remove(m)
+                    await aioremove(m)
 
     async def _send_media_group(self, subkey, key, msgs):
         msgs_list = await msgs[0].reply_to_message.reply_media_group(
@@ -294,7 +286,7 @@ class TgUploader:
                 self._up_path = ospath.join(dirpath, file_)
                 if file_.lower().endswith(tuple(self._listener.extension_filter)):
                     if not self._listener.seed or self._listener.newDir:
-                        await remove(self._up_path)
+                        await aioremove(self._up_path)
                     continue
                 try:
                     f_size = await aiopath.getsize(self._up_path)
@@ -363,7 +355,7 @@ class TgUploader:
                             or "/copied_mltb/" in self._up_path
                         )
                     ):
-                        await remove(self._up_path)
+                        await aioremove(self._up_path)
         for key, value in list(self._media_dict.items()):
             for subkey, msgs in list(value.items()):
                 if len(msgs) > 1:
@@ -464,7 +456,7 @@ class TgUploader:
                         self._up_path = await copy(self._up_path, new_path)
                     else:
                         new_path = f"{ospath.splitext(self._up_path)[0]}.mp4"
-                        await rename(self._up_path, new_path)
+                        await aiorename(self._up_path, new_path)
                         self._up_path = new_path
                 if self._is_cancelled:
                     return
@@ -533,7 +525,7 @@ class TgUploader:
                 and thumb is not None
                 and await aiopath.exists(thumb)
             ):
-                await remove(thumb)
+                await aioremove(thumb)
             if (
                 not self._is_cancelled
                 and not self._is_corrupted
@@ -557,7 +549,7 @@ class TgUploader:
                 and thumb is not None
                 and await aiopath.exists(thumb)
             ):
-                await remove(thumb)
+                await aioremove(thumb)
             err_type = "RPCError: " if isinstance(err, RPCError) else ""
             LOGGER.error(f"{err_type}{err}. Path: {self._up_path}")
             if "Telegram says: [400" in str(err) and key != "documents":

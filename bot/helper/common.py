@@ -1,4 +1,4 @@
-from aiofiles.os import path as aiopath, remove
+from aiofiles.os import path as aiopath, remove as aioremove
 from asyncio import sleep, create_subprocess_exec
 from asyncio.subprocess import PIPE
 from secrets import token_urlsafe
@@ -78,7 +78,6 @@ class TaskConfig:
         self.multi = 0
         self.isLeech = False
         self.isQbit = False
-        self.isJd = False
         self.isClone = False
         self.isYtDlp = False
         self.equalSplits = False
@@ -368,7 +367,6 @@ class TaskConfig:
             nextmsg,
             self.isQbit,
             self.isLeech,
-            self.isJd,
             self.sameDir,
             self.bulk,
             self.multiTag,
@@ -475,7 +473,7 @@ class TaskConfig:
                             if is_archive_split(file_) or is_archive(file_):
                                 del_path = ospath.join(dirpath, file_)
                                 try:
-                                    await remove(del_path)
+                                    await aioremove(del_path)
                                 except:
                                     return False
                 return up_path
@@ -507,7 +505,7 @@ class TaskConfig:
                     LOGGER.info(f"Extracted Path: {up_path}")
                     if not self.seed:
                         try:
-                            await remove(dl_path)
+                            await aioremove(dl_path)
                         except:
                             return False
                     return up_path
@@ -599,12 +597,12 @@ class TaskConfig:
                         if f_size <= self.maxSplitSize:
                             continue
                         try:
-                            await remove(f_path)
+                            await aioremove(f_path)
                         except:
                             return False
                     elif not self.seed or self.newDir:
                         try:
-                            await remove(f_path)
+                            await aioremove(f_path)
                         except:
                             return False
                     else:

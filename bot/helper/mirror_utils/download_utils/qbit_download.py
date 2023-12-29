@@ -1,9 +1,6 @@
 from time import time
-from aiofiles.os import remove, path as aiopath
+from aiofiles.os import remove as aioremove, path as aiopath
 
-from bot.helper.ext_utils.bot_utils import bt_selection_buttons, sync_to_async
-from bot.helper.listeners.qbit_listener import onDownloadStart
-from bot.helper.ext_utils.task_manager import is_queued
 from bot import (
     task_dict,
     task_dict_lock,
@@ -19,7 +16,9 @@ from bot.helper.telegram_helper.message_utils import (
     deleteMessage,
     sendStatusMessage,
 )
-
+from bot.helper.ext_utils.bot_utils import bt_selection_buttons, sync_to_async
+from bot.helper.listeners.qbit_listener import onDownloadStart
+from bot.helper.ext_utils.task_manager import is_queued
 
 """
 Only v1 torrents
@@ -33,8 +32,8 @@ def _get_hash_magnet(mgt: str):
         hash_ = b16encode(b32decode(hash_.upper())).decode()
     return str(hash_)
 
-def _get_hash_file(fpath):
-    with open(fpath, "rb") as f:
+def _get_hash_file(path):
+    with open(path, "rb") as f:
         decodedDict = bdecode(f.read())
         hash_ = sha1(bencode(decodedDict[b'info'])).hexdigest()
     return str(hash_)
@@ -72,13 +71,17 @@ async def add_qb_torrent(listener, path, ratio, seed_time):
                     if len(tor_info) > 0:
                         break
                     elif time() - ADD_TIME >= 120:
-                        await listener.onDownloadError("Torrent tidak valid!")
+                        msg = "<b>Torrent tidak valid!</b>"
+                        await sendMessage(listener.message, msg)
                         return
             tor_info = tor_info[0]
             listener.name = tor_info.name
             ext_hash = tor_info.hash
         else:
-            await listener.onDownloadError("Torrent ini sudah ditambahkan atau torrent tidak valid!")
+            await sendMessage(
+                listener.message,
+                "<b>Torrent ini sudah ditambahkan atau torrent tidak valid!</b>",
+            )
             return
 
         async with task_dict_lock:
@@ -143,8 +146,8 @@ async def add_qb_torrent(listener, path, ratio, seed_time):
             async with queue_dict_lock:
                 non_queued_dl.add(listener.mid)
     except Exception as e:
-        await listener.onDownloadError(f"{e}")
+        await sendMessage(listener.message, str(e))
     finally:
         if await aiopath.exists(listener.link):
-            await remove(listener.link)
+            await aioremove(listener.link)
         await sync_to_async(client.auth_log_out)
