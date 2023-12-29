@@ -306,7 +306,6 @@ async def edit_user_settings(client, query):
         "stop_duplicate",
     ]:
         update_user_ldata(user_id, data[2], data[3] == "true")
-        update_user_ldata(user_id, data[2], data[3] == "true")
         await query.answer()
         await update_user_settings(query)
         if DATABASE_URL:
@@ -397,7 +396,9 @@ async def edit_user_settings(client, query):
             or "media_group" not in user_dict
             and config_dict["MEDIA_GROUP"]
         ):
-            buttons.ibutton("Disable Media Group", f"userset {user_id} media_group")
+            buttons.ibutton(
+                "Disable Media Group", f"userset {user_id} media_group false"
+            )
             media_group = "Enabled"
         else:
             buttons.ibutton("Enable Media Group", f"userset {user_id} media_group true")
@@ -691,11 +692,28 @@ Check all yt-dlp api options from this <a href='https://github.com/yt-dlp/yt-dlp
 
 async def send_users_settings(bot, message):
     if user_data:
-        msg = ""
-        for u, d in user_data.items():
-            kmsg = f"\n<b>{u}:</b>\n"
-            if vmsg := "".join(f"{k}: <code>{v}</code>\n" for k, v in d.items() if f"{v}"):
-                msg += kmsg + vmsg
+        # msg = ""
+        # for u, d in user_data.items():
+        #     kmsg = f"\n<b>{u}:</b>\n"
+        #     if vmsg := "".join(
+        #         f"{k}: <code>{v}</code>\n" for k, v in d.items() if f"{v}"
+        #     ):
+        #         msg += kmsg + vmsg
+        no = 0
+        msg = "<b>Pengaturan Users/Groups</b>"
+        for item, value in (user_data or {}).items():
+            no += 1
+            try:
+                user = await bot.get_users(item)
+            except:
+                user = None
+            if user:
+                msg += f"\n<b>{no}. User :</b> <a href='tg://user?id={item}'>{(user.first_name or '')} {(user.last_name or '')}</a>"
+            else:
+                msg += f"\n<b>{no}. Chat :</b> {item}"
+            for iset, vset in (value or {}).items():
+                msg += f"\n   - <b>{iset}</b> : <code>{vset}</code>"
+            msg += "\n"
 
         msg_ecd = msg.encode()
         if len(msg_ecd) > 4000:

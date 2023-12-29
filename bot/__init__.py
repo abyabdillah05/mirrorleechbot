@@ -559,7 +559,7 @@ def get_client():
         host="localhost", 
         port=8090, 
         FORCE_SCHEME_FROM_HOST=True, 
-        # VERIFY_WEBUI_CERTIFICATE=False, 
+        VERIFY_WEBUI_CERTIFICATE=False, 
         REQUESTS_ARGS={"timeout": (30, 60)}
     )
 

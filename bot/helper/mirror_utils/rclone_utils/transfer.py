@@ -405,7 +405,7 @@ class RcloneTransferHelper:
                         f"/{self._listener.name}" if dst_path else self._listener.name
                     )
 
-                cmd = f'edge link --config {config_path} "{destination}"'
+                cmd = f"edge link --config {config_path} '{destination}'"
                 res, err, code = await cmd_exec(cmd, shell=True)
 
                 if self._is_cancelled:

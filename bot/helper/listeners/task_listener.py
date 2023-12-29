@@ -1,9 +1,9 @@
 from requests import utils as rutils
 from aiofiles.os import path as aiopath, listdir, makedirs
 from html import escape
+from time import time
 from aioshutil import move
 from asyncio import sleep, Event, gather
-from time import time
 
 from bot.helper.ext_utils.status_utils import get_readable_file_size, get_readable_time
 from bot.helper.ext_utils.bot_utils import sync_to_async

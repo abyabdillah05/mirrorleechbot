@@ -7,7 +7,7 @@ from hashlib import sha256
 from http.cookiejar import MozillaCookieJar
 from json import loads
 from os import path as ospath
-from re import findall, match, search
+from re import findall, match, search, sub
 from time import sleep
 from urllib.parse import parse_qs, urlparse, unquote
 from uuid import uuid4
@@ -23,6 +23,7 @@ from bot.helper.ext_utils.status_utils import speed_string_to_bytes, get_readabl
 from bot.helper.ext_utils.links_utils import is_share_link
 from bot.helper.ext_utils.exceptions import DirectDownloadLinkException
 from bot.helper.ext_utils.help_messages import PASSWORD_ERROR_MESSAGE
+from bot.helper.telegram_helper.bot_commands import BotCommands
 
 
 _caches = {}
@@ -1885,7 +1886,6 @@ def romsget(url):
         except:
             session.close()
             raise DirectDownloadLinkException(f"ERROR: Link File tidak ditemukan!")
-
 
 
 def hexupload(url):

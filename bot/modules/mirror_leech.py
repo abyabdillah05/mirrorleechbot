@@ -430,18 +430,18 @@ bot.add_handler(
 )
 bot.add_handler(
     MessageHandler(
-        qb_mirror,
-        filters=command(
-            BotCommands.QbMirrorCommand
-        ) & CustomFilters.authorized,
-    )
-)
-bot.add_handler(
-    MessageHandler(
         leech, 
         filters=command(
             BotCommands.LeechCommand
         ) & CustomFilters.authorized
+    )
+)
+bot.add_handler(
+    MessageHandler(
+        qb_mirror,
+        filters=command(
+            BotCommands.QbMirrorCommand
+        ) & CustomFilters.authorized,
     )
 )
 bot.add_handler(
