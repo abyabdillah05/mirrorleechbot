@@ -51,7 +51,7 @@ def direct_link_generator(link: str):
         x in domain
         for x in [
             "devuploads.com",
-            "get.pixelexperience.org"
+            "get.pixelexperience.org",
             "mega.nz",
             "mega.co.nz"
         ]
