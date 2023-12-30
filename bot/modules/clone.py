@@ -48,20 +48,21 @@ class Clone(TaskListener):
         message,
         _=None,
         __=None,
-        ___=None,
+        sameDir=None,
         bulk=None,
         multiTag=None,
         options="",
     ):
+        if sameDir is None:
+            sameDir = {}
         if bulk is None:
             bulk = []
-        self.message = message
+        super().__init__(message)
         self.client = client
         self.multiTag = multiTag
         self.options = options
-        self.sameDir = {}
+        self.sameDir = sameDir
         self.bulk = bulk
-        super().__init__()
         self.isClone = True
         self.extra_details = {'startTime': time()}
 
