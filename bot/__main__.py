@@ -435,7 +435,7 @@ async def restart_notification():
 
 
 async def main():
-    jdownloader.initiate()
+    #jdownloader.initiate()
     await gather(
         clean_all(),
         torrent_search.initiate_search_tools(), 

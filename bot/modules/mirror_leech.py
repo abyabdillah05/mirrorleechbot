@@ -36,6 +36,7 @@ from bot.helper.mirror_utils.download_utils.telegram_download import (
     TelegramDownloadHelper,
 )
 from bot.helper.telegram_helper.bot_commands import BotCommands
+from bot.helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.message_utils import (
     sendMessage,
@@ -329,6 +330,7 @@ class Mirror(TaskListener):
                         f"<b>Generating Direct Link :</b>\n<code>{self.link}</code>"
                     )
                 try:
+                    
                     self.link = await sync_to_async(direct_link_generator, self.link)
                     if isinstance(self.link, tuple):
                         self.link, headers = self.link
