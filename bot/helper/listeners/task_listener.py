@@ -1,9 +1,9 @@
 from requests import utils as rutils
 from aiofiles.os import path as aiopath, listdir, makedirs
 from html import escape
-from time import time
 from aioshutil import move
 from asyncio import sleep, Event, gather
+from time import time
 
 from bot import (
     bot,
@@ -49,8 +49,8 @@ from bot.helper.common import TaskConfig
 
 
 class TaskListener(TaskConfig):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, message):
+        super().__init__(message)
 
     async def clean(self):
         try:

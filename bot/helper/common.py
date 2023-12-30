@@ -1,6 +1,5 @@
 from aiofiles.os import path as aiopath, remove as aioremove
 from asyncio import sleep, create_subprocess_exec
-from asyncio.subprocess import PIPE
 from secrets import token_urlsafe
 from os import walk, path as ospath
 from pyrogram.enums import ChatType
@@ -59,29 +58,33 @@ from bot.helper.ext_utils.exceptions import NotSupportedExtractionArchive
 
 
 class TaskConfig:
-    def __init__(self):
+    def __init__(self, message):
+        self.message = message
         self.mid = self.message.id
         self.user = self.message.from_user or self.message.sender_chat
         self.user_id = self.user.id
         self.user_dict = user_data.get(self.user_id, {})
+        self.sameDir = {}
+        self.bulk = []
         self.dir = f"{DOWNLOAD_DIR}{self.mid}"
         self.link = ""
         self.upDest = ""
         self.threadId = ""
         self.rcFlags = ""
+        self.options = ""
         self.tag = ""
         self.name = ""
         self.session = ""
         self.newDir = ""
+        self.multiTag = 0
         self.splitSize = 0
         self.maxSplitSize = 0
         self.multi = 0
-        self.isLeech = False
-        self.isQbit = False
-        self.isClone = False
-        self.isYtDlp = False
         self.equalSplits = False
         self.userTransmission = False
+        self.isClone = False
+        self.isQbit = False
+        self.isLeech = False
         self.extract = False
         self.compress = False
         self.select = False
@@ -89,12 +92,14 @@ class TaskConfig:
         self.compress = False
         self.extract = False
         self.join = False
+        self.isYtDlp = False
         self.privateLink = False
         self.stopDuplicate = False
         self.sampleVideo = False
         self.screenShots = False
         self.as_doc = False
         self.suproc = None
+        self.client = None
         self.thumb = None
         self.extension_filter = []
         self.isSuperChat = bool(self.message.chat.type.name in ["SUPERGROUP", "CHANNEL"])
@@ -153,12 +158,6 @@ class TaskConfig:
                 self.link = await gdriveList(self).get_target_id("gdd")
                 if not is_gdrive_id(self.link):
                     raise ValueError(self.link)
-                
-            self.userTransmission = IS_PREMIUM_USER and (
-                self.user_dict.get("user_transmission")
-                or config_dict["USER_TRANSMISSION"]
-                and "user_transmission" not in self.user_dict
-            )
 
         if not self.isLeech:
             self.stopDuplicate = (
@@ -249,13 +248,9 @@ class TaskConfig:
                     or not member.privileges.can_delete_messages
                 ):
                     raise ValueError("<b>Kamu tidak memiliki ijin pada chat ini!</b>")
-            elif (
-                self.userTransmission 
-                and not self.isSuperChat
-                and len(config_dict["LEECH_CHAT_ID"]) == 0
-            ):
+            elif self.userTransmission and not self.isSuperChat:
                 raise ValueError(
-                    "<b>Gunakan Super Group/Dump Channel untuk mengupload menggunakan User Session pada Private Chat!</b>"
+                    "<b>Gunakan SuperGroup untuk mengupload menggunakan User Session!</b>"
                 )
             if self.splitSize:
                 if self.splitSize.isdigit():
@@ -271,6 +266,11 @@ class TaskConfig:
                 self.user_dict.get("equal_splits")
                 or config_dict["EQUAL_SPLITS"]
                 and "equal_splits" not in self.user_dict
+            )
+            self.userTransmission = IS_PREMIUM_USER and (
+                self.user_dict.get("user_transmission")
+                or config_dict["USER_TRANSMISSION"]
+                and "user_transmission" not in self.user_dict
             )
             self.maxSplitSize = MAX_SPLIT_SIZE if self.userTransmission else 2097152000
             self.splitSize = min(self.splitSize, self.maxSplitSize)
@@ -330,7 +330,7 @@ class TaskConfig:
             return
         if self.multiTag and self.multiTag not in multi_tags:
             await sendMessage(
-                self.message, f"<b>Tugas Multi dibatalkan oleh User!</b>"
+                self.message, f"<b>Tugas Multi dibatalkan oleh User</b> (</code>{self.tag}</code>)!"
             )
             await sendStatusMessage(self.message)
             return
@@ -399,7 +399,6 @@ class TaskConfig:
                 nextmsg,
                 self.isQbit,
                 self.isLeech,
-                self.isJd,
                 self.sameDir,
                 self.bulk,
                 self.multiTag,
@@ -452,9 +451,7 @@ class TaskConfig:
                             async with subprocess_lock:
                                 if self.suproc == "cancelled":
                                     return False
-                                self.suproc = await create_subprocess_exec(
-                                    *cmd, stderr=PIPE
-                                )
+                                self.suproc = await create_subprocess_exec(*cmd)
                             _, stderr = await self.suproc.communicate()
                             code = self.suproc.returncode
                             if code == -9:
@@ -496,7 +493,7 @@ class TaskConfig:
                 async with subprocess_lock:
                     if self.suproc == "cancelled":
                         return False
-                    self.suproc = await create_subprocess_exec(*cmd, stderr=PIPE)
+                    self.suproc = await create_subprocess_exec(*cmd)
                 _, stderr = await self.suproc.communicate()
                 code = self.suproc.returncode
                 if code == -9:
@@ -562,7 +559,7 @@ class TaskConfig:
         async with subprocess_lock:
             if self.suproc == "cancelled":
                 return False
-            self.suproc = await create_subprocess_exec(*cmd, stderr=PIPE)
+            self.suproc = await create_subprocess_exec(*cmd)
         _, stderr = await self.suproc.communicate()
         code = self.suproc.returncode
         if code == -9:
