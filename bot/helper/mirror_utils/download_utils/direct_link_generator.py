@@ -112,7 +112,7 @@ def direct_link_generator(link: str):
     elif any(
         x in domain
         for x in [
-            "dood.watch",
+             "dood.watch",
             "doodstream.com",
             "dood.to",
             "dood.so",
@@ -131,6 +131,8 @@ def direct_link_generator(link: str):
             "dood.stream",
             "doods.pro",
             "ds2play.com",
+            "d0o0d.com",
+            "ds2video.com"
         ]
     ):
         return pake(link)
