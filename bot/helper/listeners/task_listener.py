@@ -237,7 +237,7 @@ class TaskListener(TaskConfig):
             and DATABASE_URL
         ):
             await DbManger().rm_complete_task(self.message.link)
-        lmsg = f"<b>Hai</b> {self.tag}, <b>Tugas leech anda sudah selesai, total ada</b> <code>{folders}</code> <b>file.</b>\n\n"
+        lmsg = f"<b>✅ Tugas leech anda sudah selesai, total ada</b> <code>{folders}</code> <b>file.</b>\n<i>Oleh:{self.tag}</i>\n\n"
         msg = f"<blockquote><b>📄 Nama :</b> <code>{escape(self.name)}</code></blockquote>"
         msg += f"\n<b>┌📦 Ukuran :</b> <code>{get_readable_file_size(size)}</code>"
         LOGGER.info(f"Task Done: {self.name}")
