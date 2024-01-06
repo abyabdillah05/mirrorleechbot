@@ -3,7 +3,7 @@ from pyrogram.errors import FloodWait
 from time import time
 from re import match as re_match
 
-from bot import config_dict, LOGGER, status_dict, task_dict_lock, Interval, bot, user
+from bot import config_dict, LOGGER, status_dict, task_dict_lock, Intervals, bot, user
 from bot.helper.ext_utils.bot_utils import setInterval, sync_to_async
 from bot.helper.ext_utils.status_utils import get_readable_message
 from bot.helper.ext_utils.exceptions import TgLinkException
@@ -43,6 +43,49 @@ async def editMessage(message, text, buttons=None, block=True):
     except Exception as e:
         LOGGER.error(str(e))
         return str(e)
+   
+
+async def copyMessage(chat_id:int, from_chat_id:int, message_id=int, message_thread_id=None, is_media_group=False):
+    try:
+        if is_media_group:
+            await bot.copy_media_group(
+                chat_id=chat_id, 
+                from_chat_id=from_chat_id, 
+                message_id=message_id, 
+                message_thread_id=message_thread_id
+            )
+        else:
+            await bot.copy_message(
+                chat_id=chat_id, 
+                from_chat_id=from_chat_id, 
+                message_id=message_id, 
+                message_thread_id=message_thread_id
+            )
+    except FloodWait as f:
+        LOGGER.warning(str(f))
+        await sleep(f.value * 1.2)
+        return await copyMessage(chat_id, from_chat_id, message_id, message_thread_id, is_media_group)
+    except Exception as e:
+        LOGGER.error(str(e))
+        raise Exception(e)
+
+
+async def forwardMessage(chat_id:int, from_chat_id:int, message_id=int, message_thread_id=None, unquote=True):
+    try:
+        await bot.forward_messages(
+                chat_id=chat_id, 
+                from_chat_id=from_chat_id, 
+                message_id=message_id, 
+                message_thread_id=message_thread_id,
+                drop_author=unquote
+            )
+    except FloodWait as f:
+        LOGGER.warning(str(f))
+        await sleep(f.value * 1.2)
+        return await forwardMessage(chat_id, from_chat_id, message_id, message_thread_id, unquote)
+    except Exception as e:
+        LOGGER.error(str(e))
+        raise Exception(e)
 
 
 async def sendFile(message, file, caption=None):
@@ -83,14 +126,14 @@ async def sendRss(text):
     try:
         if user:
             return await user.send_message(
-                chat_id=config_dict["RSS_CHAT"],
+                chat_id=config_dict["RSS_CHAT_ID"],
                 text=text,
                 disable_web_page_preview=True,
                 disable_notification=True,
             )
         else:
             return await bot.send_message(
-                chat_id=config_dict["RSS_CHAT"],
+                chat_id=config_dict["RSS_CHAT_ID"],
                 text=text,
                 disable_web_page_preview=True,
                 disable_notification=True,
@@ -199,9 +242,9 @@ async def get_tg_link_message(link):
 async def update_status_message(sid, force=False):
     async with task_dict_lock:
         if not status_dict.get(sid):
-            if obj := Interval.get(sid):
+            if obj := Intervals["status"].get(sid):
                 obj.cancel()
-                del Interval[sid]
+                del Intervals["status"][sid]
             return
         if not force and time() - status_dict[sid]["time"] < 3:
             return
@@ -215,9 +258,9 @@ async def update_status_message(sid, force=False):
         )
         if text is None:
             del status_dict[sid]
-            if obj := Interval.get(sid):
+            if obj := Intervals["status"].get(sid):
                 obj.cancel()
-                del Interval[sid]
+                del Intervals["status"][sid]
             return
         if text != status_dict[sid]["message"].text:
             message = await editMessage(
@@ -226,9 +269,9 @@ async def update_status_message(sid, force=False):
             if isinstance(message, str):
                 if message.startswith("Telegram says: [400"):
                     del status_dict[sid]
-                    if obj := Interval.get(sid):
+                    if obj := Intervals["status"].get(sid):
                         obj.cancel()
-                        del Interval[sid]
+                        del Intervals["status"][sid]
                 else:
                     LOGGER.error(
                         f"Status with id: {sid} haven't been updated. Error: {message}"
@@ -251,9 +294,9 @@ async def sendStatusMessage(msg, user_id=0):
             )
             if text is None:
                 del status_dict[sid]
-                if obj := Interval.get(sid):
+                if obj := Intervals["status"].get(sid):
                     obj.cancel()
-                    del Interval[sid]
+                    del Intervals["status"][sid]
                 return
             message = status_dict[sid]["message"]
             await deleteMessage(message)
@@ -284,7 +327,173 @@ async def sendStatusMessage(msg, user_id=0):
                 "status": "All",
                 "is_user": is_user,
             }
-    if not Interval.get(sid) and not is_user:
-        Interval[sid] = setInterval(
+    if not Intervals["status"].get(sid) and not is_user:
+        Intervals["status"][sid] = setInterval(
             config_dict["STATUS_UPDATE_INTERVAL"], update_status_message, sid
         )
+
+
+# NOTE: Custom by Me, if You dont need it, just ignore or delete from this line ^^
+async def customSendMessage(client, chat_id:int, text:str, message_thread_id=None, buttons=None):
+    try:
+        return await client.send_message(
+            chat_id=chat_id,
+            text=text,
+            disable_web_page_preview=True,
+            disable_notification=True,
+            message_thread_id=message_thread_id,
+            reply_markup=buttons
+        )
+    except FloodWait as f:
+        LOGGER.warning(str(f))
+        await sleep(f.value * 1.2)
+        return await customSendMessage(client, chat_id, text, message_thread_id, buttons)
+    except Exception as e:
+        LOGGER.error(str(e))
+        raise Exception(e)
+
+
+async def customSendRss(text, image=None, image_caption=None, reply_markup=None):
+    chat_id = None
+    message_thread_id = None
+    if chat_id := config_dict.get("RSS_CHAT_ID"):
+        if not isinstance(chat_id, int):
+            if ":" in chat_id:
+                message_thread_id = chat_id.split(":")[1]
+                chat_id = chat_id.split(":")[0]
+        
+        if chat_id.isdigit():
+            chat_id = int(chat_id)
+        
+        if message_thread_id.isdigit():
+            message_thread_id = int(message_thread_id)
+    else:
+        return "RSS_CHAT_ID tidak ditemukan!"
+        
+    try:
+        if image:
+            if len(text) > 1024:
+                reply_photo = await bot.send_photo(
+                    chat_id=chat_id,
+                    photo=image,
+                    caption=f"<code>{image_caption}</code>",
+                    disable_notification=True,
+                    message_thread_id=message_thread_id
+                )
+                return await bot.send_message(
+                    chat_id=chat_id,
+                    text=text,
+                    disable_web_page_preview=True,
+                    disable_notification=True,
+                    message_thread_id=message_thread_id,
+                    reply_to_message_id=reply_photo.id,
+                    reply_markup=reply_markup
+                )
+            else:
+                return await bot.send_photo(
+                    chat_id=chat_id,
+                    photo=image,
+                    caption=text,
+                    disable_notification=True,
+                    message_thread_id=message_thread_id,
+                    reply_markup=reply_markup
+                )
+        else:
+            return await bot.send_message(
+                chat_id=chat_id,
+                text=text,
+                disable_web_page_preview=True,
+                disable_notification=True,
+                message_thread_id=message_thread_id,
+                reply_markup=reply_markup
+            )
+    except FloodWait as f:
+        LOGGER.warning(str(f))
+        await sleep(f.value * 1.2)
+        return await customSendRss(text)
+    except Exception as e:
+        LOGGER.error(str(e))
+        return str(e)
+
+
+async def customSendDocument(client, document, thumb, caption, progress):
+    try:
+        return await client.reply_document(
+            document=document,
+            quote=True,
+            thumb=thumb,
+            caption=caption,
+            force_document=True,
+            disable_notification=True,
+            progress=progress
+        )
+    except FloodWait as f:
+        LOGGER.warning(str(f))
+        await sleep(f.value * 1.2)
+        return await customSendDocument(client, document, thumb, caption, progress)
+    except Exception as e:
+        LOGGER.error(str(e))
+        raise Exception(e)
+
+
+async def customSendVideo(client, video, caption, duration, width, height, thumb, progress):
+    try:
+        return await client.reply_video(
+            video=video,
+            quote=True,
+            caption=caption,
+            duration=duration,
+            width=width,
+            height=height,
+            thumb=thumb,
+            supports_streaming=True,
+            disable_notification=True,
+            progress=progress
+        )
+    except FloodWait as f:
+        LOGGER.warning(str(f))
+        await sleep(f.value * 1.2)
+        return await customSendVideo(client, video, caption, duration, width, height, thumb, progress)
+    except Exception as e:
+        LOGGER.error(str(e))
+        raise Exception(e)
+
+
+async def customSendAudio(client, audio, caption, duration, performer, title, thumb, progress):
+    try:
+        return await client.reply_audio(
+            audio=audio,
+            quote=True,
+            caption=caption,
+            duration=duration,
+            performer=performer,
+            title=title,
+            thumb=thumb,
+            disable_notification=True,
+            progress=progress
+        )
+    except FloodWait as f:
+        LOGGER.warning(str(f))
+        await sleep(f.value * 1.2)
+        return await customSendAudio(client, audio, caption, duration, performer, title, thumb, progress)
+    except Exception as e:
+        LOGGER.error(str(e))
+        raise Exception(e)
+
+
+async def customSendPhoto(client, photo, caption, progress):
+    try:
+        return await client.reply_photo(
+            photo=photo,
+            quote=True,
+            caption=caption,
+            disable_notification=True,
+            progress=progress
+        )
+    except FloodWait as f:
+        LOGGER.warning(str(f))
+        await sleep(f.value * 1.2)
+        return await customSendPhoto(client, photo, caption, progress)
+    except Exception as e:
+        LOGGER.error(str(e))
+        raise Exception(e)

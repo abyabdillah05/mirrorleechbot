@@ -57,6 +57,7 @@ aria2 = ariaAPI(
 
 load_dotenv("config.env", override=True)
 
+Intervals = {"status": {}, "qb": ""}
 Interval = {}
 QbInterval = []
 QbTorrents = {}
@@ -160,6 +161,7 @@ if DATABASE_URL:
         if a2c_options := db.settings.aria2c.find_one({"_id": bot_id}):
             del a2c_options["_id"]
             aria2_options = a2c_options
+            
         if qbit_opt := db.settings.qbittorrent.find_one({"_id": bot_id}):
             del qbit_opt["_id"]
             qbit_options = qbit_opt

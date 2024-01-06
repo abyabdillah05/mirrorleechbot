@@ -31,6 +31,7 @@ from bot.helper.telegram_helper.message_utils import (
     sendMessage,
     delete_status,
     update_status_message,
+    customSendMessage,
 )
 from bot.helper.ext_utils.status_utils import get_readable_file_size, get_readable_time
 from bot.helper.ext_utils.bot_utils import sync_to_async
@@ -236,6 +237,7 @@ class TaskListener(TaskConfig):
             and DATABASE_URL
         ):
             await DbManger().rm_complete_task(self.message.link)
+        lmsg = f"<b>Hai</b> {self.tag}, <b>Tugas leech anda sudah selesai, total ada</b> <code>{folders}</code> <b>file.</b>\n\n"
         msg = f"<blockquote><b>📄 Nama :</b> <code>{escape(self.name)}</code></blockquote>"
         msg += f"\n<b>┌📦 Ukuran :</b> <code>{get_readable_file_size(size)}</code>"
         LOGGER.info(f"Task Done: {self.name}")
@@ -243,24 +245,25 @@ class TaskListener(TaskConfig):
             msg += f"\n<b>├📑 Jumlah File :</b> <code>{folders}</code>"
             msg += f"\n<b>└⏱ Waktu</b>: {get_readable_time(time() - self.extra_details['startTime'])}"
             if mime_type != 0:
+                lmsg += f"<code>{mime_type}</code> File rusak dan gagal diupload.\n\n"
                 msg += f"\n\n<b>❗️ File Rusak :</b> <code>{mime_type}</code>"
             msg += f'\n\n<b>👤 Leech_Oleh :</b> {self.tag}\n\n'
             if not files:
-                await sendMessage(self.message, msg)
+                await sendMessage(self.message, lmsg)
             else:
                 fmsg = ""
-                buttons = ButtonMaker()
-                buttons.ubutton("♻️ Leech Dump Channel", "https://t.me/+pXpR1L9BVoQ5N2Vl")
-                buttons.ubutton("❤️ Support For Pikabot", "https://telegra.ph/Pikabot-Donate-10-01", "footer")
-                button = buttons.build_menu(1)
+                #buttons = ButtonMaker()
+                #buttons.ubutton("♻️ Leech Dump Channel", "https://t.me/+pXpR1L9BVoQ5N2Vl")
+                #buttons.ubutton("❤️ Support For Pikabot", "https://telegra.ph/Pikabot-Donate-10-01", "footer")
+                #button = buttons.build_menu(1)
                 for index, (link, name) in enumerate(files.items(), start=1):
                     fmsg += f"<b>{index:02d}.</b> <a href='{link}'>{name}</a>\n"
                     if len(fmsg.encode() + msg.encode()) > 4000:
-                        await sendMessage(self.message, msg + fmsg)
+                        await sendMessage(self.message, lmsg + fmsg)
                         await sleep(1)
                         fmsg = ""
                 if fmsg != "":
-                    await sendMessage(self.message, msg + fmsg, button)
+                    await sendMessage(self.message, lmsg + fmsg)
             if self.seed:
                 if self.newDir:
                     await clean_target(self.newDir)
@@ -349,13 +352,12 @@ class TaskListener(TaskConfig):
                     LOG_CHAT_THREAD_ID= int(LOG_CHAT_THREAD_ID)
                         
                 try:
-                    await bot.send_message(
+                    await customSendMessage(
+                        client=bot,
                         chat_id=LOG_CHAT_ID,
                         text=msg,
-                        disable_web_page_preview=True,
-                        disable_notification=True,
                         message_thread_id=LOG_CHAT_THREAD_ID,
-                        reply_markup=button
+                        buttons=button
                     )
                 except Exception as e:
                     LOGGER.error(f"Failed when forward message => {e}")
