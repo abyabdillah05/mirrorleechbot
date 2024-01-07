@@ -16,7 +16,7 @@ class _BotCommands:
         self.CountCommand = [f"count{CMD_SUFFIX}", f"co{CMD_SUFFIX}"]
         self.DeleteCommand = [f"remove{CMD_SUFFIX}", f"rem{CMD_SUFFIX}"]
         self.RenameCommand = [f"rename{CMD_SUFFIX}", f"ren{CMD_SUFFIX}"]
-        self.CancelTaskCommand = [f"cancel{CMD_SUFFIX}", f"c{CMD_SUFFIX}"]
+        self.CancelTaskCommand = [f"cancel{CMD_SUFFIX}", f"stop{CMD_SUFFIX}"]
         self.CancelAllCommand = [f"cancelall{CMD_SUFFIX}", f"ca{CMD_SUFFIX}"]
         self.ListCommand = [f"list{CMD_SUFFIX}", f"li{CMD_SUFFIX}"]
         self.SearchCommand = [f"search{CMD_SUFFIX}", f"se{CMD_SUFFIX}"]
