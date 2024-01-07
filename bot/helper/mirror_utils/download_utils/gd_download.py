@@ -1,4 +1,4 @@
-from secrets import token_urlsafe
+from secrets import token_hex
 
 from bot import task_dict, task_dict_lock, LOGGER, non_queued_dl, queue_dict_lock
 from bot.helper.mirror_utils.gdrive_utils.download import gdDownload
@@ -20,7 +20,7 @@ async def add_gd_download(listener, path):
         return
 
     listener.name = listener.name or name
-    gid = token_urlsafe(12)
+    gid = token_hex(6)
 
     msg, button = await stop_duplicate_check(listener)
     if msg:

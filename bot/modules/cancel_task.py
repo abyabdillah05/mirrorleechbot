@@ -17,9 +17,10 @@ from bot.helper.telegram_helper import button_build
 
 async def cancel_task(_, message):
     user_id = message.from_user.id if message.from_user else message.sender_chat.id
-    msg = message.text.split()
+    msg = message.text.split('_', maxsplit=1)
     if len(msg) > 1:
-        gid = msg[1]
+        cmd_data = msg[1].split('@', maxsplit=1)
+        gid = cmd_data[0]
         if len(gid) == 4:
             multi_tags.discard(gid)
             return
@@ -121,9 +122,8 @@ async def cancel_all_update(_, query):
 bot.add_handler(
     MessageHandler(
         cancel_task,
-        filters=command(
-            BotCommands.CancelTaskCommand
-        ) & CustomFilters.authorized,
+        filters=regex(
+    f"^/{BotCommands.CancelTaskCommand[1]}(_\w+)?(?!all)") & CustomFilters.authorized,
     )
 )
 bot.add_handler(
