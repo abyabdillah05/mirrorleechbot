@@ -219,8 +219,8 @@ def direct_link_generator(link: str):
         raise DirectDownloadLinkException(f"ERROR: R.I.P {domain}")
     elif "mp4upload.com" in domain:
         return mp4upload(link)
-    elif re.match(r"https?://(bigota|hugeota)\.d\.miui\.com/\S+", link):
-        return bigota(link)
+    #elif re.match(r"https?://(bigota|hugeota)\.d\.miui\.com/\S+", link):
+    #    return bigota(link)
     elif "androiddatahost.com" in domain:
         return androiddatahost(link)
     elif "apkadmin.com" in domain or "sharemods.com" in domain:
