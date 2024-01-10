@@ -97,6 +97,8 @@ class TelegramDownloadHelper:
             self._listener.session not in ["user", "bot"]
             and self._listener.userTransmission
             and message.chat.type != ChatType.PRIVATE
+            and message.chat.type != ChatType.SUPERGROUP
+            and message.chat.type != ChatType.GROUP
         ):
             self._listener.session = "user"
             message = await user.get_messages(
