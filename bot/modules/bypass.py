@@ -377,7 +377,7 @@ async def direct(_, message):
                 res = await transcript(link, "https://insurance.techymedies.com/", "https://blog.disheye.com/", 5)
             elif bool(match(r"https?:\/\/mplaylink\.\S+", link)):
                 res = await transcript(link, "https://tera-box.cloud/", "https://mvplaylink.in.net/", 5)
-            elif bool(match(r"https?:\/\/shrinke\.\S+", link)):
+            elif bool(re.match(r"https?:\/\/(shrinke|shrinkeme)\.\S+", link)):
                 res = await transcript(link, "https://en.shrinke.me/", "https://themezon.net/", 15)
             elif bool(match(r"https?:\/\/urlspay\.\S+", link)):
                 res = await transcript(link, "https://finance.smallinfo.in/", "https://tech.filmypoints.in/", 5)
