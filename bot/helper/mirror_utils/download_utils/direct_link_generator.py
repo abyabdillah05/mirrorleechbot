@@ -219,8 +219,18 @@ def direct_link_generator(link: str):
         raise DirectDownloadLinkException(f"ERROR: R.I.P {domain}")
     elif "mp4upload.com" in domain:
         return mp4upload(link)
-    #elif re.match(r"https?://(bigota|hugeota)\.d\.miui\.com/\S+", link):
-    #    return bigota(link)
+    elif any(
+        x in domain
+        for x in [
+            "orig.bigota",
+            "ks3orig.bigota",
+            "ultimateota",
+            "airtel.bigota"
+        ]
+    ):
+        raise DirectDownloadLinkException(f"ERROR: Domain ini sudah mati, gunakan link <code>https://bigota.d.miui.com/***</code>")
+    elif re.match(r"https?://(bigota|hugeota)\.d\.miui\.com/\S+", link):
+        return bigota(link)
     elif "androiddatahost.com" in domain:
         return androiddatahost(link)
     elif "apkadmin.com" in domain or "sharemods.com" in domain:
@@ -1575,7 +1585,7 @@ def alldebrid(url: str) -> str:
 def pake(url: str) -> str:
     """
     URL : 
-    https://api.pake.tk
+    https://v2.pake.tk
     
     Supported Sites :
     - Dood
@@ -1583,7 +1593,7 @@ def pake(url: str) -> str:
     """
     with Session() as session:
         try:
-            req = session.get(f"https://api.pake.tk/dood?url={url}").json()
+            req = session.get(f"https://v2.pake.tk/dood?url={url}").json()
             try:
                 details = {"contents":[], "title": "", "total_size": 0}
 
@@ -1948,5 +1958,5 @@ def pling_bypass(url):
 
 def bigota(url):
 
-    direct_link = re.sub(r"https?://(bigota|hugeota)\.d\.miui\.com", "https://orig.bigota.d.miui.com", url)
+    direct_link = re.sub(r"https?://(bigota|hugeota)\.d\.miui\.com", "https://cdn-ota.azureedge.net", url)
     return direct_link

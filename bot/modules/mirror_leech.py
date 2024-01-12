@@ -323,6 +323,11 @@ class Mirror(TaskListener):
                         self.message,
                         f"<b>Generating Uptobox Direct Link (±30s) :</b>\n<code>{self.link}</code>"
                     )
+                elif "bigota" in self.link:
+                    ddl = await sendMessage(
+                        self.message,
+                        f"<b>Mengubah server Bigota :</b>\n<code>{self.link}</code>"
+                    )
                 else:
                     ddl = await sendMessage(
                         self.message,
