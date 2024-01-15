@@ -57,9 +57,9 @@ def direct_link_generator(link: str):
     ):
         raise DirectDownloadLinkException(
             "ERROR: <b>Situs ini belum bisa dimirror oleh bot.</b>")
-    elif "drive.usercontent.google.com" in domain:
-        raise DirectDownloadLinkException(
-            "ERROR: Link Gdrive yang anda berikan salah, gunakan link <code>drive.google.com</code>")
+    #elif "drive.usercontent.google.com" in domain:
+    #    raise DirectDownloadLinkException(
+    #        "ERROR: Link Gdrive yang anda berikan salah, gunakan link <code>drive.google.com</code>")
     elif re.match(r"https?://www\.mediafire\.com/\S+", link):
         return mediafire(link)
     elif ".mediafire.com" in domain:
