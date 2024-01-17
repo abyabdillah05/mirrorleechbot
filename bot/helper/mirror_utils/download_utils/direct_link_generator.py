@@ -237,8 +237,8 @@ def direct_link_generator(link: str):
         return androiddatahost(link)
     elif "apkadmin.com" in domain or "sharemods.com" in domain:
         return apkadmin(link)
-    #elif "sourceforge" in domain:
-    #    return sourceforge(link)
+    elif "disk.yandex" in domain or "yadi.sk" in domain:
+        return yandex_disk(link)
     elif "androidfilehost.com" in link:
         return androidfilehost(link)
     elif "tusfiles.net" in domain or "tusfiles.com" in domain:
@@ -2027,3 +2027,13 @@ def bigota(url):
 
     direct_link = re.sub(r"https?://(bigota|hugeota)\.d\.miui\.com", "https://cdn-ota.azureedge.net", url)
     return direct_link
+
+def yandex_disk(url):
+    cget = requests.get
+    try:
+        response = cget(f'https://cloud-api.yandex.net/v1/disk/public/resources/download?public_key={url}')
+        response.raise_for_status()
+        dl = response.json()['href']
+        return dl
+    except Exception:
+        raise DirectDownloadLinkException(f"File tidak ditemukan atau sudah limit download")
