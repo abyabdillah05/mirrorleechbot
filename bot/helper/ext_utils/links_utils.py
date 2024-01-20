@@ -15,7 +15,7 @@ def is_url(url: str):
 
 
 def is_gdrive_link(url: str):
-    return bool("drive.google.com" in url or "docs.google.com" in url)
+    return bool("drive.google.com" in url or "docs.google.com" in url or "drive.usercontent.google.com" in url)
 
 
 def is_telegram_link(url: str):
