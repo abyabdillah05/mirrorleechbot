@@ -72,7 +72,8 @@ def direct_link_generator(link: str):
     elif "github.com" in domain:
         return github(link)
     elif "hxfile.co" in domain:
-        return hxfile(link)
+        raise DirectDownloadLinkException(
+            "ERROR: Gunakan direct link untuk mirror Hxfile \n\n <b>•</b> <a href='http://stream.pikabot.me:88/1a18d533084'<b>Cara ambil direct link.</b></a>")
     elif "1drv.ms" in domain:
         return onedrive(link)
     elif "pixeldrain.com" in domain:
