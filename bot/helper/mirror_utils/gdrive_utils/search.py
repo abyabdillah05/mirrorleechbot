@@ -3,6 +3,7 @@ from logging import getLogger
 from bot import DRIVES_NAMES, DRIVES_IDS, INDEX_URLS, user_data
 from bot.helper.ext_utils.status_utils import get_readable_file_size
 from bot.helper.mirror_utils.gdrive_utils.helper import GoogleDriveHelper
+from bot.helper.telegram_helper.button_build import ButtonMaker
 
 LOGGER = getLogger(__name__)
 
@@ -93,9 +94,9 @@ class gdSearch(GoogleDriveHelper):
             return {"files": []}
 
     def drive_list(self, fileName, target_id="", user_id=""):
-        msg = ""
+        msg, msg_content = "", []
         fileName = self.escapes(str(fileName))
-        contents_no = 0
+        contents_count = 0
         telegraph_content = []
         Title = False
 
@@ -131,15 +132,15 @@ class gdSearch(GoogleDriveHelper):
                 else:
                     continue
             if not Title:
-                msg += f"<h4>Hasil pencarian dengan kata kunci {fileName}</h4>"
+                msg += f"<b>Hasil pencarian dengan kata kunci:</b> <code>{fileName}</code>"
                 Title = True
             if drive_name:
-                msg += f"╾────────────╼<br><b>{drive_name}</b><br>╾────────────╼<br>"
+                msg += f"\n\n╾────────────╼\n<b>{drive_name}</b>\n╾────────────╼\n"
             for file in response.get("files", []):
                 mime_type = file.get("mimeType")
                 if mime_type == self.G_DRIVE_DIR_MIME_TYPE:
                     furl = self.G_DRIVE_DIR_BASE_DOWNLOAD_URL.format(file.get("id"))
-                    msg += f"📁 <code>{file.get('name')}<br>(folder)</code><br>"
+                    msg += f"📁 <code>{file.get('name')}\n(folder)</code>\n"
                     msg += f"<b><a href={furl}>Drive Link</a></b>"
                     if index_url:
                         url = f'{index_url}findpath?id={file.get("id")}'
@@ -152,7 +153,7 @@ class gdSearch(GoogleDriveHelper):
                     )
                 else:
                     furl = self.G_DRIVE_BASE_DOWNLOAD_URL.format(file.get("id"))
-                    msg += f"📄 <code>{file.get('name')}<br>({get_readable_file_size(int(file.get('size', 0)))})</code><br>"
+                    msg += f"📄 <code>{file.get('name')}\n({get_readable_file_size(int(file.get('size', 0)))})</code>\n"
                     msg += f"<b><a href={furl}>Drive Link</a></b>"
                     if index_url:
                         url = f'{index_url}findpath?id={file.get("id")}'
@@ -160,18 +161,29 @@ class gdSearch(GoogleDriveHelper):
                         if mime_type.startswith(("image", "video", "audio")):
                             urlv = f'{index_url}findpath?id={file.get("id")}&view=true'
                             msg += f' <b>| <a href="{urlv}">View Link</a></b>'
-                msg += "<br><br>"
-                contents_no += 1
+                msg += "\n\n"
+                contents_count += 1
                 if len(msg.encode("utf-8")) > 39000:
                     telegraph_content.append(msg)
                     msg = ""
+                
+                if not self._stopDup:
+                    msgs = msg
+                    msg_content.append(msgs)
+                    msg = ""
+
             if self._noMulti:
                 break
-
-        if msg != "":
-            telegraph_content.append(msg)
-
-        return telegraph_content, contents_no
+            
+        if not self._stopDup and contents_count != 0:
+            return msg_content, False
+        stop_msg, buttons = "", ButtonMaker()
+        if self._stopDup and contents_count <= 5 and contents_count != 0:
+            stop_msg += f"<b>File atau folder ini sudah ada di google drive !</b>\nDitemukan sekitar {contents_count} file.\n\n"
+            stop_msg += msg
+            buttons.ubutton("❤️ Support For Pikabot", "https://telegra.ph/Pikabot-Donate-10-01")
+            return stop_msg, buttons.build_menu(2)
+        return stop_msg, False
 
     def get_user_drive(self, target_id, user_id):
         dest_id = target_id.lstrip("mtp:")
