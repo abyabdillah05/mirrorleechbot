@@ -394,7 +394,7 @@ class TaskListener(TaskConfig):
                 del task_dict[self.mid]
             count = len(task_dict)
             self.removeFromSameDir()
-        msg = f"<b>Hai {self.tag} !</b>\n<b>Tugasmu dihentikan karena :</b>\n\n<code>{error}</code>"
+        msg = f"<b>Hai {self.tag} !</b>\n<b>Tugasmu dihentikan karena :</b>\n\n{error}"
         await sendMessage(self.message, msg, button)
         if count == 0:
             await self.clean()
@@ -431,7 +431,7 @@ class TaskListener(TaskConfig):
             if self.mid in task_dict:
                 del task_dict[self.mid]
             count = len(task_dict)
-        msg = f"<b>Hai {self.tag} !</b>\n<b>Tugasmu dihentikan karena :</b>\n\n<code>{error}</code>"
+        msg = f"<b>Hai {self.tag} !</b>\n<b>Tugasmu dihentikan karena :</b>\n\n{error}"
         await sendMessage(self.message, msg)
         if count == 0:
             await self.clean()
