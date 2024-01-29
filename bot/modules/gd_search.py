@@ -42,7 +42,8 @@ async def _list_drive(key, message, item_type, isRecursive, user_token, user_id)
         LOGGER.info(target_id)
     else:
         target_id = ""
-##GD List
+
+## GD List sent to telegram
     LOGGER.info(f"listing: {key}")
     msgid, userid = message.reply_to_message.id, message.reply_to_message.from_user.id
     
@@ -137,8 +138,6 @@ async def list_query(client, query):
         return await query.answer("Query pencarian sudah expired", True)
     userid = int(data[2])
     buttons = ButtonMaker()
-    if query.from_user.id != userid:
-        return await query.answer("Bukan tugas dari anda !", True)
     if data[1] == "pre":
         if msgs[1] == 1:
             msgs[0] = max_total * (msgs[3] - 1)
@@ -200,7 +199,6 @@ async def list_query(client, query):
         for no, _ in enumerate(msgs[2], start=1):
             if no == max_total:
                 break
-        await query.answer(f"Gak usah diklik bisa kan ?", True)
 
 bot.add_handler(
     MessageHandler(

@@ -132,7 +132,7 @@ class gdSearch(GoogleDriveHelper):
                 else:
                     continue
             if not Title:
-                msg += f"<b>Hasil pencarian dengan kata kunci:</b> <code>{fileName}</code>"
+                msg += f""
                 Title = True
             if drive_name:
                 msg += f"\n\n╾────────────╼\n<b>{drive_name}</b>\n╾────────────╼\n"
@@ -154,13 +154,13 @@ class gdSearch(GoogleDriveHelper):
                 else:
                     furl = self.G_DRIVE_BASE_DOWNLOAD_URL.format(file.get("id"))
                     msg += f"📄 <code>{file.get('name')}\n({get_readable_file_size(int(file.get('size', 0)))})</code>\n"
-                    msg += f"<b><a href={furl}>Drive Link</a></b>"
+                    msg += f"<b><a href={furl}>☁️ Drive Link</a></b>"
                     if index_url:
                         url = f'{index_url}findpath?id={file.get("id")}'
-                        msg += f' <b>| <a href="{url}">Index Link</a></b>'
+                        msg += f' <b>| <a href="{url}">⚡Index Link</a></b>'
                         if mime_type.startswith(("image", "video", "audio")):
                             urlv = f'{index_url}findpath?id={file.get("id")}&view=true'
-                            msg += f' <b>| <a href="{urlv}">View Link</a></b>'
+                            msg += f' <b>| <a href="{urlv}">🎬 View Link</a></b>'
                 msg += "\n\n"
                 contents_count += 1
                 if len(msg.encode("utf-8")) > 39000:
@@ -178,7 +178,7 @@ class gdSearch(GoogleDriveHelper):
         if not self._stopDup and contents_count != 0:
             return msg_content, False
         stop_msg, buttons = "", ButtonMaker()
-        if self._stopDup and contents_count <= 5 and contents_count != 0:
+        if self._stopDup and contents_count <= 6 and contents_count != 0:
             stop_msg += f"<b>File atau folder ini sudah ada di google drive !</b>\nDitemukan sekitar {contents_count} file.\n\n"
             stop_msg += msg
             buttons.ubutton("❤️ Support For Pikabot", "https://telegra.ph/Pikabot-Donate-10-01")
