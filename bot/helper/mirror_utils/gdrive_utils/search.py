@@ -132,7 +132,7 @@ class gdSearch(GoogleDriveHelper):
                 else:
                     continue
             if not Title:
-                msg += f""
+                msg += f"<b>Hasil pencarian:</b> <code>{fileName}</code>"
                 Title = True
             if drive_name:
                 msg += f"\n\n╾────────────╼\n<b>{drive_name}</b>\n╾────────────╼\n"
@@ -179,7 +179,7 @@ class gdSearch(GoogleDriveHelper):
             return msg_content, False
         stop_msg, buttons = "", ButtonMaker()
         if self._stopDup and contents_count <= 6 and contents_count != 0:
-            stop_msg += f"<b>File atau folder ini sudah ada di google drive !</b>\nDitemukan sekitar {contents_count} file.\n\n"
+            stop_msg += f"<code>File atau folder ini sudah ada di google drive !</code>\n\n"
             stop_msg += msg
             buttons.ubutton("❤️ Support For Pikabot", "https://telegra.ph/Pikabot-Donate-10-01")
             return stop_msg, buttons.build_menu(2)
