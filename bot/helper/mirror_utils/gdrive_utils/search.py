@@ -132,10 +132,10 @@ class gdSearch(GoogleDriveHelper):
                 else:
                     continue
             if not Title:
-                msg += f"<b>Hasil pencarian:</b> <code>{fileName}</code>"
+                msg += f"<b>Hasil pencarian:</b> <code>{fileName}</code>\n"
                 Title = True
             if drive_name:
-                msg += f"\n\n╾────────────╼\n<b>{drive_name}</b>\n╾────────────╼\n"
+                msg += f"\n╾────────────╼\n<b>{drive_name}</b>\n╾────────────╼\n"
             for file in response.get("files", []):
                 mime_type = file.get("mimeType")
                 if mime_type == self.G_DRIVE_DIR_MIME_TYPE:
