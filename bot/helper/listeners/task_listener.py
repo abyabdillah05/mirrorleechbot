@@ -252,10 +252,10 @@ class TaskListener(TaskConfig):
                 await sendMessage(self.message, lmsg)
             else:
                 fmsg = ""
-                #buttons = ButtonMaker()
-                #buttons.ubutton("♻️ Leech Dump Channel", "https://t.me/+pXpR1L9BVoQ5N2Vl")
+                buttons = ButtonMaker()
+                buttons.ubutton("♻️ Leech Dump Channel", "https://t.me/+pXpR1L9BVoQ5N2Vl")
                 #buttons.ubutton("❤️ Support For Pikabot", "https://telegra.ph/Pikabot-Donate-10-01", "footer")
-                #button = buttons.build_menu(1)
+                button = buttons.build_menu(1)
                 for index, (link, name) in enumerate(files.items(), start=1):
                     fmsg += f"<b>{index:02d}.</b> <a href='{link}'>{name}</a>\n"
                     if len(fmsg.encode() + msg.encode()) > 4000:
@@ -263,7 +263,7 @@ class TaskListener(TaskConfig):
                         await sleep(1)
                         fmsg = ""
                 if fmsg != "":
-                    await sendMessage(self.message, lmsg + fmsg)
+                    await sendMessage(self.message, lmsg + fmsg, button)
             if self.seed:
                 if self.newDir:
                     await clean_target(self.newDir)
