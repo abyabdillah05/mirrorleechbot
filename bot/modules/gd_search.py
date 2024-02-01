@@ -78,7 +78,7 @@ async def _list_drive(key, message, item_type, isRecursive, user_token, user_id)
 
             if len(msg) > max_total:
                 buttons.ibutton("⫷", f"list pre {userid} {msgid}")
-                buttons.ibutton(f"🇭‌🇦‌🇱‌\n{page_no}/{cur_page}", f"list {page_no} {userid} {msgid}")
+                buttons.ibutton(f"{page_no}/{cur_page}", f"list {page_no} {userid} {msgid}")
                 buttons.ibutton("⫸", f"list next {userid} {msgid}")
 
             if len(msg) <= max_total:
@@ -156,7 +156,7 @@ async def list_query(client, query):
                 break
         if len(msgs[2]) > max_total:
             buttons.ibutton("⫷", f"list pre {userid} {msgs[5]}")
-            buttons.ibutton(f"🇭‌🇦‌🇱‌\n{msgs[1]}/{cur_page}", f"list {msgs[1]} {userid} {msgs[5]}")
+            buttons.ibutton(f"{msgs[1]}/{cur_page}", f"list {msgs[1]} {userid} {msgs[5]}")
             buttons.ibutton("⫸", f"list next {userid} {msgs[5]}")
         if len(msgs[2]) <= max_total:
             buttons.ibutton(f"{msgs[1]}/{cur_page}", f"list {msgs[1]} {userid} {msgs[5]}")
@@ -181,7 +181,7 @@ async def list_query(client, query):
                 break
         if len(msgs[2]) > max_total:
             buttons.ibutton("⫷", f"list pre {userid} {msgs[5]}")
-            buttons.ibutton(f"🇭‌🇦‌🇱‌\n{msgs[1]}/{cur_page}", f"list {msgs[1]} {userid} {msgs[5]}")
+            buttons.ibutton(f"{msgs[1]}/{cur_page}", f"list {msgs[1]} {userid} {msgs[5]}")
             buttons.ibutton("⫸", f"list next {userid} {msgs[5]}")
         if len(msgs[2]) <= max_total:
             buttons.ibutton(f"{msgs[1]}/{cur_page}", f"list {msgs[1]} {userid} {msgs[5]}")
