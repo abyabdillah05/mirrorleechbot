@@ -77,9 +77,9 @@ async def _list_drive(key, message, item_type, isRecursive, user_token, user_id)
                     break
 
             if len(msg) > max_total:
-                buttons.ibutton("◀", f"list pre {userid} {msgid}")
-                buttons.ibutton(f"<b>HAL\n{page_no}/{cur_page}</b>", f"list {page_no} {userid} {msgid}")
-                buttons.ibutton("▶", f"list next {userid} {msgid}")
+                buttons.ibutton("⫷", f"list pre {userid} {msgid}")
+                buttons.ibutton(f"\n{page_no}/{cur_page}", f"list {page_no} {userid} {msgid}")
+                buttons.ibutton("⫸", f"list next {userid} {msgid}")
 
             if len(msg) <= max_total:
                 buttons.ibutton(f"{page_no}/{cur_page}", f"list {page_no} {userid} {msgid}")
@@ -155,9 +155,9 @@ async def list_query(client, query):
             if no == max_total:
                 break
         if len(msgs[2]) > max_total:
-            buttons.ibutton("◀", f"list pre {userid} {msgs[5]}")
-            buttons.ibutton(f"<b>HAL{msgs[1]}/{cur_page}</b>", f"list {msgs[1]} {userid} {msgs[5]}")
-            buttons.ibutton("▶", f"list next {userid} {msgs[5]}")
+            buttons.ibutton("⫷", f"list pre {userid} {msgs[5]}")
+            buttons.ibutton(f"{msgs[1]}/{cur_page}", f"list {msgs[1]} {userid} {msgs[5]}")
+            buttons.ibutton("⫸", f"list next {userid} {msgs[5]}")
         if len(msgs[2]) <= max_total:
             buttons.ibutton(f"{msgs[1]}/{cur_page}", f"list {msgs[1]} {userid} {msgs[5]}")
         buttons.ibutton("Close", f"list closelist {userid} {msgs[5]}", "footer")
@@ -180,9 +180,9 @@ async def list_query(client, query):
             if no == max_total:
                 break
         if len(msgs[2]) > max_total:
-            buttons.ibutton("◀", f"list pre {userid} {msgs[5]}")
+            buttons.ibutton("⫷", f"list pre {userid} {msgs[5]}")
             buttons.ibutton(f"<b>HAL{msgs[1]}/{cur_page}</b>", f"list {msgs[1]} {userid} {msgs[5]}")
-            buttons.ibutton("▶", f"list next {userid} {msgs[5]}")
+            buttons.ibutton("⫸", f"list next {userid} {msgs[5]}")
         if len(msgs[2]) <= max_total:
             buttons.ibutton(f"{msgs[1]}/{cur_page}", f"list {msgs[1]} {userid} {msgs[5]}")
         buttons.ibutton("Close", f"list closelist {userid} {msgs[5]}", "footer")
