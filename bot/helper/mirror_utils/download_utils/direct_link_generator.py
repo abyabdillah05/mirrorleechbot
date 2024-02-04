@@ -133,7 +133,8 @@ def direct_link_generator(link: str):
             "doods.pro",
             "ds2play.com",
             "d0o0d.com",
-            "ds2video.com"
+            "ds2video.com",
+            "do0od.com",
         ]
     ):
         return pake(link)
@@ -163,6 +164,7 @@ def direct_link_generator(link: str):
             "teraboxapp.com",
             "1024tera.com",
             "terabox.app",
+            "gibibox.com",
         ]
     ):
         return terabox(link)
