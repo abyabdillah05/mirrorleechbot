@@ -1657,7 +1657,7 @@ def alldebrid(url: str) -> str:
 def pake(url: str) -> str:
     """
     URL : 
-    https://v2.pake.tk
+    https://api.pake.tk
     
     Supported Sites :
     - Dood
@@ -1665,7 +1665,7 @@ def pake(url: str) -> str:
     """
     with Session() as session:
         try:
-            req = session.get(f"https://v2.pake.tk/dood?url={url}").json()
+            req = session.get(f"https://api.pake.tk/dood?url={url}").json()
             try:
                 details = {"contents":[], "title": "", "total_size": 0}
 
