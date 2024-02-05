@@ -94,7 +94,7 @@ class gdSearch(GoogleDriveHelper):
             return {"files": []}
 
     def drive_list(self, fileName, target_id="", user_id=""):
-        msg, msg_content = "", []
+        msg, smsg, msg_content = "", "", []
         fileName = self.escapes(str(fileName))
         contents_count = 0
         telegraph_content = []
@@ -132,22 +132,30 @@ class gdSearch(GoogleDriveHelper):
                 else:
                     continue
             if not Title:
-                msg += f"<b>Hasil pencarian:</b> <code>{fileName}</code>\n"
+                msg += f"<b>🔎 Hasil pencarian:</b> <code>{fileName}</code>\n"
                 Title = True
             if drive_name:
-                msg += f"\n╾────────────╼\n<b>{drive_name}</b>\n╾────────────╼\n"
+                msg += f"\n<b>💾 {drive_name}</b>\n╾────────────╼\n"
+                smsg += f"<b>💾 {drive_name}</b>\n╾────────────╼\n"
             for file in response.get("files", []):
                 mime_type = file.get("mimeType")
                 if mime_type == self.G_DRIVE_DIR_MIME_TYPE:
                     furl = self.G_DRIVE_DIR_BASE_DOWNLOAD_URL.format(file.get("id"))
                     msg += f"📁 <code>{file.get('name')}\n(folder)</code>\n"
                     msg += f"<b><a href={furl}>Drive Link</a></b>"
+                    smsg += f"📁 <code>{file.get('name')}\n(folder)</code>\n"
+                    smsg += f"<b><a href={furl}>Drive Link</a></b>"
                     if index_url:
                         url = f'{index_url}findpath?id={file.get("id")}'
                         msg += f' <b>| <a href="{url}">Index Link</a></b>'
+                        smsg += f' <b>| <a href="{url}">Index Link</a></b>'
                 elif mime_type == "application/vnd.google-apps.shortcut":
                     furl = self.G_DRIVE_DIR_BASE_DOWNLOAD_URL.format(file.get("id"))
                     msg += (
+                        f"⁍<a href='{self.G_DRIVE_DIR_BASE_DOWNLOAD_URL.format(file.get('id'))}'>{file.get('name')}"
+                        f"</a> (shortcut)"
+                    )
+                    smsg += (
                         f"⁍<a href='{self.G_DRIVE_DIR_BASE_DOWNLOAD_URL.format(file.get('id'))}'>{file.get('name')}"
                         f"</a> (shortcut)"
                     )
@@ -155,17 +163,23 @@ class gdSearch(GoogleDriveHelper):
                     furl = self.G_DRIVE_BASE_DOWNLOAD_URL.format(file.get("id"))
                     msg += f"📄 <code>{file.get('name')}\n({get_readable_file_size(int(file.get('size', 0)))})</code>\n"
                     msg += f"<b><a href={furl}>☁️ Drive Link</a></b>"
+                    smsg += f"📄 <code>{file.get('name')}\n({get_readable_file_size(int(file.get('size', 0)))})</code>\n"
+                    smsg += f"<b><a href={furl}>☁️ Drive Link</a></b>"
                     if index_url:
                         url = f'{index_url}findpath?id={file.get("id")}'
                         msg += f' <b>| <a href="{url}">⚡Index Link</a></b>'
+                        smsg += f' <b>| <a href="{url}">⚡Index Link</a></b>'
                         if mime_type.startswith(("image", "video", "audio")):
                             urlv = f'{index_url}findpath?id={file.get("id")}&view=true'
                             msg += f' <b>| <a href="{urlv}">🎬 View Link</a></b>'
+                            smsg += f' <b>| <a href="{urlv}">🎬 View Link</a></b>'
                 msg += "\n\n"
+                smsg += "\n\n"
                 contents_count += 1
                 if len(msg.encode("utf-8")) > 39000:
                     telegraph_content.append(msg)
                     msg = ""
+                    smsg = ""
                 
                 if not self._stopDup:
                     msgs = msg
@@ -179,8 +193,8 @@ class gdSearch(GoogleDriveHelper):
             return msg_content, False
         stop_msg, buttons = "", ButtonMaker()
         if self._stopDup and contents_count <= 6 and contents_count != 0:
-            stop_msg += f"<code>File atau folder ini sudah ada di google drive !</code>\n\n"
-            stop_msg += msg
+            stop_msg += f"<b>❗️ File atau folder ini sudah ada di google drive !</b>\n\n"
+            stop_msg += smsg
             buttons.ubutton("❤️ Support For Pikabot", "https://telegra.ph/Pikabot-Donate-10-01")
             return stop_msg, buttons.build_menu(2)
         return stop_msg, False
