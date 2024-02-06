@@ -41,7 +41,7 @@ class _BotCommands:
         self.UserSetCommand = [f"usetting{CMD_SUFFIX}", f"uset{CMD_SUFFIX}"]
         self.BtSelectCommand = [f"btsel{CMD_SUFFIX}", f"bts{CMD_SUFFIX}"]
         self.DirectCommand = [f"bypass{CMD_SUFFIX}", f"bp{CMD_SUFFIX}"]
-        self.MediaInfoCommand = [f"mediainfo{CMD_SUFFIX}", f"info{CMD_SUFFIX}"]
+        self.MediaInfoCommand = [f"mediainfo{CMD_SUFFIX}", f"mi{CMD_SUFFIX}"]
         self.RssCommand = f"rss{CMD_SUFFIX}"
         self.DonateCommand = f"donate{CMD_SUFFIX}"
 
