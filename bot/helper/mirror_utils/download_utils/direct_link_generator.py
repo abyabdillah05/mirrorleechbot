@@ -260,6 +260,8 @@ def direct_link_generator(link: str):
         return pling_bypass(link)
     elif 'sfile.mobi' in domain:
         return sfile(link)
+    elif 'qiwi.gg' in domain:
+        return qiwi(link)
     # Add AllDebrid supported link here
     elif any(
         x in domain
@@ -2063,8 +2065,15 @@ def sfile(url: str) -> str:
 
 def qiwi(url: str) -> str:
     sesi = requests.session()
-    response = sesi.get(url).text
-    slug = response.split("\\\",\\\"slug\\\":\\\"")[1].split("\\\",\\\"fileName\\\"")[0]
-    ext = response.split("\\\",\\\"fileName\\\":\\\"")[1].split("\\\",\\\"owner\\\"")[0].split(".")[-1]
-    f_link = f"https://qiwi.lol/{slug}.{ext}"
+    res = sesi.get(url).text
+    id = url.split("/")[-1]
+    soup = BeautifulSoup(res, "html.parser")
+    name = soup.find('h1', class_='page_TextHeading__VsM7r')
+    if name:
+        ling = name.text
+        ext = ling.split('.')[-1]
+        f_link = f"https://qiwi.lol/{id}.{ext}"
+    else:
+        ling = name.text
+        f_link = f"File Tidak Ditemukan !"
     return f_link
