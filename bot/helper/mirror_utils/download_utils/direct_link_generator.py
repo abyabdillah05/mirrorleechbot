@@ -2060,3 +2060,11 @@ def sfile(url: str) -> str:
     f_link = f"{final_url}&k={k_value}"
     header = f"Referer: {dl_link}"
     return f_link, header
+
+def qiwi(url: str) -> str:
+    sesi = requests.session()
+    response = sesi.get(url).text
+    slug = response.split("\\\",\\\"slug\\\":\\\"")[1].split("\\\",\\\"fileName\\\"")[0]
+    ext = response.split("\\\",\\\"fileName\\\":\\\"")[1].split("\\\",\\\"owner\\\"")[0].split(".")[-1]
+    f_link = f"https://qiwi.lol/{slug}.{ext}"
+    return f_link
