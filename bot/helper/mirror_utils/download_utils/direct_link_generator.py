@@ -186,12 +186,24 @@ def direct_link_generator(link: str):
         ]
     ):
         return filelions_and_streamwish(link)
-    elif any(x in domain for x in ["streamhub.ink", "streamhub.to"]):
+    elif any(
+        x in domain 
+        for x in [
+            "streamhub.ink", 
+            "streamhub.to",
+        ]
+    ):
         return streamhub(link)
-    elif any(x in domain for x in ["linkbox.to", "lbx.to"]):
+    elif any(
+        x in domain 
+        for x in [
+            "linkbox.to", 
+            "lbx.to", 
+            "teltobx.net", 
+            "telbx.net",
+        ]
+    ):
         return linkBox(link)
-    elif any(x in domain for x in ["teltobx.net", "telbx.net"]):
-        return teltobx(link)
     elif is_share_link(link):
         if "gdtot" in domain:
             return gdtot(link)
@@ -1072,72 +1084,11 @@ def linkBox(url:str):
             if "msg" in _json:
                 raise DirectDownloadLinkException(f"ERROR: {_json['msg']}")
             raise DirectDownloadLinkException("ERROR: Data tidak ditemukan!")
-        if data["shareType"] == "singleItem":
-            return __singleItem(session, data["itemId"])
-        if not details["title"]:
-            details["title"] = data["dirName"]
-        contents = data["list"]
-        if not contents:
-            return
-        for content in contents:
-            if content["type"] == "dir" and "url" not in content:
-                if not folderPath:
-                    newFolderPath = path.join(details["title"], content["name"])
-                else:
-                    newFolderPath = path.join(folderPath, content["name"])
-                if not details["title"]:
-                    details["title"] = content["name"]
-                __fetch_links(session, content["id"], newFolderPath)
-            elif "url" in content:
-                if not folderPath:
-                    folderPath = details["title"]
-                filename = content["name"]
-                if (sub_type := content.get("sub_type")) and not filename.endswith(sub_type):
-                    filename += f".{sub_type}"
-                item = {
-                    "path": path.join(folderPath),
-                    "filename": filename,
-                    "url": content["url"],
-                }
-                if "size" in content:
-                    size = content["size"]
-                    if isinstance(size, str) and size.isdigit():
-                        size = float(size)
-                    details["total_size"] += size
-                details["contents"].append(item)
-    try:
-        with Session() as session:
-            __fetch_links(session)
-    except DirectDownloadLinkException as e:
-        raise e
-    return details
-
-#Teltobx
-def teltobx(url: str):
-    parsed_url = urlparse(url)
-    try:
-        shareToken = parsed_url.path.split("/")[-1]
-    except:
-        raise DirectDownloadLinkException("ERROR: Link File tidak ditemukan!")
-
-    details = {"contents": [], "title": "", "total_size": 0}
-
-    def __fetch_links(session, _id=0, folderPath=""):
-        nonlocal details  # Tambahkan baris ini untuk mengakses variabel details dari luar fungsi
-        params = {
-            "shareToken": shareToken,
-            "pageSize": 1000,
-            "pid": _id,
-        }
         try:
-            _json = session.get("https://www.linkbox.to/api/file/share_out_list", params=params).json()
+            if data["shareType"] == "singleItem":
+                return __singleItem(session, data["itemId"])
         except Exception as e:
-            raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}")
-        data = _json["data"]
-        if not data:
-            if "msg" in _json:
-                raise DirectDownloadLinkException(f"ERROR: {_json['msg']}")
-            raise DirectDownloadLinkException("ERROR: Data tidak ditemukan!")
+            pass
         if not details["title"]:
             details["title"] = data["dirName"]
         contents = data["list"]
@@ -1169,7 +1120,6 @@ def teltobx(url: str):
                         size = float(size)
                     details["total_size"] += size
                 details["contents"].append(item)
-
     try:
         with Session() as session:
             __fetch_links(session)
@@ -1659,7 +1609,7 @@ def alldebrid(url: str) -> str:
 def pake(url: str) -> str:
     """
     URL : 
-    https://api.pake.tk
+    https://api.pakai.eu.org
     
     Supported Sites :
     - Dood
@@ -1667,7 +1617,7 @@ def pake(url: str) -> str:
     """
     with Session() as session:
         try:
-            req = session.get(f"https://api.pake.tk/dood?url={url}").json()
+            req = session.get(f"https://api.pakai.eu.org/dood?url={url}").json()
             try:
                 details = {"contents":[], "title": "", "total_size": 0}
 
