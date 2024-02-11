@@ -108,6 +108,8 @@ def direct_link_generator(link: str):
         return shrdsk(link)
     elif "u.pcloud.link" in domain:
         return pcloud(link)
+    elif "sharepoint.com" in domain:
+        return sharepoint(link)
     elif any(x in domain for x in ["akmfiles.com", "akmfls.xyz"]):
         return akmfiles(link)
     elif any(
@@ -2013,17 +2015,33 @@ def sfile(url: str) -> str:
     header = f"Referer: {dl_link}"
     return f_link, header
 
-def qiwi(url: str) -> str:
-    sesi = requests.session()
-    res = sesi.get(url).text
-    id = url.split("/")[-1]
-    soup = BeautifulSoup(res, "html.parser")
-    name = soup.find('h1', class_='page_TextHeading__VsM7r')
-    if name:
-        ling = name.text
-        ext = ling.split('.')[-1]
-        f_link = f"https://qiwi.lol/{id}.{ext}"
-    else:
-        ling = name.text
-        f_link = f"File Tidak Ditemukan !"
-    return f_link
+def qiwi(url):
+    with Session() as session:
+        id = url.split("/")[-1]
+        try:
+            res = session.get(url).text
+        except Exception as e:
+            session.close()
+            raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}")
+        tree = HTML(res)
+        name = tree.xpath('//h1[@class="page_TextHeading__VsM7r"]/text()')
+        if name:
+            ext = name[0].split('.')[-1]
+            session.close()
+            return f"https://qiwi.lol/{id}.{ext}"
+        else:
+            session.close()
+            raise DirectDownloadLinkException("ERROR: File tidak ditemukan")
+
+def sharepoint(url):
+    p_e = r'e=[\w]+'
+    p_d = r'download=1'
+    url = re.sub(p_e, '', url)
+    url = url.replace('??', '?')
+    if not re.search(p_d, url):
+        if '?' in url:
+            url += '&'
+        else:
+            url += '?'
+        url += 'download=1'
+    return url
