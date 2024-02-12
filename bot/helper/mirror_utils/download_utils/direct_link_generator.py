@@ -19,11 +19,11 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 from bot import config_dict
+from bot.helper.ext_utils.bot_utils import async_to_sync, get_content_type
 from bot.helper.ext_utils.status_utils import speed_string_to_bytes, get_readable_time, get_readable_file_size
 from bot.helper.ext_utils.links_utils import is_share_link
 from bot.helper.ext_utils.exceptions import DirectDownloadLinkException
 from bot.helper.ext_utils.help_messages import PASSWORD_ERROR_MESSAGE
-from bot.helper.telegram_helper.bot_commands import BotCommands
 
 
 _caches = {}
@@ -2044,4 +2044,11 @@ def sharepoint(url):
         else:
             url += '?'
         url += 'download=1'
-    return url
+    try:
+        c = async_to_sync(get_content_type, url)
+        if c is None or re.match(r"text/html|text/plain", c):
+            raise DirectDownloadLinkException (f"File tidak ditemukan, pastikan link yang anda berikan adalah link publik dan bukan link folder!")
+        else:
+            return url
+    except Exception as e:
+        raise DirectDownloadLinkException (f"ERROR: {e}")
