@@ -276,6 +276,8 @@ def direct_link_generator(link: str):
         return sfile(link)
     elif 'qiwi.gg' in domain:
         return qiwi(link)
+    elif 'berkasdrive.com' in domain:
+        return berkasdrive(link)
     # Add AllDebrid supported link here
     elif any(
         x in domain
@@ -2052,3 +2054,23 @@ def sharepoint(url):
             return url
     except Exception as e:
         raise DirectDownloadLinkException (f"ERROR: {e}")
+
+def berkasdrive(url):
+    """berkasdrive.com link generator
+    by https://github.com/aenulrofik"""
+    with Session() as session:
+        try:
+            sesi = session.get(url).text
+        except Exception as e:
+            session.close()
+            raise DirectDownloadLinkException(f"ERROR: {e}")
+
+    html = HTML(sesi)
+    cari = html.xpath('//script')[0].text.split('"')[1]
+    if cari:
+        session.close()
+        link = base64.b64decode(cari).decode('utf-8')
+        return link
+    else:
+        session.close()
+        raise DirectDownloadLinkException(f"ERROR: File tidak ditemukan!")
