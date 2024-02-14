@@ -72,8 +72,9 @@ def direct_link_generator(link: str):
     elif "github.com" in domain:
         return github(link)
     elif "hxfile.co" in domain:
-        raise DirectDownloadLinkException(
-            "ERROR: Gunakan direct link untuk mirror Hxfile \n\n <b>•</b> <a href='http://stream.pikabot.me:88/1a18d533084'<b>Cara ambil direct link.</b></a>")
+        #raise DirectDownloadLinkException(
+        #    "ERROR: Gunakan direct link untuk mirror Hxfile \n\n <b>•</b> <a href='http://stream.pikabot.me:88/1a18d533084'<b>Cara ambil direct link.</b></a>")
+        return hxfile(link)
     elif "1drv.ms" in domain:
         return onedrive(link)
     elif "pixeldrain.com" in domain:
@@ -589,13 +590,28 @@ def github(url):
 
 
 def hxfile(url):
-    with create_scraper() as session:
+    if not path.isfile("hxfile.txt"):
+        raise DirectDownloadLinkException("ERROR: Cookies (hxfile.txt) tidak ditemukan!")
+    
+    try:
+        jar = MozillaCookieJar()
+        jar.load("hxfile.txt", ignore_discard=True, ignore_expires=True)
+    except Exception as e:
+        raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}")
+    
+    cookies = {}
+    for cookie in jar:
+        cookies[cookie.name] = cookie.value
+        
+    with Session() as session:
         try:
             file_code = url.split("/")[-1]
-            html = HTML(session.post(url, data={"op": "download2", "id": file_code}).text)
+            html = HTML(session.post(url, data={"op": "download2", "id": file_code}, cookies=cookies).text)
         except Exception as e:
             raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}")
-    if direct_link:= html.xpath("//a[@class='btn btn-dow']/@href"):
+    
+    direct_link = html.xpath("//a[@class='btn btn-dow']/@href")
+    if direct_link:
         return direct_link[0]
     raise DirectDownloadLinkException("ERROR: Link File tidak ditemukan!")
 
