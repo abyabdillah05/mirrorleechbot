@@ -1667,6 +1667,7 @@ def mp4upload(url):
             req = session.get(url).text
             soup = BeautifulSoup(req, "lxml")
             inputs = soup.find_all("input")
+            header = f"Referer: https://www.mp4upload.com/"
             data = {input.get("name"): input.get("value") for input in inputs}
             if not data:
                 session.close()
@@ -1691,7 +1692,7 @@ def mp4upload(url):
                 data=data, 
                 verify=False
             ).url
-            return direct_link
+            return direct_link, header
         except:
             session.close()
             raise DirectDownloadLinkException("ERROR: Link File tidak ditemukan!")
