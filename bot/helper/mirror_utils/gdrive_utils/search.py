@@ -162,17 +162,17 @@ class gdSearch(GoogleDriveHelper):
                 else:
                     furl = self.G_DRIVE_BASE_DOWNLOAD_URL.format(file.get("id"))
                     msg += f"📄 <code>{file.get('name')}\n({get_readable_file_size(int(file.get('size', 0)))})</code>\n"
-                    msg += f"<b><a href={furl}>☁️ Drive Link</a></b>"
+                    msg += f"<b><a href={furl}>☁️ Drive</a></b>"
                     smsg += f"📄 <code>{file.get('name')}\n({get_readable_file_size(int(file.get('size', 0)))})</code>\n"
-                    smsg += f"<b><a href={furl}>☁️ Drive Link</a></b>"
+                    smsg += f"<b><a href={furl}>☁️ Drive</a></b>"
                     if index_url:
                         url = f'{index_url}findpath?id={file.get("id")}'
-                        msg += f' <b>| <a href="{url}">⚡Index Link</a></b>'
-                        smsg += f' <b>| <a href="{url}">⚡Index Link</a></b>'
+                        msg += f' <b>| <a href="{url}">⚡Index</a></b>'
+                        smsg += f' <b>| <a href="{url}">⚡Index</a></b>'
                         if mime_type.startswith(("image", "video", "audio")):
                             urlv = f'{index_url}findpath?id={file.get("id")}&view=true'
-                            msg += f' <b>| <a href="{urlv}">🎬 View Link</a></b>'
-                            smsg += f' <b>| <a href="{urlv}">🎬 View Link</a></b>'
+                            msg += f' <b>| <a href="{urlv}">🎬 Stream</a></b>'
+                            smsg += f' <b>| <a href="{urlv}">🎬 Stream</a></b>'
                 msg += "\n\n"
                 smsg += "\n\n"
                 contents_count += 1
