@@ -96,7 +96,7 @@ async def status_pages(_, query):
             status_dict[key]["status"] = data[3]
         await update_status_message(key, force=True)
     elif data[2] == 'close':
-        await query.answer(f"Anda bisa melihat status message lagi dengan perintah {BotCommands.StatusCommand[0]}", show_alert=True)
+        await query.answer(f"Anda bisa melihat status message lagi dengan perintah /{BotCommands.StatusCommand[0]}", show_alert=True)
         await delete_status()
     elif data[2] == "ov":
         tasks = {
