@@ -6,6 +6,7 @@ from re import match as re_match
 from bot import config_dict, LOGGER, status_dict, task_dict_lock, Intervals, bot, user
 from bot.helper.ext_utils.bot_utils import setInterval, sync_to_async
 from bot.helper.ext_utils.status_utils import get_readable_message
+from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.ext_utils.exceptions import TgLinkException
 
 
@@ -169,6 +170,15 @@ async def delete_status():
             try:
                 del status_dict[key]
                 await deleteMessage(data["message"])
+            except Exception as e:
+                LOGGER.error(str(e))
+
+async def edit_status():
+    async with task_dict_lock:
+        for key, data in list(status_dict.items()):
+            try:
+                del status_dict[key]
+                await editMessage(data["message"], f"Status message telah ditutup, silahkan buka kembali dengan perintah /{BotCommands.StatusCommand[0]}")
             except Exception as e:
                 LOGGER.error(str(e))
 

@@ -196,7 +196,7 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1):
             if status_value != status:
                 buttons.ibutton(label, f"status {sid} st {status_value}")
     buttons.ibutton("♻️", f"status {sid} ref", position="header")
-    buttons.ibutton("❌ Close", f"status {sid} close", position="footer")
+    buttons.ibutton("🔽 Tutup", f"status {sid} close", position="footer")
     button = buttons.build_menu(3)
     msg += f"<b>──────❪ ≽^•⩊•^≼ ❫──────</b>"
     msg += f"\n<b>CPU :</b> <code>{cpu_percent()}%</code> | <b>RAM :</b> <code>{virtual_memory().percent}%</code>"
