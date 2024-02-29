@@ -25,6 +25,7 @@ from bot.helper.telegram_helper.message_utils import (
     auto_delete_message,
     sendStatusMessage,
     update_status_message,
+    delete_status,
 )
 from bot.helper.ext_utils.bot_utils import new_task
 from bot.helper.ext_utils.status_utils import (
@@ -94,6 +95,9 @@ async def status_pages(_, query):
         async with task_dict_lock:
             status_dict[key]["status"] = data[3]
         await update_status_message(key, force=True)
+    elif data[2] == 'close':
+        await query.answer(f"Anda bisa melihat status message lagi dengan perintah {BotCommands.StatusCommand[0]}", show_alert=True)
+        await delete_status()
     elif data[2] == "ov":
         tasks = {
             "Download": 0,

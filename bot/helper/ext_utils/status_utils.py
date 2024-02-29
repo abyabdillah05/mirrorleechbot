@@ -188,15 +188,16 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1):
         msg += f"\n<b>Total Tugas :</b> <code>{tasks_no}</code>\n\n"
         buttons.ibutton("⏪", f"status {sid} pre", position="header")
         buttons.ibutton("⏩", f"status {sid} nex", position="header")
-        if tasks_no > 30:
-            for i in [1, 2, 4, 6, 8, 10, 15, 20]:
-                buttons.ibutton(i, f"status {sid} ps {i}", position="footer")
+        #if tasks_no > 30:
+        #    for i in [1, 2, 4, 6, 8, 10, 15, 20]:
+        #        buttons.ibutton(i, f"status {sid} ps {i}", position="footer")
     if status != "All" or tasks_no > 20:
         for label, status_value in STATUS_VALUES:
             if status_value != status:
                 buttons.ibutton(label, f"status {sid} st {status_value}")
     buttons.ibutton("♻️", f"status {sid} ref", position="header")
-    button = buttons.build_menu(8)
+    buttons.ibutton("❌ Close", f"status {sid} close", position="footer")
+    button = buttons.build_menu(3)
     msg += f"<b>──────❪ ≽^•⩊•^≼ ❫──────</b>"
     msg += f"\n<b>CPU :</b> <code>{cpu_percent()}%</code> | <b>RAM :</b> <code>{virtual_memory().percent}%</code>"
     #msg += f"\n<b>🆃🅳🅻 :</b> <code>{get_readable_file_size(net_io_counters().bytes_recv)}</code> | <b>🆃🆄🅻 :</b> <code>{get_readable_file_size(net_io_counters().bytes_sent)}</code>"
