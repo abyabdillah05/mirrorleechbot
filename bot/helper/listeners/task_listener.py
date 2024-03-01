@@ -26,6 +26,7 @@ from bot.helper.ext_utils.files_utils import (
     clean_download,
     clean_target,
     join_files,
+    get_md5,
 )
 from bot.helper.telegram_helper.message_utils import (
     sendMessage,
@@ -114,6 +115,10 @@ class TaskListener(TaskConfig):
             download = task_dict[self.mid]
             self.name = download.name()
             gid = download.gid()
+            spath = f"{self.dir}"
+            for item in await listdir(spath):
+                item_path = f"{self.dir}/{item}"
+            self.md5 = get_md5(item_path)
             self.extra_details = {'startTime': time()}
         LOGGER.info(f"Download completed: {self.name}")
 
@@ -277,6 +282,8 @@ class TaskListener(TaskConfig):
         else:
             msg += f"\n<b>├🗂 Tipe :</b> <code>{mime_type}</code>"
             msg += f'\n<b>└⏱ Waktu</b>: {get_readable_time(time() - self.extra_details["startTime"])}'
+            if mime_type != "Folder":
+                msg += f"\n\n<b>🛡️ MD5 Checksum:</b> <code>{self.md5}</code>"
             if mime_type == "Folder":
                 msg += f"\n\n<b>┌📂 Jumlah Folder :</b> <code>{folders}</code>"
                 msg += f"\n<b>└📄 Jumlah File :</b> <code>{files}</code>"

@@ -1,3 +1,5 @@
+import hashlib
+
 from os import walk, path as ospath
 from aiofiles.os import remove as aioremove, path as aiopath, listdir, rmdir, makedirs
 from aioshutil import rmtree as aiormtree
@@ -162,6 +164,20 @@ def get_mime_type(file_path):
     mime_type = mime.from_file(file_path)
     mime_type = mime_type or "text/plain"
     return mime_type
+
+def get_md5(file_path):
+    md5_hash = hashlib.md5()
+    try:
+        with open(file_path, "rb") as f:
+            for chunk in iter(lambda: f.read(4096), b""):
+                md5_hash.update(chunk)
+        return md5_hash.hexdigest()
+    except FileNotFoundError:
+        return (f"File tidak ditemukan.")
+    except PermissionError:
+        return (f"Tidak bisa membaca file.")    
+    except Exception as e:
+        return (f"Terjadi kesalahan:", e)
 
 
 async def join_files(path):
