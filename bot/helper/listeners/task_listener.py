@@ -166,6 +166,10 @@ class TaskListener(TaskConfig):
                 return
 
         up_dir, self.name = up_path.rsplit("/", 1)
+        spath = f"{self.dir}"
+        for item in await listdir(spath):
+            item_path = f"{self.dir}/{item}"
+        self.md5_zip = get_md5(item_path)
         size = await get_path_size(up_dir)
         
         if self.isLeech:
@@ -283,7 +287,10 @@ class TaskListener(TaskConfig):
             msg += f"\n<b>├🗂 Tipe :</b> <code>{mime_type}</code>"
             msg += f'\n<b>└⏱ Waktu</b>: {get_readable_time(time() - self.extra_details["startTime"])}'
             if mime_type != "Folder":
-                msg += f"\n\n<b>🛡️ MD5 Checksum:</b> <code>{self.md5}</code>"
+                if self.compress:
+                    msg += f"\n\n<b>🛡️ MD5 Checksum:</b> <code>{self.md5_zip}</code>"
+                else:
+                    msg += f"\n\n<b>🛡️ MD5 Checksum:</b> <code>{self.md5}</code>"
             if mime_type == "Folder":
                 msg += f"\n\n<b>┌📂 Jumlah Folder :</b> <code>{folders}</code>"
                 msg += f"\n<b>└📄 Jumlah File :</b> <code>{files}</code>"
