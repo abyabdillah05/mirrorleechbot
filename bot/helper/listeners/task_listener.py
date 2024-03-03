@@ -248,11 +248,11 @@ class TaskListener(TaskConfig):
             await DbManger().rm_complete_task(self.message.link)
         lmsg = f"<b>✅ Tugas leech anda sudah selesai, total ada</b> <code>{folders}</code> <b>file.</b>\n<i>Oleh:{self.tag}</i>\n\n"
         msg = f"<blockquote><b>📄 Nama :</b> <code>{escape(self.name)}</code></blockquote>"
-        msg += f"\n<b>┌📦 Ukuran :</b> <code>{get_readable_file_size(size)}</code>"
+        msg += f"\n<b>📦 Ukuran :</b> <code>{get_readable_file_size(size)}</code>"
         LOGGER.info(f"Task Done: {self.name}")
         if self.isLeech:
-            msg += f"\n<b>├📑 Jumlah File :</b> <code>{folders}</code>"
-            msg += f"\n<b>└⏱ Waktu</b>: {get_readable_time(time() - self.extra_details['startTime'])}"
+            msg += f"\n<b>📑 Jumlah File :</b> <code>{folders}</code>"
+            msg += f"\n<b>⏱ Waktu</b>: {get_readable_time(time() - self.extra_details['startTime'])}"
             if mime_type != 0:
                 lmsg += f"<code>{mime_type}</code> File rusak dan gagal diupload.\n\n"
                 msg += f"\n\n<b>❗️ File Rusak :</b> <code>{mime_type}</code>"
@@ -284,16 +284,16 @@ class TaskListener(TaskConfig):
     
 
         else:
-            msg += f"\n<b>├🗂 Tipe :</b> <code>{mime_type}</code>"
-            msg += f'\n<b>└⏱ Waktu</b>: {get_readable_time(time() - self.extra_details["startTime"])}'
+            msg += f"\n<b>🏷️ Tipe :</b> <code>{mime_type}</code>"
+            msg += f'\n<b>⏱ Waktu</b>: {get_readable_time(time() - self.extra_details["startTime"])}'
             if mime_type != "Folder" and not self.isClone:
                 if self.compress:
-                    msg += f"\n\n<b>🛡️ MD5 Checksum:</b> <code>{self.md5_zip}</code>"
+                    msg += f"\n<b>🛡️ MD5 Checksum:</b> <code>{self.md5_zip}</code>"
                 else:
-                    msg += f"\n\n<b>🛡️ MD5 Checksum:</b> <code>{self.md5}</code>"
+                    msg += f"\n<b>🛡️ MD5 Checksum:</b> <code>{self.md5}</code>"
             if mime_type == "Folder":
-                msg += f"\n\n<b>┌📂 Jumlah Folder :</b> <code>{folders}</code>"
-                msg += f"\n<b>└📄 Jumlah File :</b> <code>{files}</code>"
+                msg += f"\n<b>📂 Jumlah Folder :</b> <code>{folders}</code>"
+                msg += f"\n<b>📄 Jumlah File :</b> <code>{files}</code>"
             if (
                 link
                 or rclonePath
@@ -328,7 +328,10 @@ class TaskListener(TaskConfig):
                         INDEX_URL = config_dict["INDEX_URL"]
                     if INDEX_URL:
                         share_url = f"{INDEX_URL}findpath?id={dir_id}"
-                        buttons.ubutton("⚡ Index Link", share_url)
+                        if mime_type == "Folder":
+                            buttons.ubutton("📁 Index Link", share_url)
+                        else:
+                            buttons.ubutton("⚡ Index Link", share_url)
                         if mime_type.startswith(("image", "video", "audio")):
                             share_urls = f"{INDEX_URL}findpath?id={dir_id}&view=true"
                             buttons.ubutton("🎬 Lihat Media", share_urls)

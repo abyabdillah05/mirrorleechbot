@@ -198,7 +198,7 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1):
     buttons.ibutton("♻️", f"status {sid} ref", position="header")
     buttons.ibutton("🔽 Tutup", f"status {sid} close", position="footer")
     button = buttons.build_menu(3)
-    msg += f"<b>──────❪ ≽^•⩊•^≼ ❫──────</b>"
+    msg += f"<b>──────────────────</b>"
     msg += f"\n<b>CPU :</b> <code>{cpu_percent()}%</code> | <b>RAM :</b> <code>{virtual_memory().percent}%</code>"
     #msg += f"\n<b>🆃🅳🅻 :</b> <code>{get_readable_file_size(net_io_counters().bytes_recv)}</code> | <b>🆃🆄🅻 :</b> <code>{get_readable_file_size(net_io_counters().bytes_sent)}</code>"
     msg += f"\n<b>FREE :</b> <code>{get_readable_file_size(disk_usage(config_dict['DOWNLOAD_DIR']).free)}</code> | <b>UPT :</b> <code>{get_readable_time(time() - botStartTime)}</code>"
