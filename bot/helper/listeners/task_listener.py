@@ -286,7 +286,7 @@ class TaskListener(TaskConfig):
         else:
             msg += f"\n<b>├🗂 Tipe :</b> <code>{mime_type}</code>"
             msg += f'\n<b>└⏱ Waktu</b>: {get_readable_time(time() - self.extra_details["startTime"])}'
-            if mime_type != "Folder":
+            if mime_type != "Folder" and not self.isClone:
                 if self.compress:
                     msg += f"\n\n<b>🛡️ MD5 Checksum:</b> <code>{self.md5_zip}</code>"
                 else:
