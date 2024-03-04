@@ -328,6 +328,13 @@ class Mirror(TaskListener):
                         self.message,
                         f"<b>Mengubah server Bigota :</b>\n<code>{self.link}</code>"
                     )
+                elif "udomain" in self.link:
+                    await sendMessage(
+                        self.message,
+                        f"ERROR: Mirror server Udomain dari Sourceforge sedang bermasalah dan akan membuat speed download sangat lambat, silahkan ganti ke server lain !"
+                    )
+                    self.removeFromSameDir()
+                    return
                 else:
                     ddl = await sendMessage(
                         self.message,

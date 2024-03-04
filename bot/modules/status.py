@@ -98,6 +98,11 @@ async def status_pages(_, query):
     elif data[2] == 'close':
         await query.answer(f"Anda bisa melihat status message lagi dengan perintah /{BotCommands.StatusCommand[0]}", show_alert=True)
         await edit_status()
+    elif data[2] == 'info':
+        await query.answer(
+            f"⚠️ Jika speed download anda stuck atau stabil dibawah 20Kbps, tolong dicancel dan cari link atau torrent lain, karena link itu kemungkinan sudah limit atau lagi bermasalah.",
+            show_alert=True
+        )
     elif data[2] == "ov":
         tasks = {
             "Download": 0,

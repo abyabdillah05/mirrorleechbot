@@ -181,13 +181,13 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1):
         msg = f"<b>Tidak ada tugas</b> <code>{status}</code>!\n\n"
     buttons = ButtonMaker()
     if not is_user:
-        buttons.ibutton("🤖", "status 0 ov", position="header")
+        buttons.ibutton("🤖 Stats", "status 0 ov", position="header")
     if len(tasks) > STATUS_LIMIT:
         msg += f"<b>Step :</b> <code>{page_step}</code>"
         msg += f"\n<b>Halaman :</b> <code>{page_no}/{pages}</code>"
         msg += f"\n<b>Total Tugas :</b> <code>{tasks_no}</code>\n\n"
-        buttons.ibutton("⏪", f"status {sid} pre", position="header")
-        buttons.ibutton("⏩", f"status {sid} nex", position="header")
+        buttons.ibutton("⏪ Prev", f"status {sid} pre")
+        buttons.ibutton("⏩ Next", f"status {sid} nex")
         #if tasks_no > 30:
         #    for i in [1, 2, 4, 6, 8, 10, 15, 20]:
         #        buttons.ibutton(i, f"status {sid} ps {i}", position="footer")
@@ -195,7 +195,8 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1):
         for label, status_value in STATUS_VALUES:
             if status_value != status:
                 buttons.ibutton(label, f"status {sid} st {status_value}")
-    buttons.ibutton("♻️", f"status {sid} ref", position="header")
+    buttons.ibutton("ℹ️ Info", f"status {sid} info", position="header")
+    buttons.ibutton("♻️ Refresh", f"status {sid} ref", position="header")
     buttons.ibutton("🔽 Tutup", f"status {sid} close", position="footer")
     button = buttons.build_menu(3)
     msg += f"<b>──────────────────</b>"
