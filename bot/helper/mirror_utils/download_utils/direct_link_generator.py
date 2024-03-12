@@ -1161,27 +1161,34 @@ def gofile(url):
         raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}")
 
     def __get_token(session):
-        if "gofile_token" in _caches:
-            __url = f"https://api.gofile.io/getAccountDetails?token={_caches['gofile_token']}"
-        else:
-            __url = "https://api.gofile.io/createAccount"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Accept": "*/*",
+            "Connection": "keep-alive",
+        }
+        __url = f"https://api.gofile.io/accounts"
         try:
-            __res = session.get(__url, verify=False).json()
+            __res = session.post(__url, headers=headers).json()
             if __res["status"] != "ok":
-                if "gofile_token" in _caches:
-                    del _caches["gofile_token"]
-                return __get_token(session)
-            _caches["gofile_token"] = __res["data"]["token"]
-            return _caches["gofile_token"]
+                raise DirectDownloadLinkException(f"ERROR: Gagal mengambil token.")
+            return __res["data"]["token"]
         except Exception as e:
             raise e
 
-    def __fetch_links(session, _id, folderPath=""):
-        _url = f"https://api.gofile.io/getContent?contentId={_id}&token={token}&wt=4fd6sg89d7s6&cache=true"
+    def __fetch_links(session, _id):
+        _url = f"https://api.gofile.io/contents/{_id}?wt=4fd6sg89d7s6&cache=true"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Accept": "*/*",
+            "Connection": "keep-alive",
+            "Authorization": "Bearer" + " " + token,
+        }
         if _password:
             _url += f"&password={_password}"
         try:
-            _json = session.get(_url, verify=False).json()
+            _json = session.get(_url, headers=headers, verify=False).json()
         except Exception as e:
             raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}")
         if _json["status"] in "error-passwordRequired":
@@ -1196,32 +1203,25 @@ def gofile(url):
         data = _json["data"]
 
         if not details["title"]:
-            details["title"] = data["name"] if data["type"] == "folder" else _id
-
-        contents = data["contents"]
-        for content in contents.values():
-            if content["type"] == "folder":
-                if not content["public"]:
-                    continue
-                if not folderPath:
-                    newFolderPath = path.join(details["title"], content["name"])
+            details["title"] = data["name"] if data["type"] == "folder" else _id  
+        
+        if data["type"] == "folder":
+            children_ids = data["childrenIds"]
+            for child_id in children_ids:
+                child = data["children"][child_id]
+                if data["children"][child_id]["type"] == "folder":
+                    __fetch_links(child["code"], token)
                 else:
-                    newFolderPath = path.join(folderPath, content["name"])
-                __fetch_links(content["id"], newFolderPath)
-            else:
-                if not folderPath:
-                    folderPath = details["title"]
-                item = {
-                    "path": path.join(folderPath),
-                    "filename": content["name"],
-                    "url": content["link"],
-                }
-                if "size" in content:
-                    size = content["size"]
-                    if isinstance(size, str) and size.isdigit():
-                        size = float(size)
-                    details["total_size"] += size
-                details["contents"].append(item)
+                    item = {
+                        "filename": child["name"],
+                        "url": child["link"],
+                        }
+                    if "size" in child:
+                        size = child["size"]
+                        if isinstance(size, str) and size.isdigit():
+                            size = float(size)
+                        details["total_size"] += size
+            details["contents"].append(item)
 
     details = {"contents":[], "title": "", "total_size": 0}
     with Session() as session:
@@ -1233,7 +1233,7 @@ def gofile(url):
         try:
             __fetch_links(session, _id)
         except Exception as e:
-            raise DirectDownloadLinkException(e)
+            raise DirectDownloadLinkException (f"ERROR: {e}")
 
     if len(details["contents"]) == 1:
         return (details["contents"][0]["url"], details["header"])
