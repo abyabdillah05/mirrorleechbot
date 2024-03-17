@@ -1162,7 +1162,7 @@ def gofile(url):
 
     def __get_token(session):
         headers = {
-            "User-Agent": f"{user_agent}",
+            "User-Agent": user_agent,
             "Accept-Encoding": "gzip, deflate, br",
             "Accept": "*/*",
             "Connection": "keep-alive",
@@ -1179,7 +1179,7 @@ def gofile(url):
     def __fetch_links(session, _id, folderPath=""):
         _url = f"https://api.gofile.io/contents/{_id}?wt=4fd6sg89d7s6&cache=true"
         headers = {
-            "User-Agent": f"{user_agent}",
+            "User-Agent": user_agent,
             "Accept-Encoding": "gzip, deflate, br",
             "Accept": "*/*",
             "Connection": "keep-alive",
