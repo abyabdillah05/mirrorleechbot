@@ -1162,7 +1162,7 @@ def gofile(url):
 
     def __get_token(session):
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0",
+            "User-Agent": f"{user_agent}",
             "Accept-Encoding": "gzip, deflate, br",
             "Accept": "*/*",
             "Connection": "keep-alive",
@@ -1176,10 +1176,10 @@ def gofile(url):
         except Exception as e:
             raise e
 
-    def __fetch_links(session, _id):
+    def __fetch_links(session, _id, folderPath=""):
         _url = f"https://api.gofile.io/contents/{_id}?wt=4fd6sg89d7s6&cache=true"
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0",
+            "User-Agent": f"{user_agent}",
             "Accept-Encoding": "gzip, deflate, br",
             "Accept": "*/*",
             "Connection": "keep-alive",
@@ -1204,24 +1204,31 @@ def gofile(url):
 
         if not details["title"]:
             details["title"] = data["name"] if data["type"] == "folder" else _id  
-        
-        if data["type"] == "folder":
-            children_ids = data["childrenIds"]
-            for child_id in children_ids:
-                child = data["children"][child_id]
-                if data["children"][child_id]["type"] == "folder":
-                    __fetch_links(child["code"], token)
+
+        contents = data["children"]
+        for content in contents.values():
+            if content["type"] == "folder":
+                if not content["public"]:
+                    continue
+                if not folderPath:
+                    newFolderPath = path.join(details["title"], content["name"])
                 else:
-                    item = {
-                        "filename": child["name"],
-                        "url": child["link"],
-                        }
-                    if "size" in child:
-                        size = child["size"]
-                        if isinstance(size, str) and size.isdigit():
-                            size = float(size)
-                        details["total_size"] += size
-            details["contents"].append(item)
+                    newFolderPath = path.join(folderPath, content["name"])
+                __fetch_links(content["id"], newFolderPath)
+            else:
+                if not folderPath:
+                    folderPath = details["title"]
+                item = {
+                    "path": path.join(folderPath),
+                    "filename": content["name"],
+                    "url": content["link"],
+                }
+                if "size" in content:
+                    size = content["size"]
+                    if isinstance(size, str) and size.isdigit():
+                        size = float(size)
+                    details["total_size"] += size
+                details["contents"].append(item)
 
     details = {"contents":[], "title": "", "total_size": 0}
     with Session() as session:
