@@ -2010,7 +2010,7 @@ def pling_bypass(url):
 
 def bigota(url):
 
-    direct_link = re.sub(r"https?://(bigota|hugeota)\.d\.miui\.com", "https://cdn-ota.azureedge.net", url)
+    direct_link = re.sub(r"https?://(bigota|hugeota)\.d\.miui\.com", "https://bn.d.miui.com", url)
     return direct_link
 
 def yandex_disk(url):
