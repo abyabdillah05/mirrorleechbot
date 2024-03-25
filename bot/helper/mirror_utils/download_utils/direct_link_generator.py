@@ -2107,15 +2107,13 @@ def tiktok(url):
         except Exception as e:
             return f"ERROR: {e}" 
     if not r.ok:
-        print("Failed to Get URL")
-        exit()
+        raise DirectDownloadLinkException(f"Failed to Get URL")
     parse = search(
         pattern=r"^(?:https?://(?:www\.)?tiktok\.com)/(?P<user>[\a-zA-Z0-9-]+)/video/(?P<id>\d+)",
         string=r.url,
     )
     if not parse:
-        print("Failed to Get URL")
-        exit()
+        raise DirectDownloadLinkException(f"Failed to Get URL")
     data = ""
     while len(data) == 0:
         r = session.get(
