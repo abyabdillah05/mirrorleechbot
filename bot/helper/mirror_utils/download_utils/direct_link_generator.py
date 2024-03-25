@@ -5,7 +5,7 @@ import re
 
 from hashlib import sha256
 from http.cookiejar import MozillaCookieJar
-from json import loads
+from json import loads, dump
 from os import path
 from re import findall, match, search
 from time import sleep
@@ -41,7 +41,6 @@ def direct_link_generator(link: str):
             "youtube.com",
             "youtu.be",
             "instagram.com",
-            "tiktok.com",
             "facebook.com",
         ]
     ):
@@ -2098,3 +2097,43 @@ def berkasdrive(url):
     else:
         session.close()
         raise DirectDownloadLinkException(f"ERROR: File tidak ditemukan!")
+    
+def tiktok(url):
+    with Session() as session:
+        try:
+            r = session.get(url)
+        except Exception as e:
+            return f"ERROR: {e}" 
+    if not r.ok:
+        print("Failed to Get URL")
+        exit()
+    parse = search(
+        pattern=r"^(?:https?://(?:www\.)?tiktok\.com)/(?P<user>[\a-zA-Z0-9-]+)/video/(?P<id>\d+)",
+        string=r.url,
+    )
+    if not parse:
+        print("Failed to Get URL")
+        exit()
+    data = ""
+    while len(data) == 0:
+        r = session.get(
+            url=f"https://api22-normal-c-useast2a.tiktokv.com/aweme/v1/feed/?aweme_id={parse.group('id')}",
+            headers={
+                "User-Agent": user_agent,
+            }
+        )
+        data += r.text
+    data = loads(data)
+    with open("tiktok.json", "w+") as file:
+        dump(data, file)
+
+        details = {"contents":[], "title": "", "total_size": 0}
+
+        details["title"] = f'{data["aweme_list"][0]["aweme_id"]}.mp4'
+        item = {
+                    "path": "",
+                    "url": data["aweme_list"][0]["video"]["play_addr"]["url_list"][-1],
+                    "filename": details["title"],
+                }
+        details["contents"].append(item)
+        return details

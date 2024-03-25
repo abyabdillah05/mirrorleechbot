@@ -1,4 +1,6 @@
+import re
 from pyrogram.handlers import MessageHandler
+from pyrogram import filters
 from pyrogram.filters import command
 from base64 import b64encode
 from re import match as re_match
@@ -401,6 +403,27 @@ async def leech(client, message):
 async def qb_leech(client, message):
     Mirror(client, message, isQbit=True, isLeech=True).newEvent()
 
+async def auto_tk(client, message):
+    if message.caption is not None:
+        text = message.caption
+    else:
+        text = message.text
+    urls = re.findall(r"https?://[^\s]+", text)
+    if urls:
+        tkurl = urls[0]
+    text_before_url = text.split(tkurl, 1)[0].strip()
+        
+    if text_before_url:
+            return None
+    
+    msg = f"<b>Link Tiktok terdeteksi, silahkan tunggu sebentar...</b>"
+    send = await sendMessage(message, msg)
+    await sleep(3)
+    await deleteMessage(send)
+    Mirror(client, message, tkurl=tkurl, isLeech=True).newEvent()
+
+tiktokregex = r"(https?://(?:www\.)?[a-zA-Z0-9.-]*tiktok\.com/)"
+
 
 bot.add_handler(
     MessageHandler(
@@ -434,3 +457,5 @@ bot.add_handler(
         ) & CustomFilters.authorized
     )
 )
+
+bot.add_handler(MessageHandler(auto_tk, filters=CustomFilters.authorized & filters.regex(f"{tiktokregex}")))

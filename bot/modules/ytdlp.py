@@ -497,7 +497,7 @@ async def auto_yt(client, message):
     await deleteMessage(send)
     YtDlp(client, message, yturl=yturl, isLeech=True).newEvent()
 
-ytregex = r"(https?://(?:www\.)?(?:instagram\.com/(?:tv/|reel/)|[a-zA-Z0-9.-]*tiktok\.com/|youtu\.be/|youtube\.com/(?:shorts/|watch\?|playlist\?)|m\.youtube\.com/(?:shorts/|watch\?)|twitter\.com/|music\.youtube\.com/|facebook\.com/|x\.com/|www\.facebook\.com/|fb\.me/|m\.facebook\.com/)[^\s]+)"
+ytregex = r"(https?://(?:www\.)?(?:instagram\.com/(?:tv/|reel/)|youtu\.be/|youtube\.com/(?:shorts/|watch\?|playlist\?)|m\.youtube\.com/(?:shorts/|watch\?)|twitter\.com/|music\.youtube\.com/|facebook\.com/|x\.com/|www\.facebook\.com/|fb\.me/|m\.facebook\.com/)[^\s]+)"
 
 
 bot.add_handler(
