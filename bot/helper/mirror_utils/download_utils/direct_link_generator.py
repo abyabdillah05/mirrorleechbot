@@ -2107,13 +2107,13 @@ def tiktok(url):
         except Exception as e:
             return f"ERROR: {e}" 
     if not r.ok:
-        raise DirectDownloadLinkException(f"Gagal mendapatkan data")
+        raise DirectDownloadLinkException(f"ERROR: Gagal mendapatkan data")
     parse = search(
         pattern=r"^(?:https?://(?:www\.)?tiktok\.com)/(?P<user>[\a-zA-Z0-9-]+)/video/(?P<id>\d+)",
         string=r.url,
     )
     if not parse:
-        raise DirectDownloadLinkException(f"Gagal parsing url")
+        raise DirectDownloadLinkException(f"ERROR: Link yang anda berikan, bukan sebuah video")
     data = ""
     while len(data) == 0:
         r = session.get(
