@@ -2055,7 +2055,7 @@ def qiwi(url):
         if name:
             ext = name[0].split('.')[-1]
             session.close()
-            return f"https://qiwi.lol/{id}.{ext}"
+            return f"https://spyderrock.com/{id}.{ext}"
         else:
             session.close()
             raise DirectDownloadLinkException("ERROR: File tidak ditemukan")
