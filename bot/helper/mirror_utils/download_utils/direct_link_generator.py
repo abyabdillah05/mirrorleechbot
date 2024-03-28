@@ -280,6 +280,8 @@ def direct_link_generator(link: str):
         return qiwi(link)
     elif 'berkasdrive.com' in domain:
         return berkasdrive(link)
+    elif 'database.seikel.workers.dev' in domain:
+        return seikel(link)
     # Add AllDebrid supported link here
     elif any(
         x in domain
@@ -2137,3 +2139,16 @@ def tiktok(url):
                 }
         details["contents"].append(item)
         return details
+    
+def seikel(url): 
+    with Session() as session:
+        s = "https://database.seikel.workers.dev"
+        payload = {
+            "username": "SEIKEL",
+            "password": "SEIKEL",
+        }
+        try:
+            data = (session.post(url, json=payload)).json()
+            return f'{s}{data["link"]}'
+        except:
+            raise DirectDownloadLinkException(f"ERROR: Gagal mendapatkan data")
