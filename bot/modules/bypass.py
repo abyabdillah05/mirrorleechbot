@@ -1,20 +1,21 @@
 #!/usr/bin/env python3
 # Poweered by RKMBot and Rozakul Halim
 # https://t.me/MRojeck_Lim
-# Mod by pikachu
+# mod by pikachu
 
 from datetime import datetime
 from http.cookies import SimpleCookie
 
 from pyrogram.handlers import MessageHandler
 from pyrogram.filters import command
-from urllib.parse import urlparse
+from urllib.parse import urlparse, unquote
 
 from bot import bot
 import time
 from bot.helper.ext_utils.bot_utils import sync_to_async
 from bot.helper.ext_utils.links_utils import is_url
 from bot.helper.mirror_utils.download_utils.direct_link_generator import direct_link_generator
+from bot.helper.ext_utils.status_utils import get_readable_file_size
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.message_utils import sendMessage, editMessage
 from bot.helper.telegram_helper.bot_commands import BotCommands
@@ -24,6 +25,7 @@ from asyncio import sleep as asleep
 import cloudscraper
 from cloudscraper import create_scraper
 
+import requests as requestsx
 import httpx
 from aiohttp import ClientSession
 from curl_cffi import requests
@@ -278,6 +280,34 @@ async def thinfi(url: str) -> str:
     except: 
         return "Gagal membypass link :("
 
+def pling_bypass(url):
+    try:
+        id_url = re.search(r"https?://(store.kde.org|www.pling.com)\/p\/(\d+)", url)[2]
+        link = f"https://www.pling.com/p/{id_url}/loadFiles"
+        res = requestsx.get(link)
+        json_dic_files = res.json().pop("files")
+        msg = f"**Source Link** :\n`{url}`\n**Direct Link :**\n"
+        mss = "<b>Pling Direct Link :</b>\n"
+        
+        for i in json_dic_files:
+            file_name = i["name"]
+            file_url = unquote(i["url"])
+            file_size = get_readable_file_size(int(i["size"]))
+            
+            msg_line = f'**→ [{file_name}]({file_url}) ({file_size})**'
+            mss_line = f"📄 <a href='{file_url}'>{file_name}</a> ({file_size})\n"
+            
+            msg += "\n" + msg_line
+            mss += "<br>" + mss_line
+            err = f"Link Pling yang anda coba mirror salah, silahkan bypass terlebih dahulu dengan command <code>/bypass</code> dan pastikan linknya tidak mengarah ke sourceforge atau hosting yang lain."
+        
+        if len(mss) > 4000:
+            return msg
+        else:
+            return mss
+    except Exception:
+        return err
+
 async def direct(_, message):
     if message.caption is not None:
         args = message.caption.split()
@@ -323,7 +353,7 @@ async def direct(_, message):
             elif bool(match(r"https?:\/\/earn.moneykamalo\.\S+", link)):
                 res = await transcript(link, "https://go.moneykamalo.com/", "https://bloging.techkeshri.com/", 4)
             elif bool(match(r"https?:\/\/droplink\.\S+", link)):
-                res = await transcript(link, "https://droplink.co/", "https://yoshare.net/", 3.1)
+                res = await transcript(link, "https://droplink.co/", "https://tiktokcounter.net/", 3.1)
             elif bool(match(r"https?:\/\/tinyfy\.\S+", link)):
                 res = await transcript(link, "https://tinyfy.in", "https://www.yotrickslog.tech/", 0)
             elif bool(match(r"https?:\/\/adrinolinks\.\S+", link)):
@@ -459,6 +489,8 @@ async def direct(_, message):
                 res = await surl(link)
             elif bool(match(r"https?:\/\/thinfi\.\S+", link)):
                 res = await thinfi(link)
+            elif 'pling.com' in link:
+                res = await sync_to_async(pling_bypass, link)
             else:
                 res = await sync_to_async(direct_link_generator, link)
             if len(res) > 3500:
