@@ -139,6 +139,8 @@ def direct_link_generator(link: str):
             "d0o0d.com",
             "ds2video.com",
             "do0od.com",
+            "d000d.com",
+            "doods.pro",
         ]
     ):
         return pake(link)
