@@ -615,7 +615,8 @@ def hxfile(url):
     
     direct_link = html.xpath("//a[@class='btn btn-dow']/@href")
     if direct_link:
-        return direct_link[0]
+        header = f"Referer: {url}"
+        return direct_link[0], header
     raise DirectDownloadLinkException("ERROR: Link File tidak ditemukan!")
 
 
