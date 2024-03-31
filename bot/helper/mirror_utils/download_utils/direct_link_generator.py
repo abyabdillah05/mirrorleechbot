@@ -862,8 +862,20 @@ def terabox(url):
                     if not details["title"]:
                         details["title"] = content["server_filename"]
                     folderPath = details["title"]
+                    
+                if content["dlink"]:
+                    link = content["dlink"]
+                    try:
+                        sublink = re.sub(r'd\.1024tera\.com', r'd3.terabox.app', link)
+                        c = async_to_sync(get_content_type, sublink)  
+                        if c is None or re.match(r"text/html|text/plain|text/json", c):
+                            link = link
+                        else:
+                            link = sublink                 
+                    except:
+                        raise DirectDownloadLinkException(f"ERROR: File tidak ditemukan")  
                 item = {
-                    "url": content["dlink"],
+                    "url": link,
                     "filename": content["server_filename"],
                     "path" : path.join(folderPath),
                 }
