@@ -98,8 +98,8 @@ def get_progress_bar_string(pct):
     p = min(max(pct, 0), 100)
     cFull = int(p // 8)
     p_str = "█" * cFull
-    p_str += "▒" * (12 - cFull)
-    return f"[{p_str}]"
+    p_str += "░" * (12 - cFull)
+    return f"{p_str}"
 
 
 def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1):
@@ -139,12 +139,12 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1):
         else: 
             msg += f"<blockquote><b>📄 Nama :</b> <code>{escape(f'{task.name()}')}</code></blockquote>"
         if task.listener.isSuperChat:
-            msg += f"\n<b>┌ <a href='{task.listener.message.link}'>{tstatus}{task.progress()}</b>"
+            msg += f"\n<b>┌ <a href='{task.listener.message.link}'>{tstatus}</b><code>{task.progress()}</code>"
         else:
-            msg += f"\n<b>├ {tstatus}{task.progress()}</b>"
+            msg += f"\n<b>┌ {tstatus}</b><code>{task.progress()}</code>"
         msg += f"\n<b>├ {get_progress_bar_string(task.progress())}</b>"
-        user = f'{task.listener.user.first_name}'
-        msg += f"\n<b>├ Oleh :</b> <code>{user}</code>"
+        user = f'<a href="tg://user?id={task.listener.user.id}"><{task.listener.user.first_name}</a>'
+        msg += f"\n<b>├ Oleh :</b> {user}"
         if tstatus not in [
             MirrorStatus.STATUS_SPLITTING,
             MirrorStatus.STATUS_SEEDING,
