@@ -139,7 +139,7 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1):
         else: 
             msg += f"<blockquote><b>📄 Nama :</b> <code>{escape(f'{task.name()}')}</code></blockquote>"
         if task.listener.isSuperChat:
-            msg += f"\n<b>┌ <a href='{task.listener.message.link}'>{tstatus}</b><code>{task.progress()}</code>"
+            msg += f"\n<b>┌ <a href='{task.listener.message.link}'>{tstatus}</b></a><code>{task.progress()}</code>"
         else:
             msg += f"\n<b>┌ {tstatus}</b><code>{task.progress()}</code>"
         msg += f"\n<b>├ {get_progress_bar_string(task.progress())}</b>"
