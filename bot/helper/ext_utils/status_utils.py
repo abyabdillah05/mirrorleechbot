@@ -15,18 +15,18 @@ from bot.helper.telegram_helper.button_build import ButtonMaker
 SIZE_UNITS = ["B", "KB", "MB", "GB", "TB", "PB"]
 
 class MirrorStatus:
-    STATUS_DOWNLOADING = "Downloading..."
-    STATUS_UPLOADING = "Uploading..."
-    STATUS_QUEUEDL = "Antri Download..."
-    STATUS_QUEUEUP = "Antri Upload..."
-    STATUS_PAUSED = "Dihentikan..."
-    STATUS_ARCHIVING = "Mengarsip..."
-    STATUS_EXTRACTING = "Mengekstrak..."
-    STATUS_CLONING = "Cloning..."
-    STATUS_SEEDING = "Seeding..."
-    STATUS_SPLITTING = "Membagi..."
-    STATUS_CHECKING = "Mengecek..."
-    STATUS_SAMVID = "SampleVideo..."
+    STATUS_DOWNLOADING = "𝐃𝐨𝐰𝐧𝐥𝐨𝐚𝐝𝐢𝐧𝐠..."
+    STATUS_UPLOADING = "𝐔𝐩𝐥𝐨𝐚𝐝𝐢𝐧𝐠..."
+    STATUS_QUEUEDL = "𝐀𝐧𝐭𝐫𝐢𝐚𝐧 𝐃𝐨𝐰𝐧𝐥𝐨𝐚𝐝..."
+    STATUS_QUEUEUP = "𝐀𝐧𝐭𝐫𝐢𝐚𝐧 𝐔𝐩𝐥𝐨𝐚𝐝..."
+    STATUS_PAUSED = "𝐃𝐢𝐡𝐞𝐧𝐭𝐢𝐤𝐚𝐧..."
+    STATUS_ARCHIVING = "𝐌𝐞𝐧𝐠𝐚𝐫𝐬𝐢𝐩..."
+    STATUS_EXTRACTING = "𝐌𝐞𝐧𝐠𝐞𝐤𝐬𝐭𝐫𝐚𝐤..."
+    STATUS_CLONING = "𝐂𝐥𝐨𝐧𝐢𝐧𝐠..."
+    STATUS_SEEDING = "𝐒𝐞𝐞𝐝𝐢𝐧𝐠..."
+    STATUS_SPLITTING = "𝐌𝐞𝐦𝐛𝐚𝐠𝐢..."
+    STATUS_CHECKING = "𝐌𝐞𝐧𝐠𝐞𝐜𝐞𝐤..."
+    STATUS_SAMVID = "𝐒𝐚𝐦𝐩𝐥𝐞 𝐕𝐢𝐝𝐞𝐨"
      
 STATUS_VALUES = [
     ("ALL", "All"),
@@ -137,12 +137,9 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1):
         if task.listener.isPrivateChat: 
             msg += f"<blockquote><b>🔐 Nama :</b> <code>Private Task</code></b></blockquote>"
         else: 
-            msg += f"<blockquote><b>📄 Nama :</b> <code>{escape(f'{task.name()}')}</code></blockquote>"
-        if task.listener.isSuperChat:
-            msg += f"\n<b>┌ <a href='{task.listener.message.link}'>{tstatus}</b></a><code>{task.progress()}</code>"
-        else:
-            msg += f"\n<b>┌ {tstatus}</b><code>{task.progress()}</code>"
-        msg += f"\n<b>├ {get_progress_bar_string(task.progress())}</b>"
+            msg += f"<blockquote>📄 <a href='{task.listener.message.link}'><b>Nama :</b></a> <code>{escape(f'{task.name()}')}</code></blockquote>"
+        msg += f"\n<b>┌ </b>{tstatus} <code>({task.progress()})</code>"
+        msg += f"\n<b>├ </b>{get_progress_bar_string(task.progress())}"
         user = f'<a href="tg://user?id={task.listener.user.id}">{task.listener.user.first_name}</a>'
         msg += f"\n<b>├ Oleh :</b> {user}"
         if tstatus not in [
