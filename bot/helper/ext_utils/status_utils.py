@@ -15,18 +15,18 @@ from bot.helper.telegram_helper.button_build import ButtonMaker
 SIZE_UNITS = ["B", "KB", "MB", "GB", "TB", "PB"]
 
 class MirrorStatus:
-    STATUS_DOWNLOADING = "📥 Mengunduh..."
-    STATUS_UPLOADING = "📤 Mengunggah..."
-    STATUS_QUEUEDL = "⌛️ Antrian Download..."
-    STATUS_QUEUEUP = "⏳ Antrian Upload..."
-    STATUS_PAUSED = "⛔️Dihentikan."
-    STATUS_ARCHIVING = "📦 Mengarsip..."
-    STATUS_EXTRACTING = "🗂️ Mengekstrak..."
-    STATUS_CLONING = "📑 Mengclone..."
-    STATUS_SEEDING = "🧲 Mengeseed..."
-    STATUS_SPLITTING = "📚 Membagi..."
-    STATUS_CHECKING = "📝 Mengecek..."
-    STATUS_SAMVID = "🎞️ SampleVideo"
+    STATUS_DOWNLOADING = "Downloading..."
+    STATUS_UPLOADING = "Uploading..."
+    STATUS_QUEUEDL = "Antri Download..."
+    STATUS_QUEUEUP = "Antri Upload..."
+    STATUS_PAUSED = "Dihentikan..."
+    STATUS_ARCHIVING = "Mengarsip..."
+    STATUS_EXTRACTING = "Mengekstrak..."
+    STATUS_CLONING = "Cloning..."
+    STATUS_SEEDING = "Seeding..."
+    STATUS_SPLITTING = "Membagi..."
+    STATUS_CHECKING = "Mengecek..."
+    STATUS_SAMVID = "SampleVideo..."
      
 STATUS_VALUES = [
     ("ALL", "All"),
@@ -97,8 +97,8 @@ def get_progress_bar_string(pct):
     pct = float(pct.strip("%"))
     p = min(max(pct, 0), 100)
     cFull = int(p // 8)
-    p_str = "■" * cFull
-    p_str += "□" * (12 - cFull)
+    p_str = "█" * cFull
+    p_str += "▒" * (12 - cFull)
     return f"[{p_str}]"
 
 
@@ -138,42 +138,42 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1):
             msg += f"<blockquote><b>🔐 Nama :</b> <code>Private Task</code></b></blockquote>"
         else: 
             msg += f"<blockquote><b>📄 Nama :</b> <code>{escape(f'{task.name()}')}</code></blockquote>"
-        msg += f"\n<b>┌┤{get_progress_bar_string(task.progress())}<code>{task.progress()}</code></b>"
         if task.listener.isSuperChat:
-            msg += f"\n<b>├⌛️ Status :</b> <a href='{task.listener.message.link}'><b>{tstatus}</b></a>"
+            msg += f"\n<b>┌ <a href='{task.listener.message.link}'>{tstatus}{task.progress()}</b>"
         else:
-            msg += f"\n<b>├⌛️ Status : {tstatus}</b>"
+            msg += f"\n<b>├ {tstatus}{task.progress()}</b>"
+        msg += f"\n<b>├ {get_progress_bar_string(task.progress())}</b>"
+        user = f'{task.listener.user.first_name}'
+        msg += f"\n<b>├ Oleh :</b> <code>{user}</code>"
         if tstatus not in [
             MirrorStatus.STATUS_SPLITTING,
             MirrorStatus.STATUS_SEEDING,
             MirrorStatus.STATUS_SAMVID,
         ]:
-            msg += f"\n<b>├📦 Ukuran :</b> {task.size()}"
-            msg += f"\n<b>├🪫 Diproses :</b> <code>{task.processed_bytes()}</code>"
-            msg += f"\n<b>├⏰ Estimasi :</b> <code>{task.eta()}</code>"
-            msg += f"\n<b>├⚡️ Kecepatan :</b> <code>{task.speed()}</code>"
+            msg += f"\n<b>├ Ukuran :</b> {task.size()}"
+            msg += f"\n<b>├ Diproses :</b> <code>{task.processed_bytes()}</code>"
+            msg += f"\n<b>├ Estimasi :</b> <code>{task.eta()}</code>"
+            msg += f"\n<b>├ Kecepatan :</b> <code>{task.speed()}</code>"
             if hasattr(task, "seeders_num"):
                 try:
-                    msg += f"\n<b>├🌱 Seeders :</b> <code>{task.seeders_num()}</code>"
-                    msg += f"\n<b>├🐌 Leechers :</b> <code>{task.leechers_num()}</code>"
+                    msg += f"\n<b>├ Seeders :</b> <code>{task.seeders_num()}</code>"
+                    msg += f"\n<b>├ Leechers :</b> <code>{task.leechers_num()}</code>"
                 except:
                     pass
         elif tstatus == MirrorStatus.STATUS_SEEDING:
-            msg += f"\n<b>├🧲 Ratio :</b> <code>{task.ratio()}</code>"
-            msg += f"\n<b>├⏲ Waktu :</b> <code>{task.seeding_time()}</code>"
-            msg += f"\n<b>├📦 Ukuran :</b> <code>{task.size()}</code>"
-            msg += f"\n<b>├🆙 Diupload :</b> <code>{task.uploaded_bytes()}</code>"
-            msg += f"\n<b>├⚡️ Kecepatan :</b> <code>{task.seed_speed()}</code>"
+            msg += f"\n<b>├ Ratio :</b> <code>{task.ratio()}</code>"
+            msg += f"\n<b>├ Waktu :</b> <code>{task.seeding_time()}</code>"
+            msg += f"\n<b>├ Ukuran :</b> <code>{task.size()}</code>"
+            msg += f"\n<b>├ Diupload :</b> <code>{task.uploaded_bytes()}</code>"
+            msg += f"\n<b>├ Kecepatan :</b> <code>{task.seed_speed()}</code>"
         else:
-            msg += f"\n<b>├📦 Ukuran :</b> <code>{task.size()}</code>"
+            msg += f"\n<b>├ Ukuran :</b> <code>{task.size()}</code>"
         #if task.listener.isPrivateChat: 
             #msg += f"\n<b>├ ID :</b> <code>PRIVATE</code>"
             #msg += f"\n<b>├👨‍💻 User : <b>Anonymous 👻</b>" 
         #else:
             #msg += f"\n<b>├ ID :</b> <code>{task.listener.user_id}</code>"
-        user = f'{task.listener.user.first_name}'
-        msg += f"\n<b>├👨‍💻 User :</b> <code>{user}</code>"
-        msg += f"\n<b>└🚫 /{BotCommands.CancelTaskCommand[0]}_{task.gid()}\n\n"
+        msg += f"\n<b>└⛔️ /{BotCommands.CancelTaskCommand[0]}_{task.gid()}\n\n"
 
     if len(msg) == 0 and status == "All":
         return None, None
@@ -181,7 +181,7 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1):
         msg = f"<b>Tidak ada tugas</b> <code>{status}</code>!\n\n"
     buttons = ButtonMaker()
     if not is_user:
-        buttons.ibutton("🤖", "status 0 ov", position="header")
+        buttons.ibutton("ℹ️", "status 0 ov", position="header")
     if len(tasks) > STATUS_LIMIT:
         msg += f"<b>Step :</b> <code>{page_step}</code>"
         msg += f"\n<b>Halaman :</b> <code>{page_no}/{pages}</code>"
@@ -195,8 +195,8 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1):
         for label, status_value in STATUS_VALUES:
             if status_value != status:
                 buttons.ibutton(label, f"status {sid} st {status_value}")
-    buttons.ibutton("ℹ️", f"status {sid} info", position="header")
-    buttons.ibutton("♻️", f"status {sid} ref", position="header")
+    buttons.ibutton("*⃣", f"status {sid} info", position="header")
+    buttons.ibutton("🔄", f"status {sid} ref", position="header")
     buttons.ibutton("🔽 Tutup", f"status {sid} close", position="footer")
     button = buttons.build_menu(3)
     msg += f"<b>──────────────────</b>"
