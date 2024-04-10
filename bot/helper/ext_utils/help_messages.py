@@ -102,6 +102,8 @@ OTHER_HELP = f"""
 • /ping = Cek respon bot
 • /speedtest = Cek speed koneksi server bot
 • /mediainfo = Untuk melihat info dari file atau media
+• /upload = Upload gambar/short video ke telegraph
+• /asupan = Video asupan dari bot.
 • /donate = Fitur unggulan hehe :)
 """
 

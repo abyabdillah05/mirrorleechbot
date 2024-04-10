@@ -1,3 +1,4 @@
+import requests
 from secrets import token_urlsafe
 from asyncio import sleep
 from telegraph.aio import Telegraph
@@ -34,6 +35,19 @@ class TelegraphHelper:
             )
             await sleep(st.retry_after)
             return await self.create_page(title, content)
+        
+    def upload_file(self, path):
+        data = {'file': open(path, 'rb')}
+        try:
+            response = requests.post("https://telegra.ph/upload", files=data)
+
+            if response.status_code == 200:
+                result = response.json()[0]['src']
+                return f"https://telegra.ph{result}"
+            else:
+                return("Error:", response.text)
+        except Exception as e:
+            return f"ERROR: {e}"
 
     async def edit_page(self, path, title, content):
         try:
