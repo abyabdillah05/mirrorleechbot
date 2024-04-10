@@ -96,10 +96,10 @@ def speed_string_to_bytes(size_text: str):
 def get_progress_bar_string(pct):
     pct = float(pct.strip("%"))
     p = min(max(pct, 0), 100)
-    cFull = int(p / 100 * 8)
+    cFull = int(p / 100 * 10)
     p_str = "🟥" * cFull
-    p_str += "⬜" * (8 - cFull)
-    return f"{p_str[:8]}"
+    p_str += "⬜" * (10 - cFull)
+    return f"{p_str[:10]}"
 
 def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1):
     msg = ""
