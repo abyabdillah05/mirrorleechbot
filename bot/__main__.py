@@ -64,7 +64,8 @@ from .modules import (
     ytdlp,
     bypass,
     query,
-    mediainfo
+    mediainfo,
+    asupan,
 )
 
 def get_quotes():

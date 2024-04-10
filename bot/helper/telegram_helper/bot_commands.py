@@ -43,6 +43,7 @@ class _BotCommands:
         self.DirectCommand = [f"bypass{CMD_SUFFIX}", f"bp{CMD_SUFFIX}"]
         self.MediaInfoCommand = [f"mediainfo{CMD_SUFFIX}", f"mi{CMD_SUFFIX}"]
         self.RssCommand = f"rss{CMD_SUFFIX}"
+        self.AsupanCommand = f"asupan{CMD_SUFFIX}"
         self.DonateCommand = f"donate{CMD_SUFFIX}"
 
 
