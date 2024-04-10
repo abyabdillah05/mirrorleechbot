@@ -42,40 +42,41 @@ async def asupan(client, message):
 @new_task
 async def upload_media(_, message):
     rply = message.reply_to_message
-    if rply.video or rply.photo or rply.video_note:
-        if file := next(
-            (
-                i
-                for i in [
-                    rply.video,
-                    rply.photo,
-                    rply.video_note,
-                ]
-                if i is not None
-            ),
-            None,
-        ):
-                media = file
-        path = "telegraph_upload/"
-        if not await aiopath.isdir(path):
-            await mkdir(path)
-        mess = await sendMessage(message, f"⌛️ Mengupload media ke telegraph, siahkan tunggu sebentar..")
-        
+    if rply:
+        if rply.video or rply.photo or rply.video_note:
+            if file := next(
+                (
+                    i
+                    for i in [
+                        rply.video,
+                        rply.photo,
+                        rply.video_note,
+                    ]
+                    if i is not None
+                ),
+                None,
+            ):
+                    media = file
+            path = "telegraph_upload/"
+            if not await aiopath.isdir(path):
+                await mkdir(path)
+            mess = await sendMessage(message, f"⌛️ Mengupload media ke telegraph, siahkan tunggu sebentar..")
             
-        des_path = ospath.join(path, media.file_id)
-        if media.file_size <= 5000000:
-            await rply.download(ospath.join(getcwd(), des_path))
-        else:
-            await editMessage(mess, f"File yang anda coba upload terlalu besar, maksimal 5MB")
-            return None
+                
+            des_path = ospath.join(path, media.file_id)
+            if media.file_size <= 5000000:
+                await rply.download(ospath.join(getcwd(), des_path))
+            else:
+                await editMessage(mess, f"File yang anda coba upload terlalu besar, maksimal 5MB")
+                return None
 
-        try:
-            upload_response = await sync_to_async(telegraph.upload_file, des_path)
-            await editMessage(mess, f"<b>✅ Berhasil upload ke telegraph:</b>\n\nLink: <code>{upload_response}</code>")
-        except Exception as e:
-            await editMessage(mess, f"Gagal upload ke Telegraph {e}")          
-        finally:
-            await aioremove(des_path)    
+            try:
+                upload_response = await sync_to_async(telegraph.upload_file, des_path)
+                await editMessage(mess, f"<b>✅ Berhasil upload ke telegraph:</b>\n\nLink: <code>{upload_response}</code>")
+            except Exception as e:
+                await editMessage(mess, f"Gagal upload ke Telegraph {e}")          
+            finally:
+                await aioremove(des_path)    
     else:
         await sendMessage(message, f"Silahkan balas photo atau video pendek yang mau anda upload ke Telegraph")
 
