@@ -8,6 +8,7 @@ from aiofiles.os import remove as aioremove, path as aiopath, mkdir
 from os import path as ospath, getcwd
 from pyrogram.filters import command
 from pyrogram.handlers import MessageHandler
+from pyrogram.types import InputMediaPhoto
 from pyrogram import filters
 from bot.helper.ext_utils.bot_utils import new_task
 from bot.helper.telegram_helper.message_utils import sendMessage, editMessage, deleteMessage
@@ -96,34 +97,35 @@ async def tiktokdl(_, message):
         if not r.ok:
             await editMessage(mess, f"ERROR: Gagal mendapatkan data")
             return None
-        parse = re.search(
-            pattern=r"^(?:https?://(?:www\.)?tiktok\.com)/(?P<user>[\a-zA-Z0-9-]+)/video/(?P<id>\d+)",
-            string=r.url,
-        )
-        if not parse:
-            await editMessage(mess, f"ERROR: Link yang anda berikan, bukan sebuah video")
-            return None
+        pattern = r"^(?:https?://(?:www\.)?tiktok\.com)/(?P<user>[\a-zA-Z0-9-]+)(?P<content_type>video|photo)+/(?P<id>\d+)"
+        match = re.match(pattern, string=r.url)  
+        content_type = match.group("content_type")
         data = ""
         while len(data) == 0:
             r = session.get(
-                url=f"https://api22-normal-c-useast2a.tiktokv.com/aweme/v1/feed/?aweme_id={parse.group('id')}",
+                url=f"https://api22-normal-c-useast2a.tiktokv.com/aweme/v1/feed/?aweme_id={match.group('id')}",
                 headers={
                     "User-Agent": user_agent,
                 }
             )
-
             data += r.text
-
-        data = loads(data)
-        link = data["aweme_list"][0]["video"]["play_addr"]["url_list"][-1]
-        filename = data["aweme_list"][0]["desc"]
-
-        capt = f"<b>Title:</b> <code>{filename}</code>"
+        data = loads(data) 
         try:
-            await message.reply_video(link, caption=capt)
-            await deleteMessage(mess)
+            if content_type == "video":
+                link = data["aweme_list"][0]["video"]["play_addr"]["url_list"][-1]
+                filename = data["aweme_list"][0]["desc"]
+                capt = f"<code>{filename}</code>"                
+                await message.reply_video(link, caption=capt)
+            if content_type == "photo":
+                photo_urls = []
+                for aweme in data["aweme_list"][0]["image_post_info"]["images"]:
+                    for link in aweme["display_image"]["url_list"][1:]:
+                        photo_urls.append(link)
+                await message.reply_media_group([InputMediaPhoto(photo_url) for photo_url in photo_urls])
+               
         except Exception as e:
-            await sendMessage(message, f"ERROR: Gagal mengupload video")
+                await sendMessage(message, f"ERROR: Gagal mengupload media {e}")
+        finally:
             await deleteMessage(mess)
 
 tiktokregex = r"(https?://(?:www\.)?[a-zA-Z0-9.-]*tiktok\.com/)"
