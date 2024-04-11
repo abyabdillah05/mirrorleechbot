@@ -102,7 +102,7 @@ async def tiktokdl(_, message):
         if match:  
             content_type = match.group("content_type")
         else:
-            await sendMessage(message, f"Link yang anda berikan sepertinya salah atau belum support, silahkan coba dengan link yang lain !")
+            await editMessage(message, f"Link yang anda berikan sepertinya salah atau belum support, silahkan coba dengan link yang lain !")
             return None
         data = ""
         while len(data) == 0:
@@ -115,16 +115,20 @@ async def tiktokdl(_, message):
             data += r.text
         data = loads(data) 
         try:
+            music = data["aweme_list"][0]["music"]["play_url"]["url_list"][-1]
+            m_capt = data["aweme_list"][0]["music"]["title"]
             if content_type == "video":
                 link = data["aweme_list"][0]["video"]["play_addr"]["url_list"][-1]
                 filename = data["aweme_list"][0]["desc"]
                 capt = f"<code>{filename}</code>"                
                 await message.reply_video(link, caption=capt)
+                await message.reply_audio(music, caption=m_capt)
             if content_type == "photo":
                 photo_urls = []
                 for aweme in data["aweme_list"][0]["image_post_info"]["images"]:
                     for link in aweme["display_image"]["url_list"][1:]:
                         photo_urls.append(link)
+                await message.reply_audio(music, caption=m_capt)
                 await message.reply_media_group([InputMediaPhoto(photo_url) for photo_url in photo_urls])
                
         except Exception as e:
