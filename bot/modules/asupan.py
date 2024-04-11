@@ -213,7 +213,11 @@ async def tiktok_search(_, message):
         search += r.text
 
     data = loads(search)
-    id = (f"{data['item_list'][randint(0, len(data['item_list']) - 1)]['id']}")
+    try:
+        id = (f"{data['item_list'][randint(0, len(data['item_list']) - 1)]['id']}")
+    except Exception as e:
+        await editMessage(mess, f"ERROR: {e}")
+        return None
     await deleteMessage(mess)
     await tiktokdl(_, message, id=id)
 
