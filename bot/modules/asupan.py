@@ -98,8 +98,12 @@ async def tiktokdl(_, message):
             await editMessage(mess, f"ERROR: Gagal mendapatkan data")
             return None
         pattern = r"^(?:https?://(?:www\.)?tiktok\.com)/(?P<user>[\a-zA-Z0-9-]+)(?P<content_type>video|photo)+/(?P<id>\d+)"
-        match = re.match(pattern, string=r.url)  
-        content_type = match.group("content_type")
+        match = re.match(pattern, string=r.url)
+        if match:  
+            content_type = match.group("content_type")
+        else:
+            await sendMessage(message, f"Link yang anda berikan sepertinya salah atau belum support, silahkan coba dengan link yang lain !")
+            return None
         data = ""
         while len(data) == 0:
             r = session.get(
