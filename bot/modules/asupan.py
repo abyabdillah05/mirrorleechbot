@@ -1,13 +1,16 @@
 import random
 import requests
+import re
 
+from json import loads
+from bot import bot
 from aiofiles.os import remove as aioremove, path as aiopath, mkdir
 from os import path as ospath, getcwd
-from bot import bot
 from pyrogram.filters import command
 from pyrogram.handlers import MessageHandler
+from pyrogram import filters
 from bot.helper.ext_utils.bot_utils import new_task
-from bot.helper.telegram_helper.message_utils import sendMessage, editMessage
+from bot.helper.telegram_helper.message_utils import sendMessage, editMessage, deleteMessage
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.ext_utils.telegraph_helper import telegraph
@@ -15,6 +18,7 @@ from bot.helper.ext_utils.bot_utils import sync_to_async
 
 
 file_url = "https://gist.github.com/aenulrofik/33be032a24c227952a4e4290a1c3de63/raw/asupan.json"
+user_agent  = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0"
 
 async def get_url(url):
     try:
@@ -80,6 +84,50 @@ async def upload_media(_, message):
     else:
         await sendMessage(message, f"Silahkan balas photo atau video pendek yang mau anda upload ke Telegraph")
 
+async def tiktokdl(_, message):
+    url = message.text
+    mess = await sendMessage(message, f"<b>⌛️Link tiktok terdeteksi, silahkan tunggu sebentar...</b>")
+    with requests.Session() as session:
+        try:
+            r = session.get(url)
+        except Exception as e:
+            return f"ERROR: {e}"
+        
+        if not r.ok:
+            await editMessage(mess, f"ERROR: Gagal mendapatkan data")
+            return None
+        parse = re.search(
+            pattern=r"^(?:https?://(?:www\.)?tiktok\.com)/(?P<user>[\a-zA-Z0-9-]+)/video/(?P<id>\d+)",
+            string=r.url,
+        )
+        if not parse:
+            await editMessage(mess, f"ERROR: Link yang anda berikan, bukan sebuah video")
+            return None
+        data = ""
+        while len(data) == 0:
+            r = session.get(
+                url=f"https://api22-normal-c-useast2a.tiktokv.com/aweme/v1/feed/?aweme_id={parse.group('id')}",
+                headers={
+                    "User-Agent": user_agent,
+                }
+            )
+
+            data += r.text
+
+        data = loads(data)
+        link = data["aweme_list"][0]["video"]["play_addr"]["url_list"][-1]
+        filename = data["aweme_list"][0]["desc"]
+
+        capt = f"<b>Title:</b> <code>{filename}</code>"
+        try:
+            await message.reply_video(link, caption=capt)
+            await deleteMessage(mess)
+        except Exception as e:
+            await sendMessage(message, f"ERROR: Gagal mengupload video")
+            await deleteMessage(mess)
+
+tiktokregex = r"(https?://(?:www\.)?[a-zA-Z0-9.-]*tiktok\.com/)"
+
 bot.add_handler(
     MessageHandler(
         asupan, 
@@ -94,5 +142,14 @@ bot.add_handler(
         filters=command(
             BotCommands.UploadCommand
         ) & CustomFilters.authorized
+    )
+)
+bot.add_handler(
+    MessageHandler(
+        tiktokdl,
+        filters=CustomFilters.authorized
+        & filters.regex(
+            f"{tiktokregex}"
+        )
     )
 )

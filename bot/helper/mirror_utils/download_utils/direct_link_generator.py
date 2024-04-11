@@ -42,6 +42,7 @@ def direct_link_generator(link: str):
             "youtu.be",
             "instagram.com",
             "facebook.com",
+            "tiktok.com",
         ]
     ):
         raise DirectDownloadLinkException(
@@ -93,8 +94,8 @@ def direct_link_generator(link: str):
         return uploadee(link)
     elif "gofile.io" in domain:
         return gofile(link)
-    elif "tiktok.com" in domain:
-        return tiktok(link)
+    #elif "tiktok.com" in domain:
+    #    return tiktok(link)
     elif "send.cm" in domain:
         if len(config_dict['ALLDEBRID_API']) == 0:
             return send_cm(link)
