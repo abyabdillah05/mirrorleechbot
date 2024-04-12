@@ -2,6 +2,7 @@ import random
 import requests
 import re
 
+from http.cookiejar import MozillaCookieJar
 from random import randint
 from cloudscraper import create_scraper
 from json import loads
@@ -155,19 +156,18 @@ async def tiktok_search(_, message):
     else:
         await sendMessage(message, f"Silahkan masukkan keyword pencarian setelah perintah !")
     mess = await sendMessage(message, f"Mencari video tiktok dengan keyword <code>{keyword}</code>")
-    session = create_scraper()
-    session.headers.update({
-        "Cookie": "tt_csrf_token=GX36Elxm-IzPlqY84I9Tvr1kEur1nMkUBsZE; tt_chain_token=V1k0U3zHiB6IYmqNCi/ULw==; tiktok_webapp_theme=light; ttwid=1%7C5XR3IKQDX3Z-j6gzdzHyJltpq3c84r0JW0EknblG1QY%7C1707850284%7Cec05b8ce0d447706d505b64e0f52666e98415056c991aba9cde540905e1c2b06; odin_tt=2377ef16d4e71ca25af6865e5873fea22d360caf85546b8bf0b34d2efdbc3b3b7e5283171b534d61e6ea11e0c5611a61210d121625711d0489126458d6956577dd2414bb9a1c4d4edd56a20371a3a916; _ttp=2cZzw9oUTjdEZnWw4doQ8IDaHDQ; passport_csrf_token=7bd001111dd720f4bbd9a696587939e6; passport_csrf_token_default=7bd001111dd720f4bbd9a696587939e6; ak_bmsc=958EBBEC8D841EC70BAFDB1370A8BE2D~000000000000000000000000000000~YAAQFOnOF/lQaciOAQAAwoUOzBcoimpv18E1S0dU/ZbN2ufjvBbjKS+w3IiSPEEQlRgDDtymbFQI1pjBYdKq4VVUuln0/M+eUBKQHgeYGAm6cgST5nhz/YtjRPHhqi/IgeAvpaIKNUgiiDsMPlmusRpl5g1QH0PJaTsfQgl/cHYuD7JgHHfSpBZklMS+u/cUu2qqER9k2wR+RzzGgRk/5BAQtvuRD21RvNATBYDFEoNwMlsuKD2dh9HCc/K69PfaHgEx51TC524b5dhs6BB4tKvxAhckMvAMELoiDIrwV9fyyBD9vNSczGL65HfmmtdIvCsymM3ixKJNTdOTIV+EQ1KDnyensl5gl3SdcG62mVisdmt5LvkduzsY3EPlY3GAxkA9Yh45THk=; perf_feed_cache={%22expireTimestamp%22:1712991600000%2C%22itemIds%22:[%227354684321174686982%22%2C%227343630660034170117%22]}; msToken=BwpAcQ7JFCJBHvI9gsZ8dNwMC4a1kCe8tiHTeYFX93wLU3SgUpsS1bCj6MsKA3nSr9S7-OYtuqGiGpGcxu-1PvqkoN-eBnoTdwtFPaXtGQuM51BWJ-tW1Ptw9DLRWNH5O-_hblv4qAPq7YSsAw==; bm_sv=A7FF973F42B8CF54725255B244CA3503~YAAQC+nOF0++F7OOAQAAxKsdzBftSAowhIcW2HjxPpASPwrSdSmnrpM3fU+iONXPddufPHVfQ5lwxXLOsFwhhqtPP8fw70yY3Gikwp7yYH2hCbnwVevwdI6RdSemimxs66s8SvzX8/sCS5e6Jw0417Fxp5irxSmkWwdKBUGOOKuWnSISW3BuFXUosIt2FjhAJLAotGal+ZjbAIF6q1Z05d5KBTnD0TWkB1sMfTuN9Mg5z9VddEPqwdMXdbH4QMpR~1; msToken=A6HQB6w2ekZFT2FtNq3J-QiQxq8JdEnoiY-33plstM32Su2pF0KyAhJ9275X4TIxzh4jTcskP_hJd2dKB7JL3w57HwO7enrNz8p7P-rS2-6oIr7F3AjLdqQOpVr2dif4bYNtAxlboTpevRAX2w==",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-        }
-    )
-    num = 0
-    search = ""
-    while len(search) == 0:
-        num += 1
-        r = session.get(
-            url="https://www.tiktok.com/api/search/item/full/",
-            params = {
+    try:
+        jar = MozillaCookieJar()
+        jar.load("tiktok.txt", ignore_discard=True, ignore_expires=True)
+    except Exception as e:
+        await editMessage(mess, f"ERROR: {e.__class__.__name__}")
+        return None
+    
+    cookies = {}
+    for cookie in jar:
+        cookies[cookie.name] = cookie.value
+    session = requests.Session()
+    params = {
                 "aid": 1988,
                 "app_language": "en",
                 "app_name": "tiktok_web",
@@ -196,6 +196,7 @@ async def tiktok_search(_, message):
                 "screen_width": 1920,
                 "search_source": "normal_search",
                 "tz_name": "Asia/Jakarta",
+                "count": 15,
                 "web_search_code": {
                     "tiktok": {
                         "client_params_x": {
@@ -206,8 +207,16 @@ async def tiktok_search(_, message):
                         }, 
                         "search_server": {}
                     }
-                },
+                }
             }
+    num = 0
+    search = ""
+    while len(search) == 0:
+        num += 1
+        r = session.get(
+            url="https://www.tiktok.com/api/search/item/full/",
+            params=params,
+            cookies=cookies
         )
 
         search += r.text
