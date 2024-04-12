@@ -91,7 +91,7 @@ async def upload_media(_, message):
 async def tiktokdl(_, message, id=None):
     url = message.text
     mess = await sendMessage(message, f"<b>⌛️Mendownload media dari tiktok, silahkan tunggu sebentar...</b>")
-    with requests.Session() as session:
+    with create_scraper() as session:
         if id is None:
             try:
                 r = session.get(url)
@@ -156,6 +156,7 @@ async def tiktok_search(_, message):
     else:
         await sendMessage(message, f"Silahkan masukkan keyword pencarian setelah perintah !")
     mess = await sendMessage(message, f"Mencari video tiktok dengan keyword <code>{keyword}</code>")
+    session = create_scraper()
     try:
         jar = MozillaCookieJar()
         jar.load("tiktok.txt", ignore_discard=True, ignore_expires=True)
@@ -166,7 +167,6 @@ async def tiktok_search(_, message):
     cookies = {}
     for cookie in jar:
         cookies[cookie.name] = cookie.value
-    session = requests.Session()
     params = {
                 "aid": 1988,
                 "app_language": "en",
