@@ -156,7 +156,7 @@ async def tiktok_search(_, message):
         keyword = ' '.join(message.command[1:])
     else:
         await sendMessage(message, f"Silahkan masukkan keyword pencarian setelah perintah !")
-    mess = await sendMessage(message, f"Mencari video tiktok dengan keyword <code>{keyword}</code>")
+    mess = await sendMessage(message, f"<b>⌛️Sedang mencari video tiktok dengan keyword:</b>\n\n<code>🔎 {keyword}</code>")
     session = create_scraper()
     try:
         jar = MozillaCookieJar()
@@ -197,7 +197,7 @@ async def tiktok_search(_, message):
                 "screen_width": 1920,
                 "search_source": "normal_search",
                 "tz_name": "Asia/Jakarta",
-                "count": 15,
+                "count": 10,
                 "web_search_code": {
                     "tiktok": {
                         "client_params_x": {
@@ -206,7 +206,7 @@ async def tiktok_search(_, message):
                                 "mt_search_general_user_live_card": 1
                             }
                         }, 
-                        "search_server": {}
+                        "search_server": {id}
                     }
                 }
             }
@@ -221,15 +221,38 @@ async def tiktok_search(_, message):
         )
 
         search += r.text
-    sleep(3)
+
     data = loads(search)
+    #try:
+    #    id = (f"{data['item_list'][randint(0, len(data['item_list']) - 1)]['id']}")
+    #except Exception as e:
+    #    await editMessage(mess, f"ERROR: {e}")
+    #    return None
+    #await deleteMessage(mess)
+    #await tiktokdl(_, message, id=id)
+    num = 0
+    video = ""
+    if message.from_user.username:
+            uname = f'@{message.from_user.username}'
+    else:
+            uname = f'<code>{message.from_user.first_name}</code>'
     try:
-        id = (f"{data['item_list'][randint(0, len(data['item_list']) - 1)]['id']}")
+        while len(video) == 0:
+            num += 1
+            r = session.get(
+                url=f"https://api22-normal-c-useast2a.tiktokv.com/aweme/v1/feed/?aweme_id={data['item_list'][randint(0, len(data['item_list']) - 1)]['id']}",
+            )
+
+            video += r.text
+        data = loads(video)
+    
+        capt = (f'<code>{data["aweme_list"][0]["desc"]}</code>\n\n<b>Pencarian Oleh:</b> {uname}')
+        link = (data["aweme_list"][0]["video"]["play_addr"]["url_list"][-1])    
+        await customSendVideo(message, link, capt, None, None, None, None, None)
     except Exception as e:
-        await editMessage(mess, f"ERROR: {e}")
-        return None
-    await deleteMessage(mess)
-    await tiktokdl(_, message, id=id)
+        await sendMessage(message, f"<b>Hai {uname}, tugas pencarian gagal karena:\n\n{e}")
+    finally:
+        await deleteMessage(mess)
 
 tiktokregex = r"(https?://(?:www\.)?[a-zA-Z0-9.-]*tiktok\.com/)"
 
