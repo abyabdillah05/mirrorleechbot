@@ -2,6 +2,7 @@ import random
 import requests
 import re
 
+from asyncio import sleep
 from http.cookiejar import MozillaCookieJar
 from random import randint
 from cloudscraper import create_scraper
@@ -177,7 +178,7 @@ async def tiktok_search(_, message):
                 "browser_platform": "Win32",
                 "browser_version": "5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36 Edg/123.0.0.0",
                 "channel": "tiktok_web",
-                "cookie_enabled": False,
+                "cookie_enabled": True,
                 "device_id": 7335161018286622210,
                 "device_platform": "web_pc",
                 "device_type": "web_h264",
@@ -189,9 +190,9 @@ async def tiktok_search(_, message):
                 "keyword": keyword,
                 "offset": 0,
                 "os": "windows",
-                "priority_region": "",
+                "priority_region": "id",
                 "referer": "",
-                "region": "ID",
+                "region": "id",
                 "screen_height": 1080,
                 "screen_width": 1920,
                 "search_source": "normal_search",
@@ -205,7 +206,7 @@ async def tiktok_search(_, message):
                                 "mt_search_general_user_live_card": 1
                             }
                         }, 
-                        "search_server": {}
+                        "search_server": {id}
                     }
                 }
             }
@@ -220,7 +221,7 @@ async def tiktok_search(_, message):
         )
 
         search += r.text
-
+    sleep(3)
     data = loads(search)
     try:
         id = (f"{data['item_list'][randint(0, len(data['item_list']) - 1)]['id']}")
