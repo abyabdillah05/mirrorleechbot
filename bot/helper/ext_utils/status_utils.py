@@ -15,18 +15,18 @@ from bot.helper.telegram_helper.button_build import ButtonMaker
 SIZE_UNITS = ["B", "KB", "MB", "GB", "TB", "PB"]
 
 class MirrorStatus:
-    STATUS_DOWNLOADING = "𝐃𝐨𝐰𝐧𝐥𝐨𝐚𝐝𝐢𝐧𝐠..."
-    STATUS_UPLOADING = "𝐔𝐩𝐥𝐨𝐚𝐝𝐢𝐧𝐠..."
-    STATUS_QUEUEDL = "𝐀𝐧𝐭𝐫𝐢𝐚𝐧 𝐃𝐨𝐰𝐧𝐥𝐨𝐚𝐝..."
-    STATUS_QUEUEUP = "𝐀𝐧𝐭𝐫𝐢𝐚𝐧 𝐔𝐩𝐥𝐨𝐚𝐝..."
-    STATUS_PAUSED = "𝐃𝐢𝐡𝐞𝐧𝐭𝐢𝐤𝐚𝐧..."
-    STATUS_ARCHIVING = "𝐌𝐞𝐧𝐠𝐚𝐫𝐬𝐢𝐩..."
-    STATUS_EXTRACTING = "𝐌𝐞𝐧𝐠𝐞𝐤𝐬𝐭𝐫𝐚𝐤..."
-    STATUS_CLONING = "𝐂𝐥𝐨𝐧𝐢𝐧𝐠..."
-    STATUS_SEEDING = "𝐒𝐞𝐞𝐝𝐢𝐧𝐠..."
-    STATUS_SPLITTING = "𝐌𝐞𝐦𝐛𝐚𝐠𝐢..."
-    STATUS_CHECKING = "𝐌𝐞𝐧𝐠𝐞𝐜𝐞𝐤..."
-    STATUS_SAMVID = "𝐒𝐚𝐦𝐩𝐥𝐞 𝐕𝐢𝐝𝐞𝐨"
+    STATUS_DOWNLOADING = "Downloading..."
+    STATUS_UPLOADING = "Uploading..."
+    STATUS_QUEUEDL = "Antrian download..."
+    STATUS_QUEUEUP = "Antrian upload..."
+    STATUS_PAUSED = "Dihentikan..."
+    STATUS_ARCHIVING = "Mengarsip..."
+    STATUS_EXTRACTING = "Mengextract..."
+    STATUS_CLONING = "Cloning..."
+    STATUS_SEEDING = "Seeding..."
+    STATUS_SPLITTING = "Memecah..."
+    STATUS_CHECKING = "Mengecek..."
+    STATUS_SAMVID = "Sample Video"
      
 STATUS_VALUES = [
     ("ALL", "All"),
@@ -68,7 +68,7 @@ def get_readable_file_size(size_in_bytes: int):
     )
 
 def get_readable_time(seconds: int):
-    periods = [("d", 86400), ("h", 3600), ("m", 60), ("s", 1)]
+    periods = [("h", 86400), ("j", 3600), ("m", 60), ("d", 1)]
     result = ""
     for period_name, period_seconds in periods:
         if seconds >= period_seconds:
@@ -96,10 +96,10 @@ def speed_string_to_bytes(size_text: str):
 def get_progress_bar_string(pct):
     pct = float(pct.strip("%"))
     p = min(max(pct, 0), 100)
-    cFull = int(p / 100 * 10)
-    p_str = "🟦" * cFull
-    p_str += "⬜" * (10 - cFull)
-    return f"{p_str[:10]}"
+    cFull = int(p // 8)
+    p_str = "■" * cFull
+    p_str += "□" * (12 - cFull)
+    return f"[{p_str}]"
 
 def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1):
     msg = ""
@@ -137,7 +137,7 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1):
             msg += f"<blockquote><b>🔐 Nama :</b> <code>Private Task</code></b></blockquote>"
         else: 
             msg += f"<blockquote>📄 <a href='{task.listener.message.link}'><b>Nama :</b></a> <code>{escape(f'{task.name()}')}</code></blockquote>"
-        msg += f"\n<b>┌ </b>{tstatus} <code>({task.progress()})</code>"
+        msg += f"\n<b>┌ {tstatus}</b> <code>({task.progress()})</code>"
         msg += f"\n<b>├ </b>{get_progress_bar_string(task.progress())}"
         user = f'<a href="tg://user?id={task.listener.user.id}">{task.listener.user.first_name}</a>'
         msg += f"\n<b>├ Oleh :</b> {user}"
@@ -187,10 +187,10 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1):
         #if tasks_no > 30:
         #    for i in [1, 2, 4, 6, 8, 10, 15, 20]:
         #        buttons.ibutton(i, f"status {sid} ps {i}", position="footer")
-    if status != "All" or tasks_no > 20:
-        for label, status_value in STATUS_VALUES:
-            if status_value != status:
-                buttons.ibutton(label, f"status {sid} st {status_value}")
+    #if status != "All" or tasks_no > 20:
+    #    for label, status_value in STATUS_VALUES:
+    #        if status_value != status:
+    #            buttons.ibutton(label, f"status {sid} st {status_value}")
     buttons.ubutton("*⃣", "https://t.me/pikachukocak", position="header")
     buttons.ibutton("🔄", f"status {sid} ref", position="header")
     buttons.ibutton("🔽 Tutup", f"status {sid} close", position="footer")
