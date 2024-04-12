@@ -206,7 +206,7 @@ async def tiktok_search(_, message):
                                 "mt_search_general_user_live_card": 1
                             }
                         }, 
-                        "search_server": {id}
+                        "search_server": {}
                     }
                 }
             }
