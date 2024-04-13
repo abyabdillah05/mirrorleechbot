@@ -4,6 +4,7 @@ import re
 
 from asyncio import sleep
 from http.cookiejar import MozillaCookieJar
+from aiohttp import ClientSession
 from random import randint
 from cloudscraper import create_scraper
 from json import loads
@@ -13,7 +14,6 @@ from os import path as ospath, getcwd
 from pyrogram.filters import command
 from pyrogram.handlers import MessageHandler
 from pyrogram.types import InputMediaPhoto
-from pyrogram import filters
 from bot.helper.ext_utils.bot_utils import new_task
 from bot.helper.telegram_helper.message_utils import sendMessage, editMessage, deleteMessage, customSendAudio, customSendPhoto, customSendVideo
 from bot.helper.telegram_helper.filters import CustomFilters
@@ -92,7 +92,7 @@ async def upload_media(_, message):
 async def tiktokdl(_, message, id=None):
     url = message.text
     mess = await sendMessage(message, f"<b>⌛️Mendownload media dari tiktok, silahkan tunggu sebentar...</b>")
-    with create_scraper() as session:
+    with ClientSession() as session:
         if id is None:
             try:
                 r = session.get(url)
@@ -210,35 +210,36 @@ async def tiktok_search(_, message):
                     }
                 }
             }
+    num = 0
     search = ""
-    try:
+    while len(search) == 0:
+        num += 1
         r = session.get(
             url="https://www.tiktok.com/api/search/item/full/",
             params=params,
             cookies=cookies
         )
-        search += r.text
-    except Exception as e:
-        await editMessage(mess, f"Gagal menganmbil data dari API: {e}")
-        return None
-    sleep(4)
-    if len(search) != 0:
-        data = loads(search)
-    else:
-        await editMessage(mess, f"Gagal mengambil data")
-        return None
 
-    video = ""
+        search += r.text
+
+    data = loads(search)
+    sleep(1)
+    
     if message.from_user.username:
             uname = f'@{message.from_user.username}'
     else:
             uname = f'<code>{message.from_user.first_name}</code>'
-    try:        
-        r = session.get(
-        url=f"https://api22-normal-c-useast2a.tiktokv.com/aweme/v1/feed/?aweme_id={data['item_list'][randint(0, len(data['item_list']) - 1)]['id']}",
-        )
-        video += r.text
-        data = loads(video)   
+    try:
+        while len(video) == 0:
+            num += 1
+            r = session.get(
+                url=f"https://api22-normal-c-useast2a.tiktokv.com/aweme/v1/feed/?aweme_id={data['item_list'][randint(0, len(data['item_list']) - 1)]['id']}",
+            )
+
+            video = r.text
+        data = loads(video)
+        sleep(1)
+    
         capt = (f'<code>{data["aweme_list"][0]["desc"]}</code>\n\n<b>Pencarian Oleh:</b> {uname}')
         link = (data["aweme_list"][0]["video"]["play_addr"]["url_list"][-1])    
         await customSendVideo(message, link, capt, None, None, None, None, None)
@@ -273,12 +274,12 @@ bot.add_handler(
         ) & CustomFilters.authorized
     )
 )
-bot.add_handler(
-    MessageHandler(
-        tiktokdl,
-        filters=CustomFilters.authorized
-        & filters.regex(
-            f"{tiktokregex}"
-        )
-    )
-)
+#bot.add_handler(
+#    MessageHandler(
+#        tiktokdl,
+#        filters=CustomFilters.authorized
+#        & filters.regex(
+#            f"{tiktokregex}"
+#        )
+#    )
+#)
