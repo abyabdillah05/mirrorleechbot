@@ -206,46 +206,38 @@ async def tiktok_search(_, message):
                                 "mt_search_general_user_live_card": 1
                             }
                         }, 
-                        "search_server": {id}
+                        "search_server": {}
                     }
                 }
             }
-    num = 0
     search = ""
-    while len(search) == 0:
-        num += 1
+    try:
         r = session.get(
             url="https://www.tiktok.com/api/search/item/full/",
             params=params,
             cookies=cookies
         )
-
         search += r.text
+    except Exception as e:
+        await editMessage(mess, f"Gagal menganmbil data dari API: {e}")
+        return None
+    if len(search) != 0:
+        data = loads(search)
+    else:
+        await editMessage(mess, f"Gagal mengambil data")
+        return None
 
-    data = loads(search)
-    #try:
-    #    id = (f"{data['item_list'][randint(0, len(data['item_list']) - 1)]['id']}")
-    #except Exception as e:
-    #    await editMessage(mess, f"ERROR: {e}")
-    #    return None
-    #await deleteMessage(mess)
-    #await tiktokdl(_, message, id=id)
-    num = 0
     video = ""
     if message.from_user.username:
             uname = f'@{message.from_user.username}'
     else:
             uname = f'<code>{message.from_user.first_name}</code>'
-    try:
-        while len(video) == 0:
-            num += 1
-            r = session.get(
-                url=f"https://api22-normal-c-useast2a.tiktokv.com/aweme/v1/feed/?aweme_id={data['item_list'][randint(0, len(data['item_list']) - 1)]['id']}",
-            )
-
-            video += r.text
-        data = loads(video)
-    
+    try:        
+        r = session.get(
+        url=f"https://api22-normal-c-useast2a.tiktokv.com/aweme/v1/feed/?aweme_id={data['item_list'][randint(0, len(data['item_list']) - 1)]['id']}",
+        )
+        video += r.text
+        data = loads(video)   
         capt = (f'<code>{data["aweme_list"][0]["desc"]}</code>\n\n<b>Pencarian Oleh:</b> {uname}')
         link = (data["aweme_list"][0]["video"]["play_addr"]["url_list"][-1])    
         await customSendVideo(message, link, capt, None, None, None, None, None)
