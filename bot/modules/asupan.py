@@ -93,7 +93,7 @@ async def upload_media(_, message):
 async def tiktokdl(_, message, id=None):
     url = message.text
     mess = await sendMessage(message, f"<b>⌛️Mendownload media dari tiktok, silahkan tunggu sebentar...</b>")
-    with ClientSession() as session:
+    with create_scraper() as session:
         if id is None:
             try:
                 r = session.get(url)
