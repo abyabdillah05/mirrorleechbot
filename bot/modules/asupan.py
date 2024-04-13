@@ -14,7 +14,7 @@ from os import path as ospath, getcwd
 from pyrogram.filters import command
 from pyrogram.handlers import MessageHandler
 from pyrogram.types import InputMediaPhoto
-from pyrogra import filters
+from pyrogram import filters
 from bot.helper.ext_utils.bot_utils import new_task
 from bot.helper.telegram_helper.message_utils import sendMessage, editMessage, deleteMessage, customSendAudio, customSendPhoto, customSendVideo
 from bot.helper.telegram_helper.filters import CustomFilters
