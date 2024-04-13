@@ -225,13 +225,13 @@ async def tiktok_search(_, message):
     data = loads(search)
     sleep(1)
     
+    video = ""
     if message.from_user.username:
             uname = f'@{message.from_user.username}'
     else:
             uname = f'<code>{message.from_user.first_name}</code>'
     try:
         while len(video) == 0:
-            num += 1
             r = session.get(
                 url=f"https://api22-normal-c-useast2a.tiktokv.com/aweme/v1/feed/?aweme_id={data['item_list'][randint(0, len(data['item_list']) - 1)]['id']}",
             )
