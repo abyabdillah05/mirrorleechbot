@@ -109,7 +109,7 @@ async def tiktokdl(_, message, id=None):
                 content_type = match.group("content_type")
                 id = match.group('id')
             else:
-                await editMessage(message, f"Link yang anda berikan sepertinya salah atau belum support, silahkan coba dengan link yang lain !")
+                await editMessage(mess, f"Link yang anda berikan sepertinya salah atau belum support, silahkan coba dengan link yang lain !")
                 return None
         else:       
             id = id
