@@ -221,6 +221,7 @@ async def tiktok_search(_, message):
     except Exception as e:
         await editMessage(mess, f"Gagal menganmbil data dari API: {e}")
         return None
+    sleep(4)
     if len(search) != 0:
         data = loads(search)
     else:
