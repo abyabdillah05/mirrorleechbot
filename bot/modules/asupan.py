@@ -2,9 +2,7 @@ import random
 import requests
 import re
 
-from asyncio import sleep
 from http.cookiejar import MozillaCookieJar
-from aiohttp import ClientSession
 from random import randint
 from cloudscraper import create_scraper
 from json import loads
@@ -43,7 +41,7 @@ async def asupan(client, message):
             try:
                 await message.reply_video(video_link)
             except Exception as e:
-                await sendMessage(message, f"ERROR: Gagal mengirim auspan karena link error.\n\nLink Error: {video_link}")
+                await sendMessage(message, f"ERROR: Gagal mengirim asupan karena link error.")
         else:
             await sendMessage(message, f"Gagal mengirim video")
     else:
@@ -93,7 +91,7 @@ async def upload_media(_, message):
 async def tiktokdl(_, message, id=None):
     url = message.text
     mess = await sendMessage(message, f"<b>⌛️Mendownload media dari tiktok, silahkan tunggu sebentar...</b>")
-    with create_scraper() as session:
+    with requests.Session() as session:
         if id is None:
             try:
                 r = session.get(url)
@@ -224,8 +222,14 @@ async def tiktok_search(_, message):
         search += r.text
 
     data = loads(search)
-    sleep(1)
-    
+    #try:
+    #    id = (f"{data['item_list'][randint(0, len(data['item_list']) - 1)]['id']}")
+    #except Exception as e:
+    #    await editMessage(mess, f"ERROR: {e}")
+    #    return None
+    #await deleteMessage(mess)
+    #await tiktokdl(_, message, id=id)
+    num = 0
     video = ""
     if message.from_user.username:
             uname = f'@{message.from_user.username}'
@@ -233,13 +237,13 @@ async def tiktok_search(_, message):
             uname = f'<code>{message.from_user.first_name}</code>'
     try:
         while len(video) == 0:
+            num += 1
             r = session.get(
                 url=f"https://api22-normal-c-useast2a.tiktokv.com/aweme/v1/feed/?aweme_id={data['item_list'][randint(0, len(data['item_list']) - 1)]['id']}",
             )
 
-            video = r.text
+            video += r.text
         data = loads(video)
-        sleep(1)
     
         capt = (f'<code>{data["aweme_list"][0]["desc"]}</code>\n\n<b>Pencarian Oleh:</b> {uname}')
         link = (data["aweme_list"][0]["video"]["play_addr"]["url_list"][-1])    
