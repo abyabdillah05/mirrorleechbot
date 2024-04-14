@@ -43,7 +43,7 @@ async def asupan(client, message):
             try:
                 await message.reply_video(video_link)
             except Exception as e:
-                await sendMessage(message, f"ERROR: {e}")
+                await sendMessage(message, f"ERROR: Gagal mengirim auspan karena link error.\n\nLink Error: {video_link}")
         else:
             await sendMessage(message, f"Gagal mengirim video")
     else:
