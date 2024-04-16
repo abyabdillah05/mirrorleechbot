@@ -339,7 +339,7 @@ class TaskConfig:
             msg.append(f"{self.bulk[0]} -i {self.multi - 1} {self.options}")
             msgts = " ".join(msg)
             if self.multi > 2:
-                msgts += f"\n\n<b>Batalkan Multi :</b> /{BotCommands.CancelTaskCommand[1]}_{self.multiTag}"
+                msgts += f"\n\n<b>Batalkan Multi :</b> /{BotCommands.CancelTaskCommand[0]}_{self.multiTag}"
             nextmsg = await sendMessage(self.message, msgts)
         else:
             msg = [s.strip() for s in input_list]
@@ -351,7 +351,7 @@ class TaskConfig:
             )
             msgts = " ".join(msg)
             if self.multi > 2:
-                msgts += f"\n\n<b>Batalkan Multi :</b> /{BotCommands.CancelTaskCommand[1]}_{self.multiTag}"
+                msgts += f"\n\n<b>Batalkan Multi :</b> /{BotCommands.CancelTaskCommand[0]}_{self.multiTag}"
             nextmsg = await sendMessage(nextmsg, msgts)
         nextmsg = await self.client.get_messages(
             chat_id=self.message.chat.id, message_ids=nextmsg.id

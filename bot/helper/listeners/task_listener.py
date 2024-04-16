@@ -317,7 +317,7 @@ class TaskListener(TaskConfig):
                         share_url += "/"
                     buttons.ubutton("🔗 Rclone Link", share_url)
                 if not rclonePath and dir_id:
-                    msg += f"\n\n<code>⚠️ File/Folder ini hanya disimpan sementara di drive, segera download atau copy ke drive anda!</code>"
+                    #msg += f"\n\n<code>⚠️ File/Folder ini hanya disimpan sementara di drive, segera download atau copy ke drive anda!</code>"
                     INDEX_URL = ""
                     if self.privateLink:
                         INDEX_URL = (
