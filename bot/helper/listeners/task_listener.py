@@ -302,7 +302,7 @@ class TaskListener(TaskConfig):
             ):
                 buttons = ButtonMaker()
                 if link:
-                    buttons.ubutton("☁️ Cloud Link", link)
+                    buttons.ubutton("☁️ Cloud", link, position="header")
                 if rclonePath:
                     msg += f"\n\n<b>📁 Path :</b> <code>{rclonePath}</code>"
                 if (
@@ -315,7 +315,7 @@ class TaskListener(TaskConfig):
                     share_url = f"{RCLONE_SERVE_URL}/{remote}/{url_path}"
                     if mime_type == "Folder":
                         share_url += "/"
-                    buttons.ubutton("🔗 Rclone Link", share_url)
+                    buttons.ubutton("🔗 Rclone", share_url)
                 if not rclonePath and dir_id:
                     #msg += f"\n\n<code>⚠️ File/Folder ini hanya disimpan sementara di drive, segera download atau copy ke drive anda!</code>"
                     INDEX_URL = ""
@@ -330,14 +330,14 @@ class TaskListener(TaskConfig):
                     if INDEX_URL:
                         share_url = f"{INDEX_URL}findpath?id={dir_id}"
                         if mime_type == "Folder":
-                            buttons.ubutton("📁 Index Link", share_url)
+                            buttons.ubutton("📁 Index", share_url, position="header")
                         else:
-                            buttons.ubutton("⚡ Index Link", share_url)
+                            buttons.ubutton("⚡ Index", share_url, position="header")
                         if mime_type.startswith(("image", "video", "audio")):
                             share_urls = f"{INDEX_URL}findpath?id={dir_id}&view=true"
-                            buttons.ubutton("🎬 Lihat Media", share_urls)
+                            buttons.ubutton("🎬 Stream", share_urls, position="header")
                 buttons.ubutton("❤️ Suppport For Pikabot", "https://telegra.ph/Pikabot-Donate-10-01", "footer")
-                button = buttons.build_menu(2)
+                button = buttons.build_menu(3)
             else:
                 msg += f"\n\n<b>📁 Path :</b> <code>{rclonePath}</code>"
                 button = None
