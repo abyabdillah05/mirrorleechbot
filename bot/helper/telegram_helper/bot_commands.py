@@ -46,6 +46,7 @@ class _BotCommands:
         self.UploadCommand = [f"telegraph{CMD_SUFFIX}", f"tg{CMD_SUFFIX}"]
         self.TiktokCommand = [f"tiktok{CMD_SUFFIX}", f"tt{CMD_SUFFIX}"]
         self.AsupanCommand = [f"asupan{CMD_SUFFIX}", f"asu{CMD_SUFFIX}"]
+        self.DonateCommand = f"waifu{CMD_SUFFIX}"
         self.DonateCommand = f"donate{CMD_SUFFIX}"
 
 

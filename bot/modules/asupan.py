@@ -253,6 +253,28 @@ async def tiktok_search(_, message):
     finally:
         await deleteMessage(mess)
 
+async def animek(_, message):
+    mess = await sendMessage(message, f"<b>Tunggu sebentar tuan...</b>")
+    tipe = [
+        "waifu",
+        "neko",
+        "shinobu",
+        "megumin"
+    ]
+    try:
+        r = requests.get(f"https://api.waifu.pics/sfw/{random.choice(tipe)}").json()
+        if message.from_user.username:
+            uname = f'@{message.from_user.username}'
+        else:
+            uname = f'<code>{message.from_user.first_name}</code>'
+        capt = f"<b>Ini waifu anda tuan {uname}</b>"
+        await customSendPhoto(message, r["url"], capt, None)
+    except:
+        await editMessage(mess, f"Gagal mengambil data")
+        return None
+    finally:
+        await deleteMessage(mess)
+
 tiktokregex = r"(https?://(?:www\.)?[a-zA-Z0-9.-]*tiktok\.com/)"
 
 bot.add_handler(
@@ -260,7 +282,15 @@ bot.add_handler(
         asupan, 
         filters=command(
             BotCommands.AsupanCommand
-        ) & CustomFilters.authorized
+        )
+    )
+)
+bot.add_handler(
+    MessageHandler(
+        animek, 
+        filters=command(
+            BotCommands.AnimekCommand
+        )
     )
 )
 bot.add_handler(
