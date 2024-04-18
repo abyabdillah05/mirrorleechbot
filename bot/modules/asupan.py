@@ -312,8 +312,7 @@ bot.add_handler(
 bot.add_handler(
     MessageHandler(
         tiktokdl,
-        filters=CustomFilters.authorized
-        & filters.regex(
+        filters=filters.regex(
             f"{tiktokregex}"
         )
     )
