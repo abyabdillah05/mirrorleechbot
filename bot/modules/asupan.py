@@ -263,9 +263,9 @@ async def animek(_, message):
     ]
     try:
         r = requests.get(f"https://api.waifu.pics/sfw/{random.choice(tipe)}").json()
-        await message.reply_photo(r["url"])
-    except:
-        await editMessage(mess, f"Gagal mengambil data")
+        await customSendPhoto(message, r["url"], None, None)
+    except Exception as e:
+        await sendMessage(message, f"Gagal mengambil data, {e}")
         return None
     finally:
         await deleteMessage(mess)
