@@ -263,12 +263,7 @@ async def animek(_, message):
     ]
     try:
         r = requests.get(f"https://api.waifu.pics/sfw/{random.choice(tipe)}").json()
-        if message.from_user.username:
-            uname = f'@{message.from_user.username}'
-        else:
-            uname = f'<code>{message.from_user.first_name}</code>'
-        capt = f"<b>Ini waifu anda tuan {uname}</b>"
-        await customSendPhoto(message, r["url"], capt, None)
+        await message.reply_photo(r["url"])
     except:
         await editMessage(mess, f"Gagal mengambil data")
         return None
