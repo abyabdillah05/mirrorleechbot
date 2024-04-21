@@ -2048,17 +2048,24 @@ def qiwi(url):
         try:
             res = session.get(url).text
         except Exception as e:
-            session.close()
             raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}")
         tree = HTML(res)
         name = tree.xpath('//h1[@class="page_TextHeading__VsM7r"]/text()')
         if name:
             ext = name[0].split('.')[-1]
-            session.close()
-            return f"https://spyderrock.com/{id}.{ext}"
+            flink = f"https://spyderrock.com/{id}.{ext}"
         else:
             session.close()
             raise DirectDownloadLinkException("ERROR: File tidak ditemukan")
+        details = {"contents":[], "title": "", "total_size": 0}
+        details["title"] = name[0]
+        item = {
+                    "path": "",
+                    "url": flink,
+                    "filename": name[0],
+                }
+        details["contents"].append(item)
+        return details
 
 def sharepoint(url):
     p_e = r'e=[\w]+'
