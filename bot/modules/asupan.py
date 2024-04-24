@@ -9,9 +9,11 @@ from json import loads
 from bot import bot
 from aiofiles.os import remove as aioremove, path as aiopath, mkdir
 from os import path as ospath, getcwd
-from pyrogram.filters import command
+from pyrogram.filters import command, regex
 from pyrogram.handlers import MessageHandler
 from pyrogram.types import InputMediaPhoto
+from pyrogram.handlers import MessageHandler, CallbackQueryHandler
+from bot.helper.telegram_helper.button_build import ButtonMaker
 from pyrogram import filters
 from bot.helper.ext_utils.bot_utils import new_task
 from bot.helper.telegram_helper.message_utils import sendMessage, editMessage, deleteMessage, customSendAudio, customSendPhoto, customSendVideo
@@ -20,7 +22,7 @@ from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.ext_utils.telegraph_helper import telegraph
 from bot.helper.ext_utils.bot_utils import sync_to_async
 
-
+tiktok = []
 file_url = "https://gist.github.com/aenulrofik/33be032a24c227952a4e4290a1c3de63/raw/asupan.json"
 user_agent  = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0"
 
@@ -88,30 +90,29 @@ async def upload_media(_, message):
     else:
         await sendMessage(message, f"Silahkan balas photo atau video pendek yang mau anda upload ke Telegraph")
 
-async def tiktokdl(_, message, id=None):
-    url = message.text
-    mess = await sendMessage(message, f"<b>⌛️Mendownload media dari tiktok, silahkan tunggu sebentar...</b>")
-    with requests.Session() as session:
-        if id is None:
-            try:
-                r = session.get(url)
-            except Exception as e:
-                return f"ERROR: {e}"
+async def tiktokdl(client, message, url, audio=False):
+    url = url
+    if audio is False:
+        mess = await sendMessage(message, f"<b>⌛️Mendownload media dari tiktok, silahkan tunggu sebentar...</b>")
+    else:
+        mess = await sendMessage(message, f"<b>⌛️Mendownload audio dari tiktok, silahkan tunggu sebentar...</b>")
+    with create_scraper() as session:
+        try:
+            r = session.get(url)
+        except Exception as e:
+            return f"ERROR: {e}"
             
-            if not r.ok:
-                await editMessage(mess, f"ERROR: Gagal mendapatkan data")
-                return None
-            pattern = r"^(?:https?://(?:www\.)?tiktok\.com)/(?P<user>[\a-zA-Z0-9-]+)(?P<content_type>video|photo)+/(?P<id>\d+)"
-            match = re.match(pattern, string=r.url)
-            if match:  
-                content_type = match.group("content_type")
-                id = match.group('id')
-            else:
-                await editMessage(mess, f"Link yang anda berikan sepertinya salah atau belum support, silahkan coba dengan link yang lain !")
-                return None
-        else:       
-            id = id
-            content_type = "video"
+        if not r.ok:
+            await editMessage(mess, f"ERROR: Gagal mendapatkan data")
+            return None
+        pattern = r"^(?:https?://(?:www\.)?tiktok\.com)/(?P<user>[\a-zA-Z0-9-]+)(?P<content_type>video|photo)+/(?P<id>\d+)"
+        match = re.match(pattern, string=r.url)
+        if match:  
+            content_type = match.group("content_type")
+            id = match.group('id')
+        else:
+            await editMessage(message, f"Link yang anda berikan sepertinya salah atau belum support, silahkan coba dengan link yang lain !")
+            return None    
         data = ""
         while len(data) == 0:
             r = session.get(
@@ -127,23 +128,27 @@ async def tiktokdl(_, message, id=None):
         else:
             uname = f'<code>{message.from_user.first_name}</code>'
         try:
-            #music = data["aweme_list"][0]["music"]["play_url"]["url_list"][-1]
-            #m_capt = data["aweme_list"][0]["music"]["title"]
+            music = data["aweme_list"][0]["music"]["play_url"]["url_list"][-1]
+            m_capt = data["aweme_list"][0]["music"]["title"]
             if content_type == "video":
                 link = data["aweme_list"][0]["video"]["play_addr"]["url_list"][-1]
                 filename = data["aweme_list"][0]["desc"]
-                capt = f"<code>{filename}</code> \n\n<b>Tugas Oleh:</b> {uname}"                
-                await customSendVideo(message, link, capt, None, None, None, None, None)
-                #await customSendAudio(message, music, m_capt, None, None, None, None, None)
+                capt = f"<code>{filename}</code> \n\n<b>Tugas Oleh:</b> {uname}"
+                if audio is False:                
+                    await customSendVideo(message, link, capt, None, None, None, None, None)
+                else:
+                    await customSendAudio(message, music, m_capt, None, None, None, None, None)
             if content_type == "photo":
-                photo_urls = []
-                for aweme in data["aweme_list"][0]["image_post_info"]["images"]:
-                    for link in aweme["display_image"]["url_list"][1:]:
-                        photo_urls.append(link)
-                photo_groups = [photo_urls[i:i+10] for i in range(0, len(photo_urls), 10)]
-                for photo_group in photo_groups:
-                    await message.reply_media_group([InputMediaPhoto(photo_url) for photo_url in photo_group])
-                #await customSendAudio(message, music, m_capt, None, None, None, None, None)
+                if audio is False:
+                    photo_urls = []
+                    for aweme in data["aweme_list"][0]["image_post_info"]["images"]:
+                        for link in aweme["display_image"]["url_list"][1:]:
+                            photo_urls.append(link)
+                    photo_groups = [photo_urls[i:i+10] for i in range(0, len(photo_urls), 10)]
+                    for photo_group in photo_groups:
+                        await message.reply_media_group([InputMediaPhoto(photo_url) for photo_url in photo_group])
+                else:
+                    await customSendAudio(message, music, m_capt, None, None, None, None, None)
                
         except Exception as e:
                 await sendMessage(message, f"ERROR: Gagal mengupload media {e}")
@@ -270,6 +275,48 @@ async def animek(_, message):
     finally:
         await deleteMessage(mess)
 
+async def auto_tk(client, message):
+    user_id = message.from_user.id
+    isi = {user_id: message}
+    tiktok.append(isi)
+    msg = f"<b>Link Tiktok terdeteksi, silahkan pilih untuk download Media atau Audio saja...</b>"
+    user_id = message.from_user.id
+    butt = ButtonMaker()
+    butt.ibutton("🎞 Media", f"tk media {user_id}")
+    butt.ibutton("🔈 Audio", f"tk audio {user_id}")
+    butt.ibutton("⛔️ Batal", f"tk cancel {user_id}")
+    butts = butt.build_menu(2)
+    await sendMessage(message, msg, butts)
+
+async def tk_query(_, query):
+    message = query.message
+    user_id = query.from_user.id
+    data = query.data.split()
+    uid = int(data[2])
+    for isi in tiktok:
+        if uid in isi:
+            msgs = isi
+            msg = (msgs[uid])
+            text = msg.text
+            urls = re.findall(r"https?://[^\s]+", text)
+            if urls:
+                tkurl = urls[0]
+    if user_id != uid:
+        return await query.answer(text="Bukan Tugas Anda !", show_alert=True)
+    
+    elif data[1] == "media":
+        await deleteMessage(message)
+        del msgs[uid]   
+        await tiktokdl(bot, msg, url=tkurl) 
+    elif data[1] == "audio":
+        await deleteMessage(message)
+        del msgs[uid]
+        await tiktokdl(bot, msg, url=tkurl, audio=True)
+    else:
+        await query.answer()
+        del msgs[uid]
+        await editMessage(message, "Tugas Dibatalkan.")
+
 tiktokregex = r"(https?://(?:www\.)?[a-zA-Z0-9.-]*tiktok\.com/)"
 
 bot.add_handler(
@@ -309,6 +356,15 @@ bot.add_handler(
         tiktokdl,
         filters=filters.regex(
             f"{tiktokregex}"
+        )
+    )
+)
+
+bot.add_handler(
+    CallbackQueryHandler(
+        tk_query,
+        filters=regex(
+            r'^tk'
         )
     )
 )

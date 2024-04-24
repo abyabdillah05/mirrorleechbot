@@ -30,6 +30,7 @@ from bot.helper.listeners.task_listener import TaskListener
 from bot.helper.ext_utils.status_utils import get_readable_file_size, get_readable_time
 from bot.helper.ext_utils.links_utils import is_url
 
+pika = []
 
 @new_task
 async def select_format(_, query, obj):
@@ -479,6 +480,11 @@ async def ytdlleech(client, message):
     YtDlp(client, message, isLeech=True).newEvent()
 
 async def auto_yt(client, message):
+    user_id = message.from_user.id
+    isi = {
+        user_id: message
+    }
+    pika.append(isi)
     if message.caption is not None:
         text = message.caption
     else:
@@ -491,14 +497,43 @@ async def auto_yt(client, message):
     if text_before_url:
             return None
     
-    msg = f"<b>Link YT-Dlp terdeteksi, silahkan tunggu sebentar...</b>"
-    send = await sendMessage(message, msg)
-    await sleep(3)
-    await deleteMessage(send)
-    YtDlp(client, message, yturl=yturl, isLeech=True).newEvent()
+    msg = f"<b>Link YT-Dlp terdeteksi, silahkan pilih untuk mirror atau leech...</b>"
+    butt = ButtonMaker()
+    butt.ibutton("☁️ Mirror", f"yt mirror {user_id}")
+    butt.ibutton("☀️ Leech", f"yt leech {user_id}")
+    butt.ibutton("⛔️ Batal", f"yt cancel {user_id}")
+    butts = butt.build_menu(2)
+    await sendMessage(message, msg, butts)
+
+async def yt_query(_, query):
+    message = query.message
+    user_id = query.from_user.id
+    data = query.data.split()
+    uid = int(data[2])
+    for isi in pika:
+        if uid in isi:
+            msgs = isi
+            msg = msgs[uid]
+            text = msg.text
+            urls = re.findall(r"https?://[^\s]+", text)
+            if urls:
+                yturl = urls[0]
+    if user_id != uid:
+        return await query.answer(text="Bukan Tugas Anda !", show_alert=True)
+    elif data[1] == "mirror":
+        await deleteMessage(message)
+        del msgs[uid]     
+        YtDlp(bot, msg, yturl=yturl).newEvent()       
+    elif data[1] == "leech":
+        await deleteMessage(message)
+        del msgs[uid]
+        YtDlp(bot, msg, yturl=yturl, isLeech=True).newEvent()
+    else:
+        await query.answer()
+        del msgs[uid]
+        await editMessage(message, "Tugas Dibatalkan.")
 
 ytregex = r"(https?://(?:www\.)?(?:instagram\.com/(?:tv/|reel/)|youtu\.be/|youtube\.com/(?:shorts/|watch\?|playlist\?)|m\.youtube\.com/(?:shorts/|watch\?)|twitter\.com/|music\.youtube\.com/|facebook\.com/|x\.com/|www\.facebook\.com/|fb\.me/|m\.facebook\.com/)[^\s]+)"
-
 
 bot.add_handler(
     MessageHandler(
@@ -516,4 +551,20 @@ bot.add_handler(
     )
 )
 
-bot.add_handler(MessageHandler(auto_yt, filters=CustomFilters.authorized & filters.regex(f"{ytregex}")))
+bot.add_handler(
+    MessageHandler(
+        auto_yt,
+        filters=CustomFilters.authorized & filters.regex(
+            f"{ytregex}"
+        )
+    )
+)
+
+bot.add_handler(
+    CallbackQueryHandler(
+        yt_query,
+        filters=regex(
+            r'^yt'
+        )
+    )
+)
