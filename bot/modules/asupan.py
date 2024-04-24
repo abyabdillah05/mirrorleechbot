@@ -353,7 +353,7 @@ bot.add_handler(
 )
 bot.add_handler(
     MessageHandler(
-        tiktokdl,
+        auto_tk,
         filters=filters.regex(
             f"{tiktokregex}"
         )
