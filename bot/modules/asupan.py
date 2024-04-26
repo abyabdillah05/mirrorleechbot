@@ -53,7 +53,7 @@ async def asupan(client, message):
 async def upload_media(_, message):
     rply = message.reply_to_message
     if rply:
-        if rply.video or rply.photo or rply.video_note:
+        if rply.video or rply.photo or rply.video_note or rply.animation:
             if file := next(
                 (
                     i
@@ -61,6 +61,7 @@ async def upload_media(_, message):
                         rply.video,
                         rply.photo,
                         rply.video_note,
+                        rply.animation
                     ]
                     if i is not None
                 ),
@@ -86,7 +87,9 @@ async def upload_media(_, message):
             except Exception as e:
                 await editMessage(mess, f"Gagal upload ke Telegraph {e}")          
             finally:
-                await aioremove(des_path)    
+                await aioremove(des_path) 
+        else:
+            await sendMessage(message, "Jenis file tidak didukung, upload telegraph hanya support Photo, Video, dan Animation.")   
     else:
         await sendMessage(message, f"Silahkan balas photo atau video pendek yang mau anda upload ke Telegraph")
 
