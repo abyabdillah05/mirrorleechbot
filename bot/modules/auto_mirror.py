@@ -1,5 +1,5 @@
 from bot import bot
-from asyncio import sleep
+from asyncio import sleep as asleep
 from pyrogram import filters
 from pyrogram.filters import regex
 from pyrogram.handlers import CallbackQueryHandler, MessageHandler
@@ -51,9 +51,12 @@ async def auto_mirror(client, message):
                 msgs = caches
         msg, buttons = await msg_button(urls, user_id)
         mess = await sendMessage(message, msg, buttons)
-        sleep(5)
-        await editMessage(mess, "Tidak ada respon, task dibatalkan.")
-        del msgs[user_id]
+        await asleep(30)
+        await editMessage(mess, "Waktu habis, tugas dibatalkan")
+        try:
+            del msgs[user_id]
+        except:
+            pass
     
 async def msg_button(url, user_id):
     uid = user_id
