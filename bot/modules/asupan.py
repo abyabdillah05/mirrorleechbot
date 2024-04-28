@@ -263,15 +263,23 @@ async def tiktok_search(_, message):
 
 async def animek(_, message):
     mess = await sendMessage(message, f"<b>Tunggu sebentar tuan...</b>")
-    tipe = [
-        "waifu",
-        "neko",
-        "shinobu",
-        "megumin"
+    tags=[
+    "maid",
+    "waifu",
+    "marin-kitagawa",
+    "mori-calliope",
+    "raiden-shogun",
+    "oppai",
+    "selfies",
+    "uniform",
+    "kamisato-ayaka"
     ]
     try:
-        r = requests.get(f"https://api.waifu.pics/sfw/{random.choice(tipe)}").json()
-        await customSendPhoto(message, r["url"], None, None)
+        r = requests.get(f"https://api.waifu.im/search?included_tags={random.choice(tags)}").json()
+        data = r.json()
+        for picts in data:
+            pict = (data[pict][0]["url"])
+        await customSendPhoto(message, pict, None, None)
     except Exception as e:
         await sendMessage(message, f"Gagal mengambil data, {e}")
         return None
