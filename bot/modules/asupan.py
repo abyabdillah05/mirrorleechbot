@@ -1,6 +1,8 @@
 import random
 import requests
 import re
+import uuid
+import os
 
 from http.cookiejar import MozillaCookieJar
 from random import randint
@@ -36,18 +38,28 @@ async def get_url(url):
 
 @new_task
 async def asupan(client, message):
-    json_data = await get_url(file_url)
-    if json_data:
-        if isinstance(json_data, list):
-            video_link = random.choice(json_data)
-            try:
-                await message.reply_video(video_link)
-            except Exception as e:
-                await sendMessage(message, f"ERROR: Gagal mengirim asupan karena link error.")
-        else:
-            await sendMessage(message, f"Gagal mengirim video")
-    else:
-        await sendMessage(message, f"Gagal mengambil link")
+    mess = await sendMessage(message, "Tunggu sebentar tuan...")
+    try_count = 5
+    attempt = 1
+    while attempt <= try_count:
+        try:
+            json_data = await get_url(file_url)
+            if json_data:
+                if isinstance(json_data, list):
+                    video_link = random.choice(json_data)
+                    await message.reply_video(video_link)
+                    break
+                else:
+                    break
+        except:
+            attempt += 1
+            if attempt <= try_count:
+                await sendMessage(mess, f"Gagal mengirim asupan, Mencoba lagi untuk ke-{attempt} kali...")
+            else:
+                await editMessage(mess, "Gagal mengupload asupan setelah 5x percobaan.")
+                break
+        finally:
+            await deleteMessage(mess)
 
 @new_task
 async def upload_media(_, message):
@@ -261,31 +273,115 @@ async def tiktok_search(_, message):
     finally:
         await deleteMessage(mess)
 
+#####################################################
+# Fitur Waifu
+#####################################################
+async def download_photo(url):
+    filename = os.path.join("downloads", str(uuid.uuid4()) + ".jpg")
+    with open(filename, "wb") as f:
+        response = requests.get(url)
+        f.write(response.content)
+    return filename
+
 async def animek(_, message):
+    if len(message.command) > 1:
+        keyword = ' '.join(message.command[1:])
+    else:
+        keyword = ""
     mess = await sendMessage(message, f"<b>Tunggu sebentar tuan...</b>")
-    tags=[
-    "maid",
-    "waifu",
-    "marin-kitagawa",
-    "mori-calliope",
-    "raiden-shogun",
-    "oppai",
-    "selfies",
-    "uniform",
-    "kamisato-ayaka"
+    tags = [
+        {"maid": "maid"},
+        {"wife": "waifu"},
+        {"marin": "marin-kitagawa"},
+        {"mori": "mori-calliope"},
+        {"raiden": "raiden-shogun"},
+        {"oppai": "oppai"},
+        {"selfie": "selfies"},
+        {"uniform": "uniform"},
+        {"ayaka": "kamisato-ayaka"}
     ]
-    try:
-        r = requests.get(f"https://api.waifu.im/search?included_tags={random.choice(tags)}")
-        data = r.json()
-        if r.status_code == 200:
-            for picts in data:
-                pict = (data[picts][0]["url"])
-        await customSendPhoto(message, pict, None, None)
-    except Exception as e:
-        await sendMessage(message, f"Gagal mengambil data dari link {pict}")
+    if keyword.lower() == "list":
+        msg = f"""
+        <b>Daftar list keyword</b>:    
+<blockquote>• <code>maid</code>
+• <code>wife</code>
+• <code>marin</code>
+• <code>mori</code>
+• <code>raiden</code>
+• <code>oppai</code>
+• <code>selfie</code>
+• <code>uniform</code>
+• <code>ayaka</code></blockquote>
+
+<b>Note:</b> Kirim hanya printah <code>/{BotCommands.AnimekCommand}</code> untuk hasil random.
+        """
+        await editMessage(mess, msg)
         return None
-    finally:
-        await deleteMessage(mess)
+    query = None
+    for tag in tags:
+        for key in tag:
+            if key in keyword:
+                query = tag[key]
+                break
+        if query:
+            break
+
+    if not query:
+        random_tag = random.choice(tags)
+        random_value = list(random_tag.values())[0]
+        query = random_value
+
+    try_count = 5
+    attempt = 1
+    while attempt <= try_count:
+        try:
+            r = requests.get(f"https://api.waifu.im/search?included_tags={query}")
+            data = r.json()
+            if r.status_code == 200:
+                for picts in data:
+                    pict = (data[picts][0]["url"])
+                    path = await download_photo(pict)
+                await customSendPhoto(message, path, None, None)
+                break
+            else:
+                break
+        except:
+            attempt += 1
+            if attempt <= try_count:
+                await editMessage(mess, f"Gagal mengirim photo, Mencoba lagi untuk ke-{attempt} kali...")
+            else:
+                await editMessage(message, "Gagal mengupload foto setelah 5x percobaan.")
+                break
+        finally:
+            await deleteMessage(mess)
+            os.remove(path)
+        
+@bot.on_message(filters.group, group=1)
+async def welcome(client, message):
+    if (message.chat_joined_by_request or message.new_chat_members):
+        for mess in m_id:
+            try:
+                await deleteMessage(mess)
+                m_id.clear()
+            except:
+                pass
+        user = f'<a href="tg://user?id={message.from_user.id}">{message.from_user.first_name}</a>'
+        med = "https://telegra.ph/file/075ceb9aabce1646eaad1.mp4"
+        capt = f"""
+<b>Hai {user} !!</b>
+Selamat datang di <b>PikaMirror Group</b>.
+
+Gunakan <code>/help</code> untuk melihat bantuan dan jangan lupa ikutin rules. Untuk full fitur dari bot, bisa cek <a href='https://t.me/pikachukocak/13'><b>DISINI</b></a>.
+    
+<b>Rules:</b>
+✓ Tidak boleh mirror/leech konten 18+ (Auto Ban)
+✓ Sisanya ngikutin mood admin
+"""
+
+        mess = await bot.send_animation(chat_id=message.chat.id, animation=med, caption=capt)
+        m_id.append(mess)
+    else:
+        return
 
 async def auto_tk(client, message):
     user_id = message.from_user.id
