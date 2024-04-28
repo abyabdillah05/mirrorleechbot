@@ -110,8 +110,8 @@ async def auto_query(_, query):
         if data[2] == "mirror":
             mess = f"Silahkan pilih engine untuk mirror link anda, jika tidak yakin, pilih saja <b>Mirror dengan Aria2</b>"
             butt = ButtonMaker()
-            butt.ibutton("⚙️ Mirror dengan Aria2", f"auto direct mirror {uid} aria2")
-            butt.ibutton("⚙️ Mirror dengan Yt-Dlp", f"auto direct mirror {uid} ytdl")
+            butt.ibutton("⚙️ Aria2", f"auto direct mirror {uid} aria2")
+            butt.ibutton("⚙️ Yt-Dlp", f"auto direct mirror {uid} ytdl")
             butt.ibutton("↩️ Kembali", f"auto direct mirror {uid} back")
             butt.ibutton("⛔️ Batal", f"auto cancel none {uid} none")
             butts = butt.build_menu(2)
@@ -131,8 +131,8 @@ async def auto_query(_, query):
         elif data[2] == "leech":
             mess = f"Silahkan pilih engine untuk leech link anda, jika tidak yakin, pilih saja <b>Aria2</b>"
             butt = ButtonMaker()
-            butt.ibutton("⚙️ Leech dengan Aria2", f"auto direct leech {uid} aria2")
-            butt.ibutton("⚙️ Leech dengan Yt-Dlp", f"auto direct leech {uid} ytdl")
+            butt.ibutton("⚙️ Aria2", f"auto direct leech {uid} aria2")
+            butt.ibutton("⚙️ Yt-Dlp", f"auto direct leech {uid} ytdl")
             butt.ibutton("↩️ Kembali", f"auto direct leech {uid} back")
             butt.ibutton("⛔️ Batal", f"auto cancel none {uid} none")
             butts = butt.build_menu(2)
