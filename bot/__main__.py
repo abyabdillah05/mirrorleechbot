@@ -66,6 +66,7 @@ from .modules import (
     query,
     mediainfo,
     asupan,
+    auto_mirror,
 )
 
 def get_quotes():
