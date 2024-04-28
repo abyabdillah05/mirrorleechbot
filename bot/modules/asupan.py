@@ -355,33 +355,6 @@ async def animek(_, message):
         finally:
             await deleteMessage(mess)
             os.remove(path)
-        
-@bot.on_message(filters.group, group=1)
-async def welcome(client, message):
-    if (message.chat_joined_by_request or message.new_chat_members):
-        for mess in m_id:
-            try:
-                await deleteMessage(mess)
-                m_id.clear()
-            except:
-                pass
-        user = f'<a href="tg://user?id={message.from_user.id}">{message.from_user.first_name}</a>'
-        med = "https://telegra.ph/file/075ceb9aabce1646eaad1.mp4"
-        capt = f"""
-<b>Hai {user} !!</b>
-Selamat datang di <b>PikaMirror Group</b>.
-
-Gunakan <code>/help</code> untuk melihat bantuan dan jangan lupa ikutin rules. Untuk full fitur dari bot, bisa cek <a href='https://t.me/pikachukocak/13'><b>DISINI</b></a>.
-    
-<b>Rules:</b>
-✓ Tidak boleh mirror/leech konten 18+ (Auto Ban)
-✓ Sisanya ngikutin mood admin
-"""
-
-        mess = await bot.send_animation(chat_id=message.chat.id, animation=med, caption=capt)
-        m_id.append(mess)
-    else:
-        return
 
 async def auto_tk(client, message):
     user_id = message.from_user.id
