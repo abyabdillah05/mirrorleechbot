@@ -1,8 +1,6 @@
 import random
 import requests
 import re
-import uuid
-import os
 
 from http.cookiejar import MozillaCookieJar
 from random import randint
@@ -276,12 +274,6 @@ async def tiktok_search(_, message):
 #####################################################
 # Fitur Waifu
 #####################################################
-async def download_photo(url):
-    filename = os.path.join("downloads", str(uuid.uuid4()) + ".jpg")
-    with open(filename, "wb") as f:
-        response = requests.get(url)
-        f.write(response.content)
-    return filename
 
 async def animek(_, message):
     if len(message.command) > 1:
@@ -340,8 +332,7 @@ async def animek(_, message):
             if r.status_code == 200:
                 for picts in data:
                     pict = (data[picts][0]["url"])
-                    path = await download_photo(pict)
-                await customSendPhoto(message, path, None, None)
+                await customSendPhoto(message, pict, None, None)
                 break
             else:
                 break
@@ -354,7 +345,6 @@ async def animek(_, message):
                 break
         finally:
             await deleteMessage(mess)
-            os.remove(path)
 
 async def auto_tk(client, message):
     user_id = message.from_user.id
