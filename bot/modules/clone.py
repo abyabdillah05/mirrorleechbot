@@ -51,6 +51,7 @@ class Clone(TaskListener):
         sameDir=None,
         bulk=None,
         multiTag=None,
+        auto_url=None,
         options="",
     ):
         if sameDir is None:
@@ -64,6 +65,7 @@ class Clone(TaskListener):
         self.sameDir = sameDir
         self.bulk = bulk
         self.isClone = True
+        self.auto_url = auto_url
         self.extra_details = {'startTime': time()}
 
     @new_task
@@ -92,7 +94,10 @@ class Clone(TaskListener):
 
         self.upDest = args["-up"]
         self.rcFlags = args["-rcf"]
-        self.link = args["link"]
+        if self.auto_url:
+            self.link = self.auto_url
+        else:
+            self.link = args["link"]
 
         isBulk = args["-b"]
         bulk_start = 0

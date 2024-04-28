@@ -59,7 +59,7 @@ class Mirror(TaskListener):
         sameDir=None,
         bulk=None,
         multiTag=None,
-        tkurl=None,
+        auto_url=None,
         options="",
     ):
         if sameDir is None:
@@ -74,7 +74,7 @@ class Mirror(TaskListener):
         self.options = options
         self.sameDir = sameDir
         self.bulk = bulk
-        self.tkurl = tkurl
+        self.auto_url = auto_url
 
     @new_task
     async def newEvent(self):
@@ -114,8 +114,8 @@ class Mirror(TaskListener):
         self.name = args["-n"]
         self.upDest = args["-up"]
         self.rcFlags = args["-rcf"]
-        if self.tkurl:
-            self.link = self.tkurl
+        if self.auto_url:
+            self.link = self.auto_url
         else:
             self.link = args["link"]
         self.compress = args["-z"]
