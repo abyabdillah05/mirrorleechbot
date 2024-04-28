@@ -275,10 +275,11 @@ async def animek(_, message):
     "kamisato-ayaka"
     ]
     try:
-        r = requests.get(f"https://api.waifu.im/search?included_tags={random.choice(tags)}").json()
+        r = requests.get(f"https://api.waifu.im/search?included_tags={random.choice(tags)}")
         data = r.json()
-        for picts in data:
-            pict = (data[pict][0]["url"])
+        if r.status_code == 200:
+            for picts in data:
+                pict = (data[picts][0]["url"])
         await customSendPhoto(message, pict, None, None)
     except Exception as e:
         await sendMessage(message, f"Gagal mengambil data, {e}")
