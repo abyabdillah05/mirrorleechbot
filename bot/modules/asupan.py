@@ -282,7 +282,7 @@ async def animek(_, message):
                 pict = (data[picts][0]["url"])
         await customSendPhoto(message, pict, None, None)
     except Exception as e:
-        await sendMessage(message, f"Gagal mengambil data, {e}")
+        await sendMessage(message, f"Gagal mengambil data dari link {pict}")
         return None
     finally:
         await deleteMessage(mess)
