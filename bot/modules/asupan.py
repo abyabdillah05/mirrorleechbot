@@ -274,7 +274,6 @@ async def tiktok_search(_, message):
 #####################################################
 # Fitur Waifu
 #####################################################
-
 async def animek(_, message):
     if len(message.command) > 1:
         keyword = ' '.join(message.command[1:])
@@ -309,19 +308,30 @@ async def animek(_, message):
         """
         await editMessage(mess, msg)
         return None
-    query = None
-    for tag in tags:
-        for key in tag:
-            if key in keyword:
-                query = tag[key]
-                break
-        if query:
-            break
-
-    if not query:
+    if keyword == "":
         random_tag = random.choice(tags)
         random_value = list(random_tag.values())[0]
         query = random_value
+    else:
+        keyword_cocok = False
+        query = None
+        for tag in tags:
+            for key in tag:
+                if key in keyword:
+                    keyword_cocok = True
+                    query = tag[key]
+                    break
+            
+            if keyword_cocok:
+                break
+
+        if not keyword_cocok:
+            await editMessage(mess, f"<b>Keyword yang anda masukkan belum tersedia.</b>\n\nGunakan perintah: <blockquote><code>/{BotCommands.AnimekCommand} list</code></blockquote>Untuk melihat list keyword yang tersedia, atau kirimkan perintah tanpa keyword untuk hasil random.")
+            return None
+        if not query:
+            random_tag = random.choice(tags)
+            random_value = list(random_tag.values())[0]
+            query = random_value
 
     try_count = 5
     attempt = 1
@@ -331,8 +341,10 @@ async def animek(_, message):
             data = r.json()
             if r.status_code == 200:
                 for picts in data:
-                    pict = (data[picts][0]["url"])
-                await customSendPhoto(message, pict, None, None)
+                    url = (data[picts][0]["url"])
+                    desc = (data[picts][0]["tags"][0]["description"])
+                    capt = (f"<b>[{query}]</b>\n<code>{desc}</code>\n\n<a href='{url}'><b>⬇️Download HD</b></a>")
+                await customSendPhoto(message, url, capt, None)
                 break
             else:
                 break
