@@ -280,7 +280,7 @@ async def ping(_, message):
         "<b>Mengetest waktu respon bot...</b>"
     )
     end_time = int(round(time() * 1000))
-    capt = f"<b>[VESTIA ZETA]\n\n🤖 Respon Bot :</b> <code>{end_time - start_time} ms</code>"
+    capt = f"<b>[KOBO KANAERU]\n\n🤖 Respon Bot :</b> <code>{end_time - start_time} ms</code>"
     await sendPhoto(message, "https://telegra.ph/file/7144402e029ac366413f7.jpg", caption = capt)
     await deleteMessage(reply)
 
