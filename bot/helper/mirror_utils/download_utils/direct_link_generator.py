@@ -190,6 +190,7 @@ def direct_link_generator(link: str):
             "kitabmarkaz.xyz",
             "wishfast.top",
             "streamwish.to",
+            "jodwish.com",
         ]
     ):
         return filelions_and_streamwish(link)
