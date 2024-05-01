@@ -21,6 +21,7 @@ from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.ext_utils.telegraph_helper import telegraph
 from bot.helper.ext_utils.bot_utils import sync_to_async
+from pyrogram.enums import ChatType
 
 tiktok = []
 file_url = "https://gist.github.com/aenulrofik/33be032a24c227952a4e4290a1c3de63/raw/asupan.json"
@@ -325,8 +326,7 @@ async def animek(_, message):
         await editMessage(mess, msg)
         return None
     
-    chat_type = message.chat.type
-    if chat_type in ["group", "supergroup"] and any(
+    if [ChatType.GROUP, ChatType.SUPERGROUP] and any(
         tag in keyword.lower() for tag in [
             "ass",
             "hentai",
