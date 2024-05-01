@@ -26,7 +26,7 @@ from .helper.ext_utils.bot_utils import cmd_exec, sync_to_async, create_help_but
 from .helper.ext_utils.status_utils import get_readable_file_size, get_readable_time
 from .helper.ext_utils.db_handler import DbManger
 from .helper.telegram_helper.bot_commands import BotCommands
-from .helper.telegram_helper.message_utils import sendMessage, editMessage, sendFile
+from .helper.telegram_helper.message_utils import sendMessage, editMessage, sendFile, sendPhoto, deleteMessage
 from .helper.telegram_helper.filters import CustomFilters
 from .helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.listeners.aria2_listener import start_aria2_listener
@@ -280,10 +280,9 @@ async def ping(_, message):
         "<b>Mengetest waktu respon bot...</b>"
     )
     end_time = int(round(time() * 1000))
-    await editMessage(
-        reply, 
-        f"🤖 <b>Respon Bot :</b> <code>{end_time - start_time} ms</code>"
-    )
+    capt = f"<b>[VESTIA ZETA]\n\n🤖 Respon Bot :</b> <code>{end_time - start_time} ms</code>"
+    await sendPhoto(message, "https://telegra.ph/file/7144402e029ac366413f7.jpg", caption = capt)
+    await deleteMessage(reply)
 
 
 async def log(_, message):
