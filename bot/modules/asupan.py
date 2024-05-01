@@ -289,7 +289,14 @@ async def animek(_, message):
         {"oppai": "oppai"},
         {"selfie": "selfies"},
         {"uniform": "uniform"},
-        {"ayaka": "kamisato-ayaka"}
+        {"ayaka": "kamisato-ayaka"},
+        {"ass": "ass"},
+        {"hentai": "hentai"},
+        {"milf": "milf"},
+        {"oral": "oral"},
+        {"paizuri": "paizuri"},
+        {"ecchi": "ecchi"},
+        {"ero": "ero"},
     ]
     if keyword.lower() == "list":
         msg = f"""
@@ -304,14 +311,36 @@ async def animek(_, message):
 • <code>uniform</code>
 • <code>ayaka</code></blockquote>
 
-<b>Note:</b> Kirim hanya printah <code>/{BotCommands.AnimekCommand}</code> untuk hasil random.
+<b>🔞 Kategori Nsfw hanya bisa dipakai di Private Message.</b>
+<blockquote><spoiler>• <code>ass</code>
+• <code>hentai</code>
+• <code>milf</code>
+• <code>oral</code>
+• <code>paizuri</code>
+• <code>ecchi</code>
+• <code>ero</code></spoiler></blockquote>
+
+<b>Note:</b> Kirim hanya printah <code>/{BotCommands.AnimekCommand[0]}</code> untuk hasil random.
         """
         await editMessage(mess, msg)
         return None
+    
+    chat_type = message.chat.type
+    if chat_type in ["group", "supergroup"] and any(
+        tag in keyword.lower() for tag in [
+            "ass",
+            "hentai",
+            "milf",
+            "oral",
+            "paizuri",
+            "ecchi",
+            "ero"
+            ]
+        ):
+        await editMessage(mess, "🔞 <b>Keyword ini hanya tersedia di private message.</b>")
+        return None
     if keyword == "":
-        random_tag = random.choice(tags)
-        random_value = list(random_tag.values())[0]
-        query = random_value
+        query = "waifu"
     else:
         keyword_cocok = False
         query = None
@@ -326,12 +355,12 @@ async def animek(_, message):
                 break
 
         if not keyword_cocok:
-            await editMessage(mess, f"<b>Keyword yang anda masukkan belum tersedia.</b>\n\nGunakan perintah: <blockquote><code>/{BotCommands.AnimekCommand} list</code></blockquote>Untuk melihat list keyword yang tersedia, atau kirimkan perintah tanpa keyword untuk hasil random.")
+            await editMessage(mess, f"<b>Keyword yang anda masukkan belum tersedia.</b>\n\nGunakan perintah: <blockquote><code>/{BotCommands.AnimekCommand[0]} list</code></blockquote>Untuk melihat list keyword yang tersedia, atau kirimkan perintah tanpa keyword untuk hasil random.")
             return None
         if not query:
             random_tag = random.choice(tags)
             random_value = list(random_tag.values())[0]
-            query = random_value
+            query = "waifu"
 
     try_count = 5
     attempt = 1

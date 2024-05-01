@@ -1543,7 +1543,7 @@ def filelions_and_streamwish(url):
     ):
         apiKey = config_dict["FILELION_API"]
         apiUrl = "https://vidhideapi.com"
-    elif any(x in hostname for x in ["embedwish.com", "streamwish.com", "kitabmarkaz.xyz", "wishfast.top", "streamwish.to"]):
+    elif any(x in hostname for x in ["embedwish.com", "streamwish.com", "kitabmarkaz.xyz", "wishfast.top", "streamwish.to", "jodwish.com"]):
         apiKey = config_dict["STREAMWISH_API"]
         apiUrl = "https://api.streamwish.com"
     if not apiKey:
