@@ -313,13 +313,13 @@ async def animek(_, message):
 • <code>ayaka</code></blockquote>
 
 <b>🔞 Kategori Nsfw hanya bisa dipakai di Private Message.</b>
-<blockquote><spoiler>• <code>ass</code>
+<spoiler><blockquote>• <code>ass</code>
 • <code>hentai</code>
 • <code>milf</code>
 • <code>oral</code>
 • <code>paizuri</code>
 • <code>ecchi</code>
-• <code>ero</code></spoiler></blockquote>
+• <code>ero</code></blockquote></spoiler>
 
 <b>Note:</b> Kirim hanya printah <code>/{BotCommands.AnimekCommand[0]}</code> untuk hasil random.
         """
