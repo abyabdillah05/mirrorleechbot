@@ -29,8 +29,11 @@ async def auto_mirror(client, message):
     else:
         text = message.text
     urls = text
-    domain = urlparse(urls).hostname
-    if ' ' in urls.strip() or len(urls.split()) != 1:
+    try:
+        domain = urlparse(urls).hostname
+        if ' ' in urls.strip() or len(urls.split()) != 1:
+            pass
+    except:
         pass
     if any(
         x in domain
