@@ -22,10 +22,6 @@ magnetregex = r"magnet:\?xt=urn:(btih|btmh):[a-zA-Z0-9]*\s*"
 cache = []
 async def auto_mirror(client, message):
     user_id = message.from_user.id
-    caches = {
-        user_id: message
-    }
-    cache.append(caches)
     if message.caption is not None:
         text = message.caption
     else:
@@ -51,6 +47,10 @@ async def auto_mirror(client, message):
             ]
         ):
             return None
+    caches = {
+        user_id: message
+    }
+    cache.append(caches)
     for caches in cache:
         if user_id in caches:
             msgs = caches
