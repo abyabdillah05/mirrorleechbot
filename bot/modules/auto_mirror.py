@@ -169,7 +169,7 @@ async def auto_query(_, query):
             await deleteMessage(message)
     elif data[1] == "mega":
         if data[2] == "mirror":
-            Mirror(bot, message).newEvent()
+            Mirror(bot, message, auto_url=auto_url).newEvent()
             del msgs[uid]
             await deleteMessage(message)
         if data[2] == "leech":
