@@ -31,13 +31,13 @@ async def auto_mirror(client, message):
     else:
         text = message.text
     urls = text
+    if ' ' in urls.strip() or len(urls.split()) != 1:
+            return None
     magnet = re.search(magnetregex, text)
     if magnet:
         pass
     else:
         domain = urlparse(urls).hostname
-        if ' ' in urls.strip() or len(urls.split()) != 1:
-            return None
         if any(
             x in domain
             for x in [
