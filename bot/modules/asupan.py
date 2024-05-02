@@ -45,6 +45,7 @@ async def asupan(client, message):
             json_data = await get_url(file_url)
             if json_data:
                 if isinstance(json_data, list):
+                    random.shuffle(json_data)
                     video_link = random.choice(json_data)
                     await message.reply_video(video_link)
                     break
