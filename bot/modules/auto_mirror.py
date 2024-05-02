@@ -1,3 +1,5 @@
+import re
+
 from bot import bot
 from asyncio import sleep as asleep
 from pyrogram import filters
@@ -29,37 +31,37 @@ async def auto_mirror(client, message):
     else:
         text = message.text
     urls = text
-    try:
+    magnet = re.search(magnetregex, text)
+    if magnet:
+        pass
+    else:
         domain = urlparse(urls).hostname
         if ' ' in urls.strip() or len(urls.split()) != 1:
-            pass
+            return None
+        if any(
+            x in domain
+            for x in [
+                "youtube.com",
+                "youtu.be",
+                "instagram.com",
+                "facebook.com",
+                "tiktok.com",
+                "twitter.com"
+                "x.com"
+            ]
+        ):
+            return None
+    for caches in cache:
+        if user_id in caches:
+            msgs = caches
+    msg, buttons = await msg_button(urls, user_id)
+    mess = await sendMessage(message, msg, buttons)
+    await asleep(60)
+    await editMessage(mess, "Waktu habis, tugas dibatalkan")
+    try:
+        del msgs[user_id]
     except:
         pass
-    if any(
-        x in domain
-        for x in [
-            "youtube.com",
-            "youtu.be",
-            "instagram.com",
-            "facebook.com",
-            "tiktok.com",
-            "twitter.com"
-            "x.com"
-        ]
-    ):
-        pass
-    else: 
-        for caches in cache:
-            if user_id in caches:
-                msgs = caches
-        msg, buttons = await msg_button(urls, user_id)
-        mess = await sendMessage(message, msg, buttons)
-        await asleep(30)
-        await editMessage(mess, "Waktu habis, tugas dibatalkan")
-        try:
-            del msgs[user_id]
-        except:
-            pass
     
 async def msg_button(url, user_id):
     uid = user_id
