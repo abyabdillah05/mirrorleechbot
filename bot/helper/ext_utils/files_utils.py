@@ -165,19 +165,22 @@ def get_mime_type(file_path):
     mime_type = mime_type or "text/plain"
     return mime_type
 
-def get_md5(file_path):
+async def get_md5(file_path):
     md5_hash = hashlib.md5()
     try:
-        with open(file_path, "rb") as f:
-            for chunk in iter(lambda: f.read(4096), b""):
+        async with aiofiles.open(file_path, "rb") as f:
+            while True:
+                chunk = await f.read(4096)
+                if not chunk:
+                    break
                 md5_hash.update(chunk)
         return md5_hash.hexdigest()
     except FileNotFoundError:
-        return (f"File tidak ditemukan.")
+        return None
     except PermissionError:
-        return (f"Tidak bisa membaca file.")    
+        return None
     except Exception as e:
-        return (f"Terjadi kesalahan:", e)
+        return None
 
 
 async def join_files(path):

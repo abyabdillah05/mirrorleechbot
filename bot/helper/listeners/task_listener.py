@@ -26,7 +26,7 @@ from bot.helper.ext_utils.files_utils import (
     clean_download,
     clean_target,
     join_files,
-    #get_md5,
+    get_md5,
 )
 from bot.helper.telegram_helper.message_utils import (
     sendMessage,
@@ -80,6 +80,12 @@ class TaskListener(TaskConfig):
             )
 
     async def onDownloadComplete(self):
+        item_path = f"{self.dir}/{self.name}"
+        self.md5 = None
+        try:
+            self.md5 = await get_md5(item_path)
+        except:
+            pass
         multi_links = False
         if self.sameDir and self.mid in self.sameDir["tasks"]:
             while not (
@@ -286,9 +292,9 @@ class TaskListener(TaskConfig):
         else:
             msg += f"\n<b>🏷️ Tipe :</b> <code>{mime_type}</code>"
             msg += f'\n<b>⏱ Waktu:</b> {get_readable_time(time() - self.extra_details["startTime"])}'
-            #if mime_type != "Folder" and not self.isClone:
-            #    if self.compress:
-            #        msg += f"\n<b>🛡️ MD5 Checksum:</b> <code>{self.md5_zip}</code>"
+            if mime_type != "Folder" and not self.isClone:
+                if self.md5:
+                    msg += f"\n<b>🛡️ MD5 Checksum:</b> <code>{self.md5}</code>"
             #    else:
             #        msg += f"\n<b>🛡️ MD5 Checksum:</b> <code>{self.md5}</code>"
             if mime_type == "Folder":

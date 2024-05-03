@@ -1,6 +1,9 @@
 import random
 import requests
 import re
+import os
+import uuid
+import httpx
 
 from http.cookiejar import MozillaCookieJar
 from random import randint
@@ -16,7 +19,7 @@ from pyrogram.handlers import MessageHandler, CallbackQueryHandler
 from bot.helper.telegram_helper.button_build import ButtonMaker
 from pyrogram import filters
 from bot.helper.ext_utils.bot_utils import new_task
-from bot.helper.telegram_helper.message_utils import sendMessage, editMessage, deleteMessage, customSendAudio, customSendPhoto, customSendVideo
+from bot.helper.telegram_helper.message_utils import sendMessage, editMessage, deleteMessage, customSendVideo, customSendPhoto, customSendAudio
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.ext_utils.telegraph_helper import telegraph
@@ -107,41 +110,63 @@ async def upload_media(_, message):
 
 async def tiktokdl(client, message, url, audio=False):
     url = url
+    if message.from_user.username:
+        uname = f'@{message.from_user.username}'
+    else:
+        uname = f'<code>{message.from_user.first_name}</code>'
     if audio is False:
         mess = await sendMessage(message, f"<b>⌛️Mendownload media dari tiktok, silahkan tunggu sebentar...</b>")
     else:
         mess = await sendMessage(message, f"<b>⌛️Mendownload audio dari tiktok, silahkan tunggu sebentar...</b>")
-    with create_scraper() as session:
+    async with httpx.AsyncClient() as client:
         try:
-            r = session.get(url)
-        except Exception as e:
-            return f"ERROR: {e}"
-            
-        if not r.ok:
-            await editMessage(mess, f"ERROR: Gagal mendapatkan data")
+            r = await client.get(url)
+            if r.status_code == 301:
+                new_url = r.headers['location']
+                r = await client.get(new_url)
+            r.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            await sendMessage(mess, f"Hai {uname}, Terjadi kesalahan saat mencoba mengakses url, silahkan coba kembali.\n\n<blockquote>{e}</blockquote>")
+            await deleteMessage(mess)
             return None
+        except httpx.RequestError as e:
+            await sendMessage(mess, f"Hai {uname}, Respon dari url terlalu lama, silahkan coba kembali.\n\n<blockquote>{e}</blockquote>")
+            await deleteMessage(mess)
+            return None
+        
+            
+        #if not r.ok:
+        #    await editMessage(mess, f"ERROR: Gagal mendapatkan data")
+        #    return None
         pattern = r"^(?:https?://(?:www\.)?tiktok\.com)/(?P<user>[\a-zA-Z0-9-]+)(?P<content_type>video|photo)+/(?P<id>\d+)"
-        match = re.match(pattern, string=r.url)
+        match = re.match(pattern, str(r.url))
         if match:  
             content_type = match.group("content_type")
             id = match.group('id')
         else:
             await editMessage(message, f"Link yang anda berikan sepertinya salah atau belum support, silahkan coba dengan link yang lain !")
-            return None    
-        data = ""
-        while len(data) == 0:
-            r = session.get(
-                url=f"https://api22-normal-c-useast2a.tiktokv.com/aweme/v1/feed/?aweme_id={id}",
-                headers={
-                    "User-Agent": user_agent,
-                }
-            )
-            data += r.text
-        data = loads(data)
-        if message.from_user.username:
-            uname = f'@{message.from_user.username}'
-        else:
-            uname = f'<code>{message.from_user.first_name}</code>'
+            return None
+        
+        async with httpx.AsyncClient() as client:
+            data = ""
+            try:
+                while len(data) == 0:
+                    r = await client.get(
+                        url=f"https://api22-normal-c-useast2a.tiktokv.com/aweme/v1/feed/?aweme_id={id}",
+                        headers={
+                            "User-Agent": user_agent,
+                        }
+                    )
+                    data += r.text
+                data = loads(data)
+            except httpx.HTTPStatusError as e:
+                await sendMessage(mess, f"Hai {uname}, Terjadi kesalahan saat mencoba mengakses url, silahkan coba kembali.\n\n<blockquote>{e}</blockquote>")
+                await deleteMessage(mess)
+                return None
+            except httpx.RequestError as e:
+                await sendMessage(mess, f"Hai {uname}, Respon dari url terlalu lama, silahkan coba kembali.\n\n<blockquote>{e}</blockquote>")
+                await deleteMessage(mess)
+                return None
         try:
             music = data["aweme_list"][0]["music"]["play_url"]["url_list"][-1]
             m_capt = data["aweme_list"][0]["music"]["title"]
@@ -171,12 +196,16 @@ async def tiktokdl(client, message, url, audio=False):
             await deleteMessage(mess)
 
 async def tiktok_search(_, message):
+    if message.from_user.username:
+            uname = f'@{message.from_user.username}'
+    else:
+            uname = f'<code>{message.from_user.first_name}</code>'
     if len(message.command) > 1:
         keyword = ' '.join(message.command[1:])
     else:
         await sendMessage(message, f"Silahkan masukkan keyword pencarian setelah perintah !")
     mess = await sendMessage(message, f"<b>⌛️Sedang mencari video tiktok dengan keyword:</b>\n\n<code>🔎 {keyword}</code>")
-    session = create_scraper()
+    #session = create_scraper()
     try:
         jar = MozillaCookieJar()
         jar.load("tiktok.txt", ignore_discard=True, ignore_expires=True)
@@ -229,49 +258,64 @@ async def tiktok_search(_, message):
                     }
                 }
             }
-    num = 0
-    search = ""
-    while len(search) == 0:
-        num += 1
-        r = session.get(
-            url="https://www.tiktok.com/api/search/item/full/",
-            params=params,
-            cookies=cookies
-        )
+    async with httpx.AsyncClient() as client:
+        try:
+            num = 0
+            search = ""
+            while len(search) == 0:
+                num += 1
+                r = await client.get(
+                    url="https://www.tiktok.com/api/search/item/full/",
+                    params=params,
+                    cookies=cookies
+                )
 
-        search += r.text
+                search += r.text
 
-    data = loads(search)
-    #try:
-    #    id = (f"{data['item_list'][randint(0, len(data['item_list']) - 1)]['id']}")
-    #except Exception as e:
-    #    await editMessage(mess, f"ERROR: {e}")
-    #    return None
-    #await deleteMessage(mess)
-    #await tiktokdl(_, message, id=id)
-    num = 0
-    video = ""
-    if message.from_user.username:
-            uname = f'@{message.from_user.username}'
-    else:
-            uname = f'<code>{message.from_user.first_name}</code>'
-    try:
-        while len(video) == 0:
-            num += 1
-            r = session.get(
-                url=f"https://api22-normal-c-useast2a.tiktokv.com/aweme/v1/feed/?aweme_id={data['item_list'][randint(0, len(data['item_list']) - 1)]['id']}",
-            )
+            data = loads(search)
+        except httpx.HTTPStatusError as e:
+            await sendMessage(mess, f"Hai {uname}, Terjadi kesalahan saat mencoba mengakses url, silahkan coba kembali.\n\n<blockquote>{e}</blockquote>")
+            await deleteMessage(mess)
+            return None
+        except httpx.RequestError as e:
+            await sendMessage(mess, f"Hai {uname}, Respon dari url terlalu lama, silahkan coba kembali.\n\n<blockquote>{e}</blockquote>")
+            await deleteMessage(mess)
+            return None
+        #try:
+        #    id = (f"{data['item_list'][randint(0, len(data['item_list']) - 1)]['id']}")
+        #except Exception as e:
+        #    await editMessage(mess, f"ERROR: {e}")
+        #    return None
+        #await deleteMessage(mess)
+        #await tiktokdl(_, message, id=id)
+    async with httpx.AsyncClient() as client:
+        num = 0
+        video = ""
+        try:
+            while len(video) == 0:
+                num += 1
+                r = await client.get(
+                    url=f"https://api22-normal-c-useast2a.tiktokv.com/aweme/v1/feed/?aweme_id={data['item_list'][randint(0, len(data['item_list']) - 1)]['id']}",
+                )
 
-            video += r.text
-        data = loads(video)
-    
-        capt = (f'<code>{data["aweme_list"][0]["desc"]}</code>\n\n<b>Pencarian Oleh:</b> {uname}')
-        link = (data["aweme_list"][0]["video"]["play_addr"]["url_list"][-1])    
-        await customSendVideo(message, link, capt, None, None, None, None, None)
-    except Exception as e:
-        await sendMessage(message, f"<b>Hai {uname}, tugas pencarian gagal karena:\n\n{e}")
-    finally:
-        await deleteMessage(mess)
+                video += r.text
+            data = loads(video)
+        except httpx.HTTPStatusError as e:
+            await sendMessage(mess, f"Hai {uname}, Terjadi kesalahan saat mencoba mengakses url, silahkan coba kembali.\n\n<blockquote>{e}</blockquote>")
+            await deleteMessage(mess)
+            return None
+        except httpx.RequestError as e:
+            await sendMessage(mess, f"Hai {uname}, Respon dari url terlalu lama, silahkan coba kembali.\n\n<blockquote>{e}</blockquote>")
+            await deleteMessage(mess)
+            return None
+        try:
+            capt = (f'<code>{data["aweme_list"][0]["desc"]}</code>\n\n<b>Pencarian Oleh:</b> {uname}')
+            link = (data["aweme_list"][0]["video"]["play_addr"]["url_list"][-1])    
+            await customSendVideo(message, link, capt, None, None, None, None, None)
+        except Exception as e:
+            await sendMessage(message, f"<b>Hai {uname}, tugas pencarian gagal karena:\n\n{e}")
+        finally:
+            await deleteMessage(mess)
 
 #####################################################
 # Fitur Waifu
