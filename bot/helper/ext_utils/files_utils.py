@@ -1,4 +1,5 @@
 import hashlib
+import aiofiles
 
 from os import walk, path as ospath
 from aiofiles.os import remove as aioremove, path as aiopath, listdir, rmdir, makedirs
