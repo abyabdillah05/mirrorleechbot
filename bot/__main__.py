@@ -20,6 +20,7 @@ from subprocess import check_output
 from quoters import Quote
 from pytz import timezone
 from datetime import datetime
+from asyncio import sleep as asleep
 
 from .helper.ext_utils.files_utils import clean_all, exit_clean_up
 from .helper.ext_utils.bot_utils import cmd_exec, sync_to_async, create_help_buttons
@@ -281,8 +282,10 @@ async def ping(_, message):
     )
     end_time = int(round(time() * 1000))
     capt = f"<b>[KOBO KANAERU]\n\n🤖 Respon Bot :</b> <code>{end_time - start_time} ms</code>"
-    await sendPhoto(message, "https://telegra.ph/file/7144402e029ac366413f7.jpg", caption = capt)
+    send = await sendPhoto(message, "https://telegra.ph/file/7144402e029ac366413f7.jpg", caption = capt)
     await deleteMessage(reply)
+    await asleep(10)
+    await deleteMessage(send)
 
 
 async def log(_, message):
