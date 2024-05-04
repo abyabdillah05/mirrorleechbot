@@ -82,10 +82,10 @@ class TaskListener(TaskConfig):
     async def onDownloadComplete(self):
         item_path = f"{self.dir}/{self.name}"
         self.md5 = None
-        try:
-            self.md5 = await get_md5(item_path)
-        except:
-            pass
+        #try:
+        #    self.md5 = await get_md5(item_path)
+        #except:
+        #    pass
         multi_links = False
         if self.sameDir and self.mid in self.sameDir["tasks"]:
             while not (

@@ -499,9 +499,9 @@ async def auto_yt(client, message):
     
     msg = f"<b>Link YT-Dlp terdeteksi, silahkan pilih untuk mirror atau leech...</b>"
     butt = ButtonMaker()
-    butt.ibutton("☁️ Mirror", f"yt mirror {user_id}")
-    butt.ibutton("☀️ Leech", f"yt leech {user_id}")
-    butt.ibutton("⛔️ Batal", f"yt cancel {user_id}")
+    butt.ibutton("☁️ Mirror", f"pikayt mirror {user_id}")
+    butt.ibutton("☀️ Leech", f"pikayt leech {user_id}")
+    butt.ibutton("⛔️ Batal", f"pikayt cancel {user_id}")
     butts = butt.build_menu(2)
     await sendMessage(message, msg, butts)
 
@@ -564,7 +564,7 @@ bot.add_handler(
     CallbackQueryHandler(
         yt_query,
         filters=regex(
-            r'^yt'
+            r'^pikayt'
         )
     )
 )
