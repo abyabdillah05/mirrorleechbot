@@ -506,7 +506,7 @@ async def subdl_butt(uid):
     butt = ButtonMaker()
     msg = ""
     r = await get_data(name=keyword, id=None)
-    if (r["status"]):
+    if r:
         results = (r["results"])
         for index, result in enumerate(results, start=1):
             name = (result["name"])
