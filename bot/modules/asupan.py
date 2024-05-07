@@ -496,7 +496,7 @@ async def get_data(name=None, id=None):
         r = requests.get(url, params=data).json()
         return r
     except Exception as e:
-        return f"Gagal mengambil hasil, atau subtitle untuk film ini belum tersedia. \n\n{e}"
+        return e
         
 async def subdl_butt(uid):
     for kueri in keywords:
@@ -522,11 +522,11 @@ async def subdl_butt(uid):
         else:
             butt.ibutton("⛔️ Batal", f"sub x {uid}", position="footer")
             butts = butt.build_menu(1)
-            return f"Gagal mendapatkan subtitle dari film \n<code>{keyword}</code>", butts
+            return f"Gagal mendapatkan subtitle dari film \n<code>{keyword}</code>\n\n{r}", butts
     else:
         butt.ibutton("⛔️ Batal", f"sub x {uid}", position="footer")
         butts = butt.build_menu(1)
-        return f"Gagal mendapatkan subtitle dari film \n<code>{keyword}</code>", butts
+        return f"Gagal mendapatkan subtitle dari film \n<code>{keyword}</code>\n\n{r}", butts
 
 
 async def subdl(client, message):
