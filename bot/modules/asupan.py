@@ -472,6 +472,138 @@ async def tk_query(_, query):
         del msgs[uid]
         await editMessage(message, "Tugas Dibatalkan.")
 
+##############################################
+#SUBDL by Pikachu
+##############################################
+keywords = []
+async def get_data(name=None, id=None):
+    url = "https://api.subdl.com/api/v1/subtitles"
+    if name:
+        data = {
+            "api_key": "J23oFXWYe-GMQZgddqKx6JiUkPgkymlE",
+            "languages": "ID",
+            "type": "movie",
+            "film_name": name
+            }
+    if id:
+        data = {
+            "api_key": "J23oFXWYe-GMQZgddqKx6JiUkPgkymlE",
+            "languages": "ID",
+            "type": "movie",
+            "sd_id": id
+            }
+    try:
+        r = requests.get(url, params=data).json()
+        return r
+    except Exception as e:
+        return f"Gagal mengambil hasil, atau subtitle untuk film ini belum tersedia. \n\n{e}"
+        
+async def subdl_butt(uid):
+    for kueri in keywords:
+        if uid in kueri:
+            keyword = kueri
+            keyword = (keyword[uid])
+    butt = ButtonMaker()
+    msg = ""
+    r = await get_data(name=keyword, id=None)
+    if (r["status"]):
+        results = (r["results"])
+        for index, result in enumerate(results, start=1):
+            name = (result["name"])
+            year = (result["year"])
+            id = int(result["sd_id"])
+            msg += f"<b>{index:02d}. </b>{name} [{year}]"
+            msg += f"\n"
+            butt.ibutton(f"{index}", f"sub s {uid} {id}")
+        butt.ibutton("⛔️ Batal", f"sub x {uid}", position="footer")
+        butts = butt.build_menu(6)
+        return msg, butts
+    else:
+        butt.ibutton("⛔️ Batal", f"sub x {uid}", position="footer")
+        butts = butt.build_menu(1)
+        del keyword[uid]
+        return f"Gagal mendapatkan subtitle dari film \n<code>{keyword}</code>", butts
+
+
+async def subdl(client, message):
+    if len(message.command) > 1:
+        keyword = ' '.join(message.command[1:])
+    else:
+        keyword = None
+
+    if keyword:
+        mess = await sendMessage(message, f"<b>Tunggu sebentar tuan...</b>")
+        uid = message.from_user.id
+        kueri = {
+            uid: keyword
+        }
+        keywords.append(kueri)     
+        msg,butts = await subdl_butt(uid)
+        await sendMessage(message, msg, butts)
+        await deleteMessage(mess)
+    else:
+        await sendMessage(message, "Silahkan masukkan perintah disertai dengan nama film.")
+
+async def subdl_result(uid, id):
+    r = await get_data(name=None, id=id)
+    
+    for kueri in keywords:
+        if uid in kueri:
+            keyword = kueri
+            keyword = (keyword[uid])
+    butt = ButtonMaker()
+    butt.ibutton("⬅️ Kembali", f"sub b {uid}")
+    butt.ibutton("⛔️ Batal", f"sub x {uid}")
+    butts = butt.build_menu(2)    
+    if (r["status"]):
+        name = (r["results"][0]["name"])
+        msg  = f"<b>Nama:</b> <code>{name}</code>\n<b>Bahasa:</b> <code>Indonesia</code>\n\n"
+        subs = (r["subtitles"])
+        for index, result in enumerate(subs, start=1):
+            name = (result["release_name"])
+            url = (result["url"])
+            sub = f"https://dl.subdl.com/{url}"
+            msg += f"<b>{index:02d}. </b><a href='{sub}'>{name}</a>"
+            msg += f"\n"   
+        return msg, butts
+    else:
+        return f"Terjadi kesalahan saat mengambil subtitle atau subtitle untuk film ini belum tersedia", butts
+            
+async def subdl_query(_, query):
+    message = query.message
+    user_id = query.from_user.id
+    data = query.data.split()
+    uid = int(data[2])
+    for kueri in keywords:
+        if uid in kueri:
+            keyword = kueri
+            keyword = (keyword[uid])
+    if user_id != uid:
+        return await query.answer(text="Bukan Tugas Anda !", show_alert=True)
+    elif data[1] == "s":
+        await editMessage(message, "⌛")
+        id = int(data[3])
+        try:
+            msg,butts = await subdl_result(uid,id)
+            await editMessage(message, msg, butts)
+        except Exception as e:
+            await editMessage(message, f"Gagal mengambil hasil, atau subtitle untuk film ini belum tersedia.")
+            del keyword[uid]
+        
+    elif data[1] == "b":
+        await editMessage(message, "⌛")
+        try:
+            msg,butts = await subdl_butt(uid)
+            await editMessage(message, msg, butts)
+        except Exception as e:
+            await editMessage(message, f"Gagal mengambil hasil, atau subtitle untuk film ini belum tersedia. \n\n{e}")
+            del keyword[uid]
+    else:
+        await query.answer()
+        await editMessage(message, "Tugas Dibatalkan.")
+        del keyword[uid]
+########################################################################################
+
 tiktokregex = r"(https?://(?:www\.)?[a-zA-Z0-9.-]*tiktok\.com/)"
 
 bot.add_handler(
@@ -521,5 +653,21 @@ bot.add_handler(
         filters=regex(
             r'^tk'
         )
+    )
+)
+bot.add_handler(
+    CallbackQueryHandler(
+        subdl_query,
+        filters=regex(
+            r'^sub'
+        )
+    )
+)
+bot.add_handler(
+    MessageHandler(
+        subdl, 
+        filters=command(
+            BotCommands.SubdlCommand
+        ) & CustomFilters.sudo
     )
 )
