@@ -506,18 +506,23 @@ async def subdl_butt(uid):
     butt = ButtonMaker()
     msg = ""
     r = await get_data(name=keyword, id=None)
-    if r:
-        results = (r["results"])
-        for index, result in enumerate(results, start=1):
-            name = (result["name"])
-            year = (result["year"])
-            id = int(result["sd_id"])
-            msg += f"<b>{index:02d}. </b>{name} [{year}]"
-            msg += f"\n"
-            butt.ibutton(f"{index}", f"sub s {uid} {id}")
-        butt.ibutton("⛔️ Batal", f"sub x {uid}", position="footer")
-        butts = butt.build_menu(6)
-        return msg, butts
+    if isinstance(r, dict) and "status" in r:
+        if r["status"]:
+            results = (r["results"])
+            for index, result in enumerate(results, start=1):
+                name = (result["name"])
+                year = (result["year"])
+                id = int(result["sd_id"])
+                msg += f"<b>{index:02d}. </b>{name} [{year}]"
+                msg += f"\n"
+                butt.ibutton(f"{index}", f"sub s {uid} {id}")
+            butt.ibutton("⛔️ Batal", f"sub x {uid}", position="footer")
+            butts = butt.build_menu(6)
+            return msg, butts
+        else:
+            butt.ibutton("⛔️ Batal", f"sub x {uid}", position="footer")
+            butts = butt.build_menu(1)
+            return f"Gagal mendapatkan subtitle dari film \n<code>{keyword}</code>", butts
     else:
         butt.ibutton("⛔️ Batal", f"sub x {uid}", position="footer")
         butts = butt.build_menu(1)
