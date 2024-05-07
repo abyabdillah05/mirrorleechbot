@@ -659,19 +659,3 @@ bot.add_handler(
         )
     )
 )
-bot.add_handler(
-    CallbackQueryHandler(
-        subdl_query,
-        filters=regex(
-            r'^sub'
-        )
-    )
-)
-bot.add_handler(
-    MessageHandler(
-        subdl, 
-        filters=command(
-            BotCommands.SubdlCommand
-        ) & CustomFilters.sudo
-    )
-)
