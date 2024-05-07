@@ -521,7 +521,6 @@ async def subdl_butt(uid):
     else:
         butt.ibutton("⛔️ Batal", f"sub x {uid}", position="footer")
         butts = butt.build_menu(1)
-        del keyword[uid]
         return f"Gagal mendapatkan subtitle dari film \n<code>{keyword}</code>", butts
 
 
