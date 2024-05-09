@@ -2099,13 +2099,11 @@ def berkasdrive(url):
             raise DirectDownloadLinkException(f"ERROR: {e}")
 
     html = HTML(sesi)
-    cari = html.xpath('//script')[0].text.split('"')[1]
+    cari = html.xpath("//script[contains(text(), 'function dl()')]")[0].text
     if cari:
-        session.close()
-        link = base64.b64decode(cari).decode('utf-8')
-        return link
+        link = cari.split('const a = "')[1].split('";')[0]
+        return base64.b64decode(link).decode('utf-8')
     else:
-        session.close()
         raise DirectDownloadLinkException(f"ERROR: File tidak ditemukan!")
     
 def tiktok(url):
