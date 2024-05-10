@@ -66,7 +66,7 @@ from .modules import (
     bypass,
     query,
     mediainfo,
-    asupan,
+    pikachu_feature,
     auto_mirror,
 )
 
