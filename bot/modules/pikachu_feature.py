@@ -1,25 +1,27 @@
 import random
 import requests
 import re
-import os
-import uuid
 import httpx
 
 from http.cookiejar import MozillaCookieJar
 from random import randint
-from cloudscraper import create_scraper
 from json import loads
 from bot import bot
 from aiofiles.os import remove as aioremove, path as aiopath, mkdir
 from os import path as ospath, getcwd
 from pyrogram.filters import command, regex
 from pyrogram.handlers import MessageHandler
-from pyrogram.types import InputMediaPhoto
+from pyrogram.types import InputMediaPhoto, InputMediaVideo
 from pyrogram.handlers import MessageHandler, CallbackQueryHandler
 from bot.helper.telegram_helper.button_build import ButtonMaker
 from pyrogram import filters
 from bot.helper.ext_utils.bot_utils import new_task
-from bot.helper.telegram_helper.message_utils import sendMessage, editMessage, deleteMessage, customSendVideo, customSendPhoto, customSendAudio
+from bot.helper.telegram_helper.message_utils import (sendMessage,
+                                                      editMessage,
+                                                      deleteMessage,
+                                                      customSendVideo,
+                                                      customSendPhoto,
+                                                      customSendAudio)
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.ext_utils.telegraph_helper import telegraph
@@ -30,40 +32,75 @@ tiktok = []
 file_url = "https://gist.github.com/aenulrofik/33be032a24c227952a4e4290a1c3de63/raw/asupan.json"
 user_agent  = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0"
 
+###############################################
+#ASUPAN
+###############################################
 async def get_url(url):
     try:
-        response = requests.get(url)
-        response.raise_for_status()
-        return response.json()
+        r = requests.get(url).json()
+        if r:
+            if isinstance(r, list):
+                random.shuffle(r)
+                video_link = random.choice(r)
+                return video_link
     except Exception as e:
         return ("ERROR:", e)
 
 @new_task
-async def asupan(client, message):
-    mess = await sendMessage(message, "Tunggu sebentar tuan...")
+async def asupan(client, message, ganti=None):
+    mess = await sendMessage(message, "<b>Tunggu sebentar tuan...</b>")
+    uid = message.from_user.id
     try_count = 5
     attempt = 1
     while attempt <= try_count:
         try:
-            json_data = await get_url(file_url)
-            if json_data:
-                if isinstance(json_data, list):
-                    random.shuffle(json_data)
-                    video_link = random.choice(json_data)
-                    await message.reply_video(video_link)
-                    break
-                else:
-                    break
+            butt = ButtonMaker()
+            butt.ibutton("🔄Ganti Asupan", f"asupan {uid} ganti" )
+            butts = butt.build_menu(1)
+            video_link = await get_url(file_url)
+            await message.reply_video(video_link, reply_markup=butts)
+            break
         except:
             attempt += 1
             if attempt <= try_count:
-                await sendMessage(mess, f"Gagal mengirim asupan, Mencoba lagi untuk ke-{attempt} kali...")
+                await editMessage(mess, f"Gagal mengirim asupan, Mencoba lagi untuk ke-{attempt} kali...")
             else:
-                await editMessage(mess, "Gagal mengupload asupan setelah 5x percobaan.")
+                await sendMessage(mess, f"Gagal mengupload asupan setelah 5x percobaan.")
                 break
-        finally:
-            await deleteMessage(mess)
+    await deleteMessage(mess)
+        
 
+async def asupan_query(_, query):
+    message = query.message
+    edit_media = query.edit_message_media
+    uid = query.from_user.id
+    data = query.data.split()
+    if uid != int(data[1]):
+        return await query.answer(text="Bukan asupan anda tuan !", show_alert=True)
+    elif data[2] == "ganti":
+        try_count = 5
+        attempt = 1
+        while attempt <= try_count:
+            try:
+                butt = ButtonMaker()
+                butt.ibutton("🔄Ganti Asupan", f"asupan {uid} ganti" )
+                butts = butt.build_menu(1)
+                video_link = await get_url(file_url)
+                caption = None
+                if video_link.endswith('.mp4'):
+                    await edit_media(media=InputMediaVideo(video_link, caption=caption), reply_markup=butts)
+                else:
+                    await edit_media(video_link, reply_markup=butts)
+                break
+            except Exception as e:
+                attempt += 1
+                if attempt == try_count:
+                    await sendMessage(message, f"Gagal mengupload asupan setelah 5x percobaan.\n\n{e}")
+                    break
+
+################################################
+#Upload Telegraph
+################################################
 @new_task
 async def upload_media(_, message):
     rply = message.reply_to_message
@@ -108,6 +145,9 @@ async def upload_media(_, message):
     else:
         await sendMessage(message, f"Silahkan balas photo atau video pendek yang mau anda upload ke Telegraph")
 
+############################################
+#Tiktok Downloader
+############################################
 async def tiktokdl(client, message, url, audio=False):
     url = url
     if message.from_user.username:
@@ -195,6 +235,9 @@ async def tiktokdl(client, message, url, audio=False):
         finally:
             await deleteMessage(mess)
 
+#########################################
+#Tiktok Search
+#########################################
 async def tiktok_search(_, message):
     if message.from_user.username:
             uname = f'@{message.from_user.username}'
@@ -656,6 +699,14 @@ bot.add_handler(
         tk_query,
         filters=regex(
             r'^tk'
+        )
+    )
+)
+bot.add_handler(
+    CallbackQueryHandler(
+        tk_query,
+        filters=regex(
+            r'^asupan'
         )
     )
 )
