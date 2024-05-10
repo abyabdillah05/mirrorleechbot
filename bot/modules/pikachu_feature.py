@@ -704,7 +704,7 @@ bot.add_handler(
 )
 bot.add_handler(
     CallbackQueryHandler(
-        tk_query,
+        asupan_query,
         filters=regex(
             r'^asupan'
         )
