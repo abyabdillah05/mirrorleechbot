@@ -47,8 +47,11 @@ from bot.helper.telegram_helper.message_utils import (
     get_tg_link_message
 )
 from bot.helper.listeners.task_listener import TaskListener
+from bot.modules.auto_mirror import AutoMirror
+from urllib.parse import urlparse
 
-
+urlregex = r"^(?!\/)(rtmps?:\/\/|mms:\/\/|rtsp:\/\/|https?:\/\/|ftp:\/\/)?([^\/:]+:[^\/@]+@)?(www\.)?(?=[^\/:\s]+\.[^\/:\s]+)([^\/:\s]+\.[^\/:\s]+)(:\d+)?(\/[^#\s]*[\s\S]*)?(\?[^#\s]*)?(#.*)?$"
+magnetregex = r"magnet:\?xt=urn:(btih|btmh):[a-zA-Z0-9]*\s*"
 class Mirror(TaskListener):
     def __init__(
         self,
@@ -59,7 +62,9 @@ class Mirror(TaskListener):
         sameDir=None,
         bulk=None,
         multiTag=None,
-        auto_url=None,
+        auto_mode=False,
+        button_mode=False,
+        auto_url="",
         options="",
     ):
         if sameDir is None:
@@ -74,10 +79,23 @@ class Mirror(TaskListener):
         self.options = options
         self.sameDir = sameDir
         self.bulk = bulk
+        self.auto_mode = auto_mode
         self.auto_url = auto_url
+        self.button_mode = button_mode
 
     @new_task
     async def newEvent(self):
+        rply = self.message.reply_to_message
+        if rply and len(self.message.text.split()) == 1:
+            self.button_mode = True
+        elif not rply and len(self.message.text.split()) == 2:
+            self.button_mode = True
+
+        if not self.auto_url:
+            command_teks = self.message.text.split(maxsplit=1)
+            if len(command_teks) > 1:
+                self.auto_url = command_teks[1]
+
         text = (
             self.message.text
             or self.message.caption
@@ -114,10 +132,7 @@ class Mirror(TaskListener):
         self.name = args["-n"]
         self.upDest = args["-up"]
         self.rcFlags = args["-rcf"]
-        if self.auto_url:
-            self.link = self.auto_url
-        else:
-            self.link = args["link"]
+        self.link = args["link"]
         self.compress = args["-z"]
         self.extract = args["-e"]
         self.join = args["-j"]
@@ -136,6 +151,71 @@ class Mirror(TaskListener):
         seed_time = None
         reply_to = None
         file_ = None
+
+        if self.auto_mode or self.button_mode:
+            _type = None
+            self.link = self.auto_url
+            if not self.auto_mode:
+                _type = "leech" if self.isLeech else "mirror"
+                reply_to = self.message.reply_to_message
+                if reply_to:
+                    if reply_text := reply_to.text:
+                        self.link = reply_text.split("\n", 1)[0].strip()
+                    else:
+                        file_ = (
+                            reply_to.document
+                            or reply_to.photo
+                            or reply_to.video
+                            or reply_to.audio
+                            or reply_to.voice
+                            or reply_to.video_note
+                            or reply_to.sticker
+                            or reply_to.animation
+                            or None
+                            )
+                        if reply_to.document and (
+                            file_.mime_type == "application/x-bittorrent"
+                            or file_.file_name.endswith(".torrent")
+                            ):
+                            self.link = await reply_to.download()
+                            file_ = None
+                        elif file_ is not None:
+                            reply_to = reply_to
+                        else:
+                            reply_to = None
+
+            if (is_url(self.link) or is_magnet(self.link) or reply_to is not None):
+                try:
+                    if not self.link:
+                        if _type:
+                            auto_args = await AutoMirror(self).main_pesan_custom("Files", _type)
+                        else:
+                            auto_args = await AutoMirror(self).main_pesan("Files", _type)
+                    else:
+                        if _type:
+                            auto_args = await AutoMirror(self).main_pesan_custom(self.link, _type)
+                        else:
+                            auto_args = await AutoMirror(self).main_pesan(self.link, _type)
+                        
+                    if "rename" in auto_args:
+                        self.name = auto_args["rename"]
+                    if "custom_upload" in auto_args:
+                        self.upDest = auto_args["custom_upload"]
+                    if "extract" in auto_args:
+                        self.extract = auto_args["extract"]
+                    if "zip" in auto_args:
+                        self.compress = auto_args["zip"]
+                    if "ss" in auto_args:
+                        self.screenShots = auto_args["ss"]
+                    if "sv" in auto_args:
+                        self.sampleVideo = auto_args["sv"]
+                    if "leech" in auto_args:
+                        self.isLeech = True
+
+                except:
+                    return None
+            else:
+                pass
 
         try:
             self.multi = int(args["-i"])
@@ -392,7 +472,6 @@ class Mirror(TaskListener):
 
         self.removeFromSameDir()
 
-
 async def mirror(client, message):
     Mirror(client, message).newEvent()
 
@@ -407,6 +486,34 @@ async def leech(client, message):
 
 async def qb_leech(client, message):
     Mirror(client, message, isQbit=True, isLeech=True).newEvent()
+
+async def auto_mirror(client, message):
+    if message.caption is not None:
+        text = message.caption
+    else:
+        text = message.text
+    urls = text
+    if ' ' in urls.strip() or len(urls.split()) != 1:
+        return None
+    magnet = re.search(magnetregex, text)
+    if magnet:
+        pass
+    else:
+        domain = urlparse(urls).hostname
+        if any(
+            x in domain
+            for x in [
+                "youtube.com",
+                "youtu.be",
+                "instagram.com",
+                "facebook.com",
+                "tiktok.com",
+                "twitter.com"
+                "x.com"
+            ]
+        ):
+            return None
+    Mirror(client, message, auto_url=text, auto_mode=True).newEvent()
 
 bot.add_handler(
     MessageHandler(
@@ -438,5 +545,14 @@ bot.add_handler(
         filters=command(
             BotCommands.QbLeechCommand
         ) & CustomFilters.authorized
+    )
+)   
+bot.add_handler(
+    MessageHandler(
+        auto_mirror,
+        filters=CustomFilters.authorized
+        & filters.regex(
+            f"{urlregex}|{magnetregex}"
+        )
     )
 )

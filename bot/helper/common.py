@@ -3,6 +3,7 @@ from asyncio import sleep, create_subprocess_exec
 from secrets import token_urlsafe
 from os import walk, path as ospath
 from pyrogram.enums import ChatType
+from asyncio.subprocess import PIPE
 
 from bot import (
     DOWNLOAD_DIR,
@@ -451,7 +452,9 @@ class TaskConfig:
                             async with subprocess_lock:
                                 if self.suproc == "cancelled":
                                     return False
-                                self.suproc = await create_subprocess_exec(*cmd)
+                                self.suproc = await create_subprocess_exec(
+                                    *cmd, stderr=PIPE
+                                )
                             _, stderr = await self.suproc.communicate()
                             code = self.suproc.returncode
                             if code == -9:
@@ -493,7 +496,7 @@ class TaskConfig:
                 async with subprocess_lock:
                     if self.suproc == "cancelled":
                         return False
-                    self.suproc = await create_subprocess_exec(*cmd)
+                    self.suproc = await create_subprocess_exec(*cmd, stderr=PIPE)
                 _, stderr = await self.suproc.communicate()
                 code = self.suproc.returncode
                 if code == -9:

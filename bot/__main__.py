@@ -54,7 +54,6 @@ from .modules import (
     gd_search, 
     gd_rename,
     help, 
-    mirror_leech, 
     rss, 
     shell, 
     speedtest,
@@ -68,6 +67,7 @@ from .modules import (
     mediainfo,
     pikachu_feature,
     auto_mirror,
+    mirror_leech,
 )
 
 def get_quotes():
