@@ -122,7 +122,7 @@ class AutoMirror:
         self._url = url
         future = self._event_handler()
         msg, buttons = await home_button(self._url)
-        msg += f"\n\n<b>⏰ Waktu Habis :</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
+        msg += f"\n\n<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
         self._reply_to = await sendMessage(self._listener.message, msg, buttons)
 
         await wrap_future(future)
@@ -164,12 +164,12 @@ class AutoMirror:
                 mess += f"<b>✓ Passw ZIP:</b> <code>{zip}</code>\n"
         if cust_up:
             mess += f"<b>✓ Custom Upload:</b> <code>{cust_up}</code>\n"
-        mess += f"\n<b>⏰ Waktu Habis :</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
+        mess += f"\n<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
         butt = ButtonMaker()
         if self._type == "mirror":
-            butt.ibutton("▶️ Mulai Proses Mirror ! ", f"auto start_mirror", position="header")
+            butt.ibutton("▶️ START MIRROR ", f"auto start_mirror", position="header")
         if self._type == "leech":
-            butt.ibutton("▶️ Mulai Proses Leech ! ", f"auto start_leech", position="header")
+            butt.ibutton("▶️ START LEECH ", f"auto start_leech", position="header")
 
         s = "" if "rename" not in auto_args else "✅"
         butt.ibutton(f"Rename {s}", f"auto rename")
@@ -268,7 +268,7 @@ class AutoMirror:
 
 <b>• Sample Video:</b> Mengambil sample video random dari video yang anda leech.
         
-<b>⏰ Waktu Habis :</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"""
+<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"""
         butt = ButtonMaker()
         butt.ibutton("↩️ Kembali", f"auto {self._type}")
         butt.ibutton("⛔️ Batal", f"auto cancel")
@@ -285,5 +285,5 @@ class AutoMirror:
 
     async def back(self):      
         msg, buttons = await home_button(self._url)
-        msg += f"\n\n<b>⏰ Waktu Habis :</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
+        msg += f"\n\n<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
         await editMessage(self._reply_to, msg, buttons)
