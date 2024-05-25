@@ -214,7 +214,7 @@ class AutoMirror:
                     filters=filters.text & filters.user(self._listener.user_id), timeout=30
                     )
             
-                if respon.text != "/batal" or respon.text != f"/batal@{bot.me.username}":
+                if respon.text != "/batal" and respon.text != f"/batal@{bot.me.username}":
                     data = respon.text
                     if respon.text == "/skip" or respon.text == f"/skip@{bot.me.username}":
                         data = True
