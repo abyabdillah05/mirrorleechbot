@@ -439,7 +439,18 @@ def mediafire(url, session=None):
     if "/folder/" in url:
         return mediafireFolder(url)
     if final_link := findall(r"https?:\/\/download\d+\.mediafire\.com\/\S+\/\S+\/\S+", url):
-        return final_link[0]
+        try:
+            c = async_to_sync(get_content_type, final_link[0])
+            if c is None or re.match(r"text/html|text/plain", c):
+                session = Session()
+                html = HTML(session.get(url).text)
+                new_link = html.xpath('//a[@id="continue-btn"]/@href')
+                new_link = f"https://mediafire.com/{new_link[0]}"
+                return mediafire(new_link)
+            else:
+                return final_link[0]
+        except Exception as e:
+            raise DirectDownloadLinkException (f"ERROR: {e}")
     if session is None:
         session = Session()
         parsed_url = urlparse(url)

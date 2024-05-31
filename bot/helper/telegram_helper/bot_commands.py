@@ -47,6 +47,7 @@ class _BotCommands:
         self.TiktokCommand = [f"tiktok{CMD_SUFFIX}", f"tt{CMD_SUFFIX}"]
         self.AsupanCommand = [f"asupan{CMD_SUFFIX}", f"asu{CMD_SUFFIX}"]
         self.AnimekCommand = [f"waifu{CMD_SUFFIX}", f"wf{CMD_SUFFIX}"]
+        self.Yt_searchCommand = [f"youtube{CMD_SUFFIX}", f"yt{CMD_SUFFIX}"]
         self.SubdlCommand = f"subdl{CMD_SUFFIX}"
         self.DonateCommand = f"donate{CMD_SUFFIX}"
 

@@ -3,6 +3,7 @@ import requests
 import re
 import httpx
 
+from asyncio import sleep as asleep
 from http.cookiejar import MozillaCookieJar
 from random import randint
 from json import loads
@@ -27,6 +28,7 @@ from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.ext_utils.telegraph_helper import telegraph
 from bot.helper.ext_utils.bot_utils import sync_to_async
 from pyrogram.enums import ChatType
+from bot.modules.ytdlp import YtDlp
 
 tiktok = []
 file_url = "https://gist.github.com/aenulrofik/33be032a24c227952a4e4290a1c3de63/raw/asupan.json"
@@ -649,6 +651,172 @@ async def subdl_query(_, query):
         await query.answer()
         await editMessage(message, "Tugas Dibatalkan.")
         del keyword[uid]
+
+####################################################################
+#YT_SEARCH
+####################################################################
+youtube = {}
+async def yt_request(uid, keyword):
+    try:
+        api_key = "AIzaSyBmQVnzf5khHZE8GSbVzNmVefzPFGPW7aU" #please use your own api_key (this is pikachu api_key)
+        search_url = f"https://www.googleapis.com/youtube/v3/search?part=snippet&q={keyword}&type=video&regionCode=ID&maxResults=10&key={api_key}"
+        async with httpx.AsyncClient() as client:
+            response = await client.get(search_url)
+            data = response.json()
+        results = []
+
+        if "items" in data:
+            for item in data["items"]:
+                video_id = item["id"]["videoId"]
+                title = item["snippet"]["title"]
+                results.append({'title': title, 'id': video_id})
+                if len(results) >= 10:
+                    break
+        
+        msg = f"<b>Hasil Pencarian dengan Keyword: <code>{keyword}</code></b>\n\n"
+        butt = ButtonMaker()
+        butt.ibutton("⛔️ Batal", f"youtube cancel {uid}", position="footer")          
+        for index,video in enumerate(results, start=1):      
+            judul = video['title']
+            video_id = video['id']
+            msg += f"<a href='https://www.youtube.com/watch?v={video_id}'><b>{index:02d}. </b></a>{judul}\n"
+            butt.ibutton(f"{index}", f"youtube select {uid} {video_id}")
+        butts = butt.build_menu(5)
+        return msg, butts
+    except Exception as e:
+        return f"Terjadi kesalahan saat mengambil video, atau video ini belum tersedia \n\n{e}"
+
+async def edit_durasi(duration):
+    duration = duration[2:]
+    duration = duration.replace("M", " menit ")
+    duration = duration.replace("S", " detik")
+    duration = duration.replace("H", " jam ")
+    duration = duration.replace("T", "")
+    return duration
+
+async def yt_extra(video_id):
+    api_key = "AIzaSyBmQVnzf5khHZE8GSbVzNmVefzPFGPW7aU" #please use your own api_key (this is pikachu api_key)
+    video_url = f"https://www.googleapis.com/youtube/v3/videos?id={video_id}&part=contentDetails,snippet&key={api_key}"
+    async with httpx.AsyncClient() as client:
+        response = await client.get(video_url)
+        data = response.json()
+    details = {}
+    if "items" in data:
+        for item in data["items"]:
+            video_id = item["id"]
+            duration = item["contentDetails"]["duration"]
+            channel_title = item["snippet"]["channelTitle"]
+            thumbnail_url = item["snippet"]["thumbnails"]["standard"]["url"]
+            title = item["snippet"]["title"]
+            details = {
+                'duration': duration,
+                'channel_title': channel_title,
+                'thumbnail_url': thumbnail_url,
+                'title': title,
+                'video_id': video_id
+            }
+    return details
+    
+async def yt_search(client, message, keyword=None):
+    uid = message.from_user.id
+    if len(message.command) > 1:
+        keyword = ' '.join(message.command[1:])
+    else:
+        keyword = None
+    if keyword:
+        mess = await sendMessage(message, f"<b>Tunggu sebentar tuan...</b>")
+        if uid in youtube:
+            butt = ButtonMaker()
+            butt.ibutton("⛔️ Batal", f"youtube cancel {uid}")
+            butts = butt.build_menu(1)
+            await editMessage(mess, "<b>Silahkan selesaikan atau batalkan proses sebelumnya !</b>", butts)
+            return None
+        youtube[uid] = {"message": message, "keyword": keyword}
+        try:
+            msg, butts = await yt_request(uid, keyword)
+            await deleteMessage(mess)
+            await message.reply_photo("https://telegra.ph/file/9fbae069402df1710585f.jpg", caption=msg, reply_markup=butts)
+        except Exception as e:
+            await editMessage(mess, f"{e}")
+            del youtube[uid]
+    else:
+        await sendMessage(message, "Tidak ada kata kunci yang ditemukan.")
+
+async def yt_query(_, query):
+    message = query.message
+    user_id = query.from_user.id
+    edit_media = query.edit_message_media
+    data = query.data.split()
+    uid = int(data[2])
+    if user_id != uid:
+        return await query.answer(text="Bukan Tugas Anda !", show_alert=True)
+    elif data[1] == "select":
+        try:
+            details = await yt_extra(data[3])
+        except Exception as e:
+            return await query.answer(text=f"Terjadi kesalahan saat mengambil video, atau video ini belum tersedia. {e}", show_alert=True)
+        try:
+            msg = f"<b>🎬 Judul: </b><code>{details['title']}</code>\n\n"
+            msg += f"<b>📢 Channel: </b><code>{details['channel_title']}</code>\n"
+            msg += f"<b>⏱ Durasi: </b><code>{await edit_durasi(details['duration'])}</code>\n"
+            msg += f"<b>🌐 Link: </b><code>https://www.youtube.com/watch?v={data[3]}</code>"
+            butt = ButtonMaker()
+            butt.ibutton("☁️ Mirror", f"youtube mirror {uid} {data[3]}")
+            butt.ibutton("☀️ Leech", f"youtube leech {uid} {data[3]}")
+            butt.ibutton("⬅️ Kembali", f"youtube back {uid}")
+            butt.ibutton("⛔️ Batal", f"youtube cancel {uid}")
+            butts = butt.build_menu(2)
+            new_media = InputMediaPhoto(details['thumbnail_url'], caption=msg)
+            no_thumbnail = InputMediaPhoto("https://telegra.ph/file/5e7fde2b232ae1b682625.jpg", caption=msg)
+            try:
+                await edit_media(new_media, reply_markup=butts)
+            except:
+                await edit_media(no_thumbnail, reply_markup=butts)
+        except Exception as e:
+            await editMessage(message, f"Gagal mengambil video, atau video ini tidak tersedia. \n\n{e}")
+            del youtube[uid]
+    elif data[1] == "mirror":
+        try:
+            details = await yt_extra(data[3])
+        except Exception as e:
+            return await query.answer(text=f"Terjadi kesalahan saat mengambil video, atau video ini belum tersedia. {e}", show_alert=True)
+        video_id = details['video_id']
+        if uid in youtube:
+            msg = youtube[uid]["message"]
+            YtDlp(bot, msg, yturl="https://www.youtube.com/watch?v=" + video_id, isLeech=True).newEvent()
+            await deleteMessage(message)
+            del youtube[uid]
+        else:
+            await query.answer(text=f"Terjadi kesalahan, silahkan coba lagi.", show_alert=True)
+            await deleteMessage(message)
+    elif data[1] == "leech":
+        try:
+            details = await yt_extra(data[3])
+        except Exception as e:
+            return await query.answer(text=f"Terjadi kesalahan saat mengambil video, atau video ini belum tersedia. {e}", show_alert=True)
+        video_id = details['video_id']
+        if uid in youtube:
+            msg = youtube[uid]["message"]
+            YtDlp(bot, msg, yturl="https://www.youtube.com/watch?v=" + video_id, isLeech=True).newEvent()
+            await deleteMessage(message)
+            del youtube[uid]
+        else:
+            await query.answer(text=f"Terjadi kesalahan, silahkan coba lagi.", show_alert=True)
+            await deleteMessage(message)
+    elif data[1] == "back":
+        try:
+            keyword = youtube[uid]["keyword"]
+            msg, butts = await yt_request(uid, keyword)
+            new_media = InputMediaPhoto("https://telegra.ph/file/9fbae069402df1710585f.jpg", caption=msg)
+            await edit_media(new_media, reply_markup=butts)  
+        except Exception as e:
+            await editMessage(message, f"{e}")
+            del youtube[uid]
+    else:
+        await query.answer(text=f"Tugas sudah dibatalkan", show_alert=True)
+        await deleteMessage(message)
+        del youtube[uid]
+
 ########################################################################################
 
 tiktokregex = r"(https?://(?:www\.)?[a-zA-Z0-9.-]*tiktok\.com/)"
@@ -707,6 +875,22 @@ bot.add_handler(
         asupan_query,
         filters=regex(
             r'^asupan'
+        )
+    )
+)
+bot.add_handler(
+    MessageHandler(
+        yt_search, 
+        filters=command(
+            BotCommands.Yt_searchCommand
+        ) & CustomFilters.authorized
+    )
+)
+bot.add_handler(
+    CallbackQueryHandler(
+        yt_query,
+        filters=regex(
+            r'^youtube'
         )
     )
 )
