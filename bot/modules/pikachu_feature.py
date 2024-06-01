@@ -682,6 +682,7 @@ async def yt_request(uid, keyword):
             msg += f"<a href='https://www.youtube.com/watch?v={video_id}'><b>{index:02d}. </b></a>{judul}\n"
             butt.ibutton(f"{index}", f"youtube select {uid} {video_id}")
         butts = butt.build_menu(5)
+        youtube[uid] = {"msg": msg, "butts": butts}
         return msg, butts
     except Exception as e:
         return f"Terjadi kesalahan saat mengambil video, atau video ini belum tersedia \n\n{e}"
@@ -691,6 +692,7 @@ async def edit_durasi(duration):
     duration = duration.replace("M", " menit ")
     duration = duration.replace("S", " detik")
     duration = duration.replace("H", " jam ")
+    duration = duration.replace("D", " hari ")
     duration = duration.replace("T", "")
     return duration
 
@@ -805,8 +807,10 @@ async def yt_query(_, query):
             await deleteMessage(message)
     elif data[1] == "back":
         try:
-            keyword = youtube[uid]["keyword"]
-            msg, butts = await yt_request(uid, keyword)
+            #keyword = youtube[uid]["keyword"]
+            msg = youtube[uid]["msg"]
+            butts = youtube[uid]["butts"]
+            #msg, butts = await yt_request(uid, keyword, back=True)
             new_media = InputMediaPhoto("https://telegra.ph/file/9fbae069402df1710585f.jpg", caption=msg)
             await edit_media(new_media, reply_markup=butts)  
         except Exception as e:
