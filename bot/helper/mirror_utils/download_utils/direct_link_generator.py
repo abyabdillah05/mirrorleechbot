@@ -60,11 +60,8 @@ def direct_link_generator(link: str):
     elif "drive.usercontent.google.com" in domain:
         raise DirectDownloadLinkException(
             "ERROR: Link Gdrive yang anda berikan salah, gunakan link <code>drive.google.com</code>")
-    elif re.match(r"https?://www\.mediafire\.com/\S+", link):
+    elif "mediafire.com" in domain:
         return mediafire(link)
-    elif ".mediafire.com" in domain:
-        raise DirectDownloadLinkException(
-            "ERROR: Jangan gunakan direct link untuk mediafire.\nGunakan link <code>https://mediafire.com/file/xxxx</code>")
     elif "uptobox.com" in domain:
         return uptobox(link)
     elif "osdn.net" in domain:
