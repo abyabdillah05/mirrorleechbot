@@ -682,7 +682,8 @@ async def yt_request(uid, keyword):
             msg += f"<a href='https://www.youtube.com/watch?v={video_id}'><b>{index:02d}. </b></a>{judul}\n"
             butt.ibutton(f"{index}", f"youtube select {uid} {video_id}")
         butts = butt.build_menu(5)
-        youtube[uid] = {"msg": msg, "butts": butts}
+        upd = {"msg": msg, "butts": butts}
+        youtube[uid].update(upd)
         return msg, butts
     except Exception as e:
         return f"Terjadi kesalahan saat mengambil video, atau video ini belum tersedia \n\n{e}"
@@ -742,7 +743,7 @@ async def yt_search(client, message, keyword=None):
             await editMessage(mess, f"{e}")
             del youtube[uid]
     else:
-        await sendMessage(message, "Tidak ada kata kunci yang ditemukan.")
+        await sendMessage(message, "<b>Silahkan masukkan perintah disertai keyword pencarian !</b>")
 
 async def yt_query(_, query):
     message = query.message
