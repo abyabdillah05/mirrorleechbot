@@ -533,7 +533,7 @@ async def yt_query(_, query):
         del msgs[uid]
         await editMessage(message, "Tugas Dibatalkan.")
 
-ytregex = r"(https?://(?:www\.)?(?:instagram\.com/(?:tv/|reel/)|youtu\.be/|youtube\.com/(?:shorts/|watch\?|playlist\?)|m\.youtube\.com/(?:shorts/|watch\?)|twitter\.com/|music\.youtube\.com/|facebook\.com/|x\.com/|www\.facebook\.com/|fb\.me/|m\.facebook\.com/)[^\s]+)"
+#ytregex = r"(https?://(?:www\.)?(?:instagram\.com/(?:tv/|reel/)|youtu\.be/|youtube\.com/(?:shorts/|watch\?|playlist\?)|m\.youtube\.com/(?:shorts/|watch\?)|twitter\.com/|music\.youtube\.com/|facebook\.com/|x\.com/|www\.facebook\.com/|fb\.me/|m\.facebook\.com/)[^\s]+)"
 
 bot.add_handler(
     MessageHandler(
@@ -551,14 +551,14 @@ bot.add_handler(
     )
 )
 
-bot.add_handler(
-    MessageHandler(
-        auto_yt,
-        filters=CustomFilters.authorized & filters.regex(
-            f"{ytregex}"
-        )
-    )
-)
+#bot.add_handler(
+#    MessageHandler(
+#        auto_yt,
+#        filters=CustomFilters.authorized & filters.regex(
+#            f"{ytregex}"
+#        )
+#    )
+#)
 
 bot.add_handler(
     CallbackQueryHandler(
