@@ -152,7 +152,7 @@ async def limit_checker(size, listener, isTorrent=False, isMega=False, isGdrive=
         if size > limit:
             limit_exceeded = f'Limit download Direct: {get_readable_file_size(limit)}'
     elif isRclone:
-        limit = 35 * 1024**2
+        limit = 35 * 1024**3
         if size > limit:
             limit_exceeded = f'Limit download Rclone: {get_readable_file_size(limit)}'
 
