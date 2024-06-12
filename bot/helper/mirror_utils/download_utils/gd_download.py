@@ -7,7 +7,7 @@ from bot.helper.mirror_utils.status_utils.gdrive_status import GdriveStatus
 from bot.helper.mirror_utils.status_utils.queue_status import QueueStatus
 from bot.helper.telegram_helper.message_utils import sendMessage, sendStatusMessage
 from bot.helper.ext_utils.bot_utils import sync_to_async
-from bot.helper.ext_utils.task_manager import is_queued, stop_duplicate_check
+from bot.helper.ext_utils.task_manager import is_queued, stop_duplicate_check, limit_checker
 
 
 async def add_gd_download(listener, path):
@@ -15,6 +15,11 @@ async def add_gd_download(listener, path):
     name, mime_type, size, _, _ = await sync_to_async(
         drive.count, listener.link, listener.user_id
     )
+
+    if limit_exceeded := await limit_checker(size, listener, isGdrive=True):
+        await sendMessage(listener.message, limit_exceeded)
+        return
+    
     if mime_type is None:
         await sendMessage(listener.message, name)
         return

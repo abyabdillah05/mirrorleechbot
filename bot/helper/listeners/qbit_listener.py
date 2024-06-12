@@ -18,7 +18,7 @@ from bot.helper.telegram_helper.message_utils import update_status_message
 from bot.helper.ext_utils.bot_utils import new_task, sync_to_async
 from bot.helper.ext_utils.status_utils import get_readable_time, getTaskByGid
 from bot.helper.ext_utils.files_utils import clean_unwanted
-from bot.helper.ext_utils.task_manager import stop_duplicate_check
+from bot.helper.ext_utils.task_manager import stop_duplicate_check, limit_checker
 
 
 async def _remove_torrent(client, hash_, tag):
@@ -65,6 +65,15 @@ async def _stop_duplicate(tor):
     msg, button = await stop_duplicate_check(task.listener)
     if msg:
         _onDownloadError(msg, tor, button)
+
+@new_task
+async def _size_checked(tor):
+    task = await getTaskByGid(tor.hash[:12])
+    if not hasattr(task, 'listener'):
+        return
+    size = tor.size
+    if limit_exceeded := await limit_checker(size, task.listener, isTorrent=True):
+        await _onDownloadError(limit_exceeded, tor)
 
 
 @new_task
@@ -145,6 +154,10 @@ async def _qb_listener():
                         ):
                             QbTorrents[tag]["stop_dup_check"] = True
                             _stop_duplicate(tor_info)
+
+                        if not QbTorrents[tag]['size_checked']:
+                            QbTorrents[tag]['size_checked'] = True
+                            _size_checked(tor_info)
                     elif state == "stalledDL":
                         TORRENT_TIMEOUT = config_dict["TORRENT_TIMEOUT"]
                         if (
@@ -205,6 +218,7 @@ async def onDownloadStart(tag):
             "rechecked": False,
             "uploaded": False,
             "seeding": False,
+            "size_checked": False,
         }
         if not QbInterval:
             periodic = bot_loop.create_task(_qb_listener())
