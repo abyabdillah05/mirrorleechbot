@@ -281,7 +281,7 @@ def direct_link_generator(link: str):
         return qiwi(link)
     elif 'berkasdrive.com' in domain:
         return berkasdrive(link)
-    elif 'database.seikel.workers.dev' in domain:
+    elif 'seikel.adventure.workers.dev' in domain:
         return seikel(link)
     # Add AllDebrid supported link here
     elif any(
@@ -2154,7 +2154,7 @@ def tiktok(url):
     
 def seikel(url): 
     with Session() as session:
-        s = "https://database.seikel.workers.dev"
+        s = "http://seikel.adventure.workers.dev"
         payload = {
             "username": "SEIKEL",
             "password": "SEIKEL",
