@@ -57,7 +57,7 @@ async def asupan(client, message, ganti=None):
     while attempt <= try_count:
         try:
             butt = ButtonMaker()
-            butt.ibutton("🔄Ganti Asupan", f"asupan {uid} ganti" )
+            butt.ibutton("🔄 Ganti Asupan", f"asupan {uid} ganti" )
             butts = butt.build_menu(1)
             video_link = await get_url(file_url)
             await message.reply_video(video_link, reply_markup=butts)
