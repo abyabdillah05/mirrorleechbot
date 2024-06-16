@@ -508,8 +508,8 @@ async def auto_mirror(client, message):
                 "instagram.com",
                 "facebook.com",
                 "tiktok.com",
-                "twitter.com"
-                "x.com"
+                "twitter.com",
+                "x.com",
             ]
         ):
             return None
