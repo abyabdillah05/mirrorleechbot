@@ -24,6 +24,7 @@ from bot.helper.ext_utils.status_utils import speed_string_to_bytes, get_readabl
 from bot.helper.ext_utils.links_utils import is_share_link
 from bot.helper.ext_utils.exceptions import DirectDownloadLinkException
 from bot.helper.ext_utils.help_messages import PASSWORD_ERROR_MESSAGE
+from bot.helper.telegram_helper.bot_commands import BotCommands
 
 
 _caches = {}
@@ -110,6 +111,8 @@ def direct_link_generator(link: str):
         return pcloud(link)
     elif "sharepoint.com" in domain:
         return sharepoint(link)
+    elif "uploadlinks.com" in domain:
+        return uploadlinks(link)
     elif any(x in domain for x in ["akmfiles.com", "akmfls.xyz"]):
         return akmfiles(link)
     elif any(
@@ -187,7 +190,7 @@ def direct_link_generator(link: str):
             "kitabmarkaz.xyz",
             "wishfast.top",
             "streamwish.to",
-            "jodwish.com",
+            "swdyu.com",
         ]
     ):
         return filelions_and_streamwish(link)
@@ -255,8 +258,10 @@ def direct_link_generator(link: str):
         return bigota(link)
     elif "androiddatahost.com" in domain:
         return androiddatahost(link)
-    elif "apkadmin.com" in domain or "sharemods.com" in domain:
+    elif "apkadmin.com" in domain:
         return apkadmin(link)
+    elif "sharemods.com" in domain:
+        return sharemods(link)
     elif "disk.yandex" in domain or "yadi.sk" in domain:
         return yandex_disk(link)
     elif "androidfilehost.com" in link:
@@ -1135,7 +1140,7 @@ def linkBox(url:str):
         try:
             if data["shareType"] == "singleItem":
                 return __singleItem(session, data["itemId"])
-        except Exception as e:
+        except Exception:
             pass
         if not details["title"]:
             details["title"] = data["dirName"]
@@ -1552,7 +1557,7 @@ def filelions_and_streamwish(url):
     ):
         apiKey = config_dict["FILELION_API"]
         apiUrl = "https://vidhideapi.com"
-    elif any(x in hostname for x in ["embedwish.com", "streamwish.com", "kitabmarkaz.xyz", "wishfast.top", "streamwish.to", "jodwish.com"]):
+    elif any(x in hostname for x in ["embedwish.com", "streamwish.com", "kitabmarkaz.xyz", "wishfast.top", "streamwish.to", "swdyu.com"]):
         apiKey = config_dict["STREAMWISH_API"]
         apiUrl = "https://api.streamwish.com"
     if not apiKey:
@@ -2113,44 +2118,35 @@ def berkasdrive(url):
         return base64.b64decode(link).decode('utf-8')
     else:
         raise DirectDownloadLinkException(f"ERROR: File tidak ditemukan!")
-    
-def tiktok(url):
+
+def files_fm(url):
+    parsed_url = urlparse(url)
+    path = parsed_url.path
+
     with Session() as session:
         try:
-            r = session.get(url)
+            sesi = session.get(url).text
         except Exception as e:
-            return f"ERROR: {e}" 
-    if not r.ok:
-        raise DirectDownloadLinkException(f"ERROR: Gagal mendapatkan data")
-    parse = search(
-        pattern=r"^(?:https?://(?:www\.)?tiktok\.com)/(?P<user>[\a-zA-Z0-9-]+)/video/(?P<id>\d+)",
-        string=r.url,
-    )
-    if not parse:
-        raise DirectDownloadLinkException(f"ERROR: Link yang anda berikan, bukan sebuah video")
-    data = ""
-    while len(data) == 0:
-        r = session.get(
-            url=f"https://api22-normal-c-useast2a.tiktokv.com/aweme/v1/feed/?aweme_id={parse.group('id')}",
-            headers={
-                "User-Agent": user_agent,
-            }
-        )
-        data += r.text
-    data = loads(data)
-    with open("tiktok.json", "w+") as file:
-        dump(data, file)
+            session.close()
+            return f"ERROR: {e}"
 
-        details = {"contents":[], "title": "", "total_size": 0}
-
-        details["title"] = f'{data["aweme_list"][0]["aweme_id"]}.mp4'
-        item = {
-                    "path": "",
-                    "url": data["aweme_list"][0]["video"]["play_addr"]["url_list"][-1],
-                    "filename": details["title"],
-                }
-        details["contents"].append(item)
-        return details
+    soup = BeautifulSoup(sesi, 'html.parser')   
+    if '/u/' in path:
+        try:
+            links = soup.find('div', class_='head_download__dropdown__content').find_all('a')
+            for link in links:
+                if 'upload_zip_streamer.php' in link.get('href'):
+                    return link.post('href')
+                elif 'down.php' in link.get('href'):
+                    return(link.post('href'))
+        except:
+            return f"File Tidak ditemukan"
+    else:
+        og = soup.find('meta', property='og:image')
+        if og:
+            link = og.get('content')
+            f_link = re.sub(r"thumb_video_picture\.php", "down.php", link)
+            return f_link
     
 def seikel(url): 
     with Session() as session:
@@ -2164,3 +2160,43 @@ def seikel(url):
             return f'{s}{data["link"]}'
         except:
             raise DirectDownloadLinkException(f"ERROR: Gagal mendapatkan data")
+
+def uploadlinks(url):
+    """uploadlinks.com link generator
+    by https://github.com/aenulrofik"""
+    try:
+        r = requests.get(url).text
+        tree = HTML(r)
+        if form:= tree.xpath('//form[starts-with(@action, "//1.uploadlinks.com")]'):
+            action_url = form[0].get('action')
+            return f"https:{action_url}"
+        else:
+            raise DirectDownloadLinkException(f"ERROR: File tidak ditemukan atau sudah dihapus")
+    except Exception as e:
+        raise DirectDownloadLinkException(f"Gagal mendapatkan data: {e}")
+    
+def sharemods(url):
+    """sharemods.com link generator
+    by https://github.com/aenulrofik"""
+    with create_scraper() as session:
+        try:
+            req = session.get(url).text
+            tree = HTML(req)
+            op = tree.xpath('//input[@name="op"]/@value')[0]
+            ids = tree.xpath('//input[@name="id"]/@value')[0]
+            post = session.post(
+                url, 
+                data={
+                    "op": op,
+                    "id": ids,
+                    "rand": " ",
+                    "referer": " ",
+                    "method_free": " ",
+                    "method_premium": " ",
+                }).text
+            tree = HTML(post)
+            link = tree.xpath('//a[@id="downloadbtn"]/@href')[0]
+            return link
+        except Exception as e:
+            session.close()
+            raise DirectDownloadLinkException(f"ERROR: Link file tidak ditemukan")
