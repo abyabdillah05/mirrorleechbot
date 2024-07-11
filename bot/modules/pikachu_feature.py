@@ -964,3 +964,11 @@ bot.add_handler(
         )
     )
 )
+bot.add_handler(
+    MessageHandler(
+        gallery_dl, 
+        filters=command(
+            BotCommands.GallerydlCommand
+        ) & CustomFilters.authorized
+    )
+)
