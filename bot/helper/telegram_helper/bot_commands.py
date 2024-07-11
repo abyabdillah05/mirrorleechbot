@@ -48,8 +48,8 @@ class _BotCommands:
         self.AsupanCommand = [f"asupan{CMD_SUFFIX}", f"asu{CMD_SUFFIX}"]
         self.AnimekCommand = [f"waifu{CMD_SUFFIX}", f"wf{CMD_SUFFIX}"]
         self.Yt_searchCommand = [f"youtube{CMD_SUFFIX}", f"yt{CMD_SUFFIX}"]
-        self.SubdlCommand = f"subdl{CMD_SUFFIX}"
         self.DonateCommand = f"donate{CMD_SUFFIX}"
+        self.GallerydlCommand = [f"gallerydl{CMD_SUFFIX}", f"gdl{CMD_SUFFIX}"]
 
 
 BotCommands = _BotCommands()

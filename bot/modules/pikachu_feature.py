@@ -2,8 +2,11 @@ import random
 import requests
 import re
 import httpx
+import niquests
+import os
+import subprocess
 
-from asyncio import sleep as asleep
+from asyncio import sleep as asleep, create_subprocess_exec
 from http.cookiejar import MozillaCookieJar
 from random import randint
 from json import loads
@@ -85,7 +88,7 @@ async def asupan_query(_, query):
         while attempt <= try_count:
             try:
                 butt = ButtonMaker()
-                butt.ibutton("🔄Ganti Asupan", f"asupan {uid} ganti" )
+                butt.ibutton("🔄 Ganti Asupan", f"asupan {uid} ganti" )
                 butts = butt.build_menu(1)
                 video_link = await get_url(file_url)
                 caption = None
@@ -156,32 +159,26 @@ async def tiktokdl(client, message, url, audio=False):
         uname = f'@{message.from_user.username}'
     else:
         uname = f'<code>{message.from_user.first_name}</code>'
-    if audio is False:
-        mess = await sendMessage(message, f"<b>⌛️Mendownload media dari tiktok, silahkan tunggu sebentar...</b>")
-    else:
+    if audio:
         mess = await sendMessage(message, f"<b>⌛️Mendownload audio dari tiktok, silahkan tunggu sebentar...</b>")
-    async with httpx.AsyncClient() as client:
+    else:
+        mess = await sendMessage(message, f"<b>⌛️Mendownload video dari tiktok, silahkan tunggu sebentar...</b>")
+    async with niquests.AsyncSession() as client:
         try:
-            r = await client.get(url)
+            r = await client.get(url, allow_redirects=False)
             if r.status_code == 301:
-                new_url = r.headers['location']
+                new_url = r.headers['Location']
                 r = await client.get(new_url)
-            r.raise_for_status()
-        except httpx.HTTPStatusError as e:
-            await sendMessage(mess, f"Hai {uname}, Terjadi kesalahan saat mencoba mengakses url, silahkan coba kembali.\n\n<blockquote>{e}</blockquote>")
-            await deleteMessage(mess)
-            return None
-        except httpx.RequestError as e:
-            await sendMessage(mess, f"Hai {uname}, Respon dari url terlalu lama, silahkan coba kembali.\n\n<blockquote>{e}</blockquote>")
+                hasil = r.url
+            else:
+                hasil = r.url
+        except Exception as e:
+            await sendMessage(mess, f"Terjadi kesalahan saat mencoba mengakses url, silahkan coba kembali.\n\n<blockquote>{e}</blockquote>")
             await deleteMessage(mess)
             return None
         
-            
-        #if not r.ok:
-        #    await editMessage(mess, f"ERROR: Gagal mendapatkan data")
-        #    return None
         pattern = r"^(?:https?://(?:www\.)?tiktok\.com)/(?P<user>[\a-zA-Z0-9-]+)(?P<content_type>video|photo)+/(?P<id>\d+)"
-        match = re.match(pattern, str(r.url))
+        match = re.match(pattern, str(hasil))
         if match:  
             content_type = match.group("content_type")
             id = match.group('id')
@@ -189,26 +186,23 @@ async def tiktokdl(client, message, url, audio=False):
             await editMessage(message, f"Link yang anda berikan sepertinya salah atau belum support, silahkan coba dengan link yang lain !")
             return None
         
-        async with httpx.AsyncClient() as client:
-            data = ""
-            try:
-                while len(data) == 0:
-                    r = await client.get(
-                        url=f"https://api22-normal-c-useast2a.tiktokv.com/aweme/v1/feed/?aweme_id={id}",
+    async with niquests.AsyncSession() as client:
+        data = ""
+        try:
+            while len(data) == 0:
+                r = await client.get(
+                        url=f"https://api16-normal-useast5.us.tiktokv.com/aweme/v1/feed/?aweme_id={id}",
                         headers={
                             "User-Agent": user_agent,
                         }
                     )
-                    data += r.text
-                data = loads(data)
-            except httpx.HTTPStatusError as e:
-                await sendMessage(mess, f"Hai {uname}, Terjadi kesalahan saat mencoba mengakses url, silahkan coba kembali.\n\n<blockquote>{e}</blockquote>")
-                await deleteMessage(mess)
-                return None
-            except httpx.RequestError as e:
-                await sendMessage(mess, f"Hai {uname}, Respon dari url terlalu lama, silahkan coba kembali.\n\n<blockquote>{e}</blockquote>")
-                await deleteMessage(mess)
-                return None
+                r.raise_for_status()
+                data = r.text
+            data = loads(data)
+        except Exception as e:
+            await sendMessage(mess, f"Hai {uname}, Terjadi kesalahan saat mencoba mengambil data, silahkan coba kembali.\n\n<blockquote>{e}</blockquote>")
+            await deleteMessage(mess)
+            return None
         try:
             music = data["aweme_list"][0]["music"]["play_url"]["url_list"][-1]
             m_capt = data["aweme_list"][0]["music"]["title"]
@@ -333,24 +327,21 @@ async def tiktok_search(_, message):
         #    return None
         #await deleteMessage(mess)
         #await tiktokdl(_, message, id=id)
-    async with httpx.AsyncClient() as client:
-        num = 0
+    async with niquests.AsyncSession() as client:
         video = ""
         try:
             while len(video) == 0:
-                num += 1
                 r = await client.get(
-                    url=f"https://api22-normal-c-useast2a.tiktokv.com/aweme/v1/feed/?aweme_id={data['item_list'][randint(0, len(data['item_list']) - 1)]['id']}",
-                )
-
-                video += r.text
+                        url=f"https://api16-normal-useast5.us.tiktokv.com/aweme/v1/feed/?aweme_id={data['item_list'][randint(0, len(data['item_list']) - 1)]['id']}",
+                        headers={
+                            "User-Agent": user_agent,
+                        }
+                    )
+                r.raise_for_status()
+                video = r.text
             data = loads(video)
-        except httpx.HTTPStatusError as e:
+        except Exception as e:
             await sendMessage(mess, f"Hai {uname}, Terjadi kesalahan saat mencoba mengakses url, silahkan coba kembali.\n\n<blockquote>{e}</blockquote>")
-            await deleteMessage(mess)
-            return None
-        except httpx.RequestError as e:
-            await sendMessage(mess, f"Hai {uname}, Respon dari url terlalu lama, silahkan coba kembali.\n\n<blockquote>{e}</blockquote>")
             await deleteMessage(mess)
             return None
         try:
@@ -552,7 +543,7 @@ async def subdl_butt(uid):
     msg = ""
     r = await get_data(name=keyword, id=None)
     if isinstance(r, dict) and "status" in r:
-        if r["status"]:
+        if (r["status"]):
             results = (r["results"])
             for index, result in enumerate(results, start=1):
                 name = (result["name"])
@@ -611,7 +602,7 @@ async def subdl_result(uid, id):
         for index, result in enumerate(subs, start=1):
             name = (result["release_name"])
             url = (result["url"])
-            sub = f"https://dl.subdl.com/{url}"
+            sub = f"https://dl.subdl.com{url}"
             msg += f"<b>{index:02d}. </b><a href='{sub}'>{name}</a>"
             msg += f"\n"   
         return msg, butts
@@ -822,9 +813,83 @@ async def yt_query(_, query):
         await deleteMessage(message)
         del youtube[uid]
 
+#####################################
+#GALLERY-DL
+#####################################
+async def downloader(url):
+    output_dir = "gallery_dl/"
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    # Perintah untuk menjalankan gallery-dl
+    command = ['gallery-dl', '-d', output_dir, url]
+    if "instagram" in url:
+        command.extend(['--cookies', 'cookies.txt'])
+        
+    process = await create_subprocess_exec(
+        *command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
+    
+    stdout, stderr = await process.communicate()
+
+    if process.returncode == 0:
+        file_paths = []
+        for root, _, files in os.walk(output_dir):
+            for file_name in files:
+                file_paths.append(os.path.join(root, file_name))
+        return file_paths
+    else:
+        return None
+    
+async def gallery_dl(client, message, auto=False):
+    if auto:
+        url = message.text
+    else:
+        rply = message.reply_to_message
+        if rply:
+            url = rply.text if rply.caption is None else rply.caption
+        else:
+            msg = message.text.split(maxsplit=1)
+            if len(msg) > 1:
+                url = msg[1].strip()
+            else:
+                await sendMessage (message, "Silahkan kirimkan link yang akan diunduh dengan gallery-dl !!.")
+                return
+
+    mess = await sendMessage(message, f"<b>Mengunduh media dengan Gallery-DL...</b>\n\n<b>Link: </b><code>{url}</code>")
+    file_paths = await downloader(url)
+    if file_paths is None:
+        await editMessage(mess, f"Gagal mendownload media dari link anda.\n\n<b>Link: </b><code>{url}</code>")
+        return
+
+    media_group = []
+    for file_path in file_paths:
+        if file_path.endswith(('.mp4', '.mkv', '.webm')):
+            media_group.append(InputMediaVideo(media=file_path))
+        elif file_path.endswith(('.png', '.jpeg', '.jpg')):
+            media_group.append(InputMediaPhoto(media=file_path))
+
+    if media_group:
+        for i in range(0, len(media_group), 10):
+            batch = media_group[i:i+10]
+            await message.reply_media_group(media=batch)
+        await deleteMessage(mess)
+        await sendMessage(message, f"Hai {message.from_user.mention}, tugas anda sudah selesai diupload.")
+
+        for file_path in file_paths:
+            os.remove(file_path)
+    else:
+        await editMessage(mess, "Tidak ada media yang ditemukan untuk diunggah.")
+
+async def gallery_dl_auto(client, message):
+    if len(message.text.split()) == 1:
+        await gallery_dl(client, message, auto=True)
+
 ########################################################################################
 
 tiktokregex = r"(https?://(?:www\.)?[a-zA-Z0-9.-]*tiktok\.com/)"
+gallery_dl_regex = r'https?:\/\/(www\.)?(instagram\.com\/[a-zA-Z0-9._-]+|twitter\.com\/[a-zA-Z0-9_]+|x\.com\/[a-zA-Z0-9_]+)'
 
 bot.add_handler(
     MessageHandler(
