@@ -252,7 +252,7 @@ bot.add_handler(
         upload_ddl_main, 
         filters=command(
             BotCommands.Upload_ddlCommand
-        ) & CustomFilters.authorized
+        ) & CustomFilters.sudo
     )
 )
 bot.add_handler(
