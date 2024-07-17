@@ -68,6 +68,7 @@ from .modules import (
     pikachu_feature,
     auto_mirror,
     mirror_leech,
+    ddl_upload,
 )
 
 def get_quotes():

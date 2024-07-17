@@ -50,6 +50,7 @@ class _BotCommands:
         self.Yt_searchCommand = [f"youtube{CMD_SUFFIX}", f"yt{CMD_SUFFIX}"]
         self.DonateCommand = f"donate{CMD_SUFFIX}"
         self.GallerydlCommand = [f"gallerydl{CMD_SUFFIX}", f"gdl{CMD_SUFFIX}"]
+        self.Upload_ddlCommand = [f"gofile{CMD_SUFFIX}", f"gf{CMD_SUFFIX}"]
 
 
 BotCommands = _BotCommands()
