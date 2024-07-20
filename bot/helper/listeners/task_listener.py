@@ -1,3 +1,6 @@
+import asyncio
+import uuid
+
 from requests import utils as rutils
 from aiofiles.os import path as aiopath, listdir, makedirs
 from html import escape
@@ -31,6 +34,8 @@ from bot.helper.ext_utils.files_utils import (
 from bot.helper.telegram_helper.message_utils import (
     sendMessage,
     delete_status,
+    editMessage,
+    deleteMessage,
     update_status_message,
     customSendMessage,
 )
@@ -49,7 +54,9 @@ from bot.helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.ext_utils.db_handler import DbManger
 from bot.helper.common import TaskConfig
 
+from bot.helper.mirror_utils.gofile_uploader import GofileUploader
 
+gofile_tasks = {}
 class TaskListener(TaskConfig):
     def __init__(self, message):
         super().__init__(message)
@@ -222,6 +229,9 @@ class TaskListener(TaskConfig):
                 update_status_message(self.message.chat.id),
                 tg.upload(o_files, m_size, size),
             )
+        elif self.upDest == "gf" or self.upDest == "gofile":
+            size = await get_path_size(up_dir)
+            await self.gofile_task(item_path, size)
         elif is_gdrive_id(self.upDest):
             size = await get_path_size(up_path)
             LOGGER.info(f"Gdrive Upload Name: {self.name}")
@@ -411,6 +421,90 @@ class TaskListener(TaskConfig):
                 non_queued_up.remove(self.mid)
 
         await start_from_queued()
+    
+    #Upload Gofile
+    async def gofile_task(self, item_path, size):
+        async with task_dict_lock:
+            if self.mid in task_dict:
+                del task_dict[self.mid]
+            count = len(task_dict)
+            self.removeFromSameDir()
+
+        if count == 0:
+            await self.clean()
+        else:
+            await update_status_message(self.message.chat.id)
+
+        if (
+            self.isSuperChat
+            and config_dict["INCOMPLETE_TASK_NOTIFIER"]
+            and DATABASE_URL
+        ):
+            await DbManger().rm_complete_task(self.message.link)
+
+        async with queue_dict_lock:
+            if self.mid in queued_dl:
+                queued_dl[self.mid].set()
+                del queued_dl[self.mid]
+            if self.mid in queued_up:
+                queued_up[self.mid].set()
+                del queued_up[self.mid]
+            if self.mid in non_queued_dl:
+                non_queued_dl.remove(self.mid)
+            if self.mid in non_queued_up:
+                non_queued_up.remove(self.mid)
+
+        await start_from_queued()
+        token = uuid.uuid4().hex[:6]
+        butt = ButtonMaker()
+        butt.ibutton("⛔️ Batalkan Tugas", f"gf_cancel {self.user_id} cancel {token}")
+        butts = butt.build_menu(1)
+        mess = await sendMessage(self.message, f"<b>⏳ Proses download file selesai:</b> <blockquote><code>📄 {self.name}</code></blockquote>\n\n<b>Silahkan tunggu untuk proses upload ke Gofile !</b>", butts)
+        up_gofile = asyncio.create_task(
+            GofileUploader(self).gofile_upload(item_path)
+            )
+        gofile_tasks[token] = up_gofile
+        try:
+            response = await up_gofile
+        except asyncio.CancelledError:
+            LOGGER.error(f"Upload gofile canceled")
+            await editMessage(mess, f"<b>Hai {self.tag}, Proses upload ke Gofile dibatalkan !</b>")
+            await sleep(3)
+            await clean_download(self.dir)
+            gofile_tasks.pop(token)
+            if self.newDir:
+                await clean_download(self.newDir)
+            return
+        except Exception as e:
+            LOGGER.error(f"Failed when upload to Gofile => {str(e)}")
+            await editMessage(mess, f"<b>Hai {self.tag}, Proses upload ke Gofile gagal\n\n<blockquote>{e}</blockquote> !</b>")
+            await sleep(3)
+            await clean_download(self.dir)
+            gofile_tasks.pop(token)
+            if self.newDir:
+                await clean_download(self.newDir)
+            return
+        
+        if response.get('status') == 'ok':
+                data = response.get('data', {})
+                msg = f"<b>✅ <b>Hai {self.tag}, File anda berhasil diupload ke Gofile !!</b>\n\n"
+                msg += f"<blockquote><b>📄 Nama File:</b> <code>{data.get('fileName')}</code></blockquote>\n"
+                msg += f"<b>📦 Ukuran:</b> <code>{get_readable_file_size(size)}</code>\n"
+                msg += f"<b>🏷️ Code:</b> <code>{data.get('code')}</code>\n"
+                msg += f"<b>⚙️ MD5:</b> <code>{data.get('md5')}</code>"
+                butt = ButtonMaker()
+                butt.ubutton("🔗 Link Download", data.get('downloadPage'))
+                butts = butt.build_menu(1)
+                await sendMessage(self.message, msg, butts)
+                await deleteMessage(mess)
+        else:
+            await sendMessage(self.message, f'<b>❌ Hai {self.tag}, File anda gagal diupload ke Gofile :(</b> \n\n<blockquote>{response.get("message")}</blockquote>')
+            await deleteMessage(mess)
+        await sleep(3)
+        await clean_download(self.dir)
+        gofile_tasks.pop(token)
+        if self.newDir:
+            await clean_download(self.newDir)
 
     async def onDownloadError(self, error, button=None):
         async with task_dict_lock:

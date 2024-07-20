@@ -64,6 +64,7 @@ class Mirror(TaskListener):
         multiTag=None,
         auto_mode=False,
         button_mode=False,
+        gofile=False,
         auto_url="",
         options="",
     ):
@@ -82,6 +83,7 @@ class Mirror(TaskListener):
         self.auto_mode = auto_mode
         self.auto_url = auto_url
         self.button_mode = button_mode
+        self.gofile = gofile
 
     @new_task
     async def newEvent(self):
@@ -125,12 +127,15 @@ class Mirror(TaskListener):
             "-t": "",
         }
 
+        if self.gofile:
+            arg_base["-up"] = "gofile"
+
         args = arg_parser(input_list[1:], arg_base)
 
         self.select = args["-s"]
         self.seed = args["-d"]
         self.name = args["-n"]
-        self.upDest = args["-up"]
+        self.upDest = args["-up"] 
         self.rcFlags = args["-rcf"]
         self.link = args["link"]
         self.compress = args["-z"]
@@ -157,6 +162,7 @@ class Mirror(TaskListener):
             self.link = self.auto_url
             if not self.auto_mode:
                 _type = "leech" if self.isLeech else "mirror"
+                
                 reply_to = self.message.reply_to_message
                 if reply_to:
                     if reply_text := reply_to.text:
@@ -186,7 +192,9 @@ class Mirror(TaskListener):
 
             if (is_url(self.link) or is_magnet(self.link) or reply_to is not None):
                 try:
-                    if not self.link:
+                    if self.gofile:
+                        auto_args = await AutoMirror(self).main_pesan_custom(self.link, _type, gofile=True)
+                    elif not self.link:
                         if _type:
                             auto_args = await AutoMirror(self).main_pesan_custom("Files", _type)
                         else:
@@ -259,7 +267,10 @@ class Mirror(TaskListener):
         if len(self.bulk) != 0:
             del self.bulk[0]
 
-        self.run_multi(input_list, folder_name, Mirror)
+        if self.gofile:
+            self.run_multi(input_list, folder_name, Mirror, gofile=True)
+        else:
+            self.run_multi(input_list, folder_name, Mirror)
 
         await self.getTag(text)
 
@@ -475,6 +486,9 @@ class Mirror(TaskListener):
 async def mirror(client, message):
     Mirror(client, message).newEvent()
 
+async def gofile(client, message):
+    Mirror(client, message, gofile=True).newEvent()
+
 
 async def qb_mirror(client, message):
     Mirror(client, message, isQbit=True).newEvent()
@@ -554,5 +568,13 @@ bot.add_handler(
         & filters.regex(
             f"{urlregex}|{magnetregex}"
         )
+    )
+)
+bot.add_handler(
+    MessageHandler(
+        gofile, 
+        filters=command(
+            BotCommands.Upload_ddlCommand
+        ) & CustomFilters.authorized
     )
 )

@@ -193,8 +193,10 @@ class TaskConfig:
                 )
             if not self.upDest:
                 raise ValueError("<b>Tujuan upload tidak ditemukan!</b>")
+                
             if not is_gdrive_id(self.upDest) and not is_rclone_path(self.upDest):
-                raise ValueError("<b>Tujuan upload salah!</b>")
+                if not self.upDest == "gf" and not self.upDest == "gofile":
+                    raise ValueError("<b>Tujuan upload salah!</b>")
             if self.upDest not in ["rcl", "gdl"]:
                 await self.isTokenExists(self.upDest, "up")
 
@@ -321,7 +323,7 @@ class TaskConfig:
             self.tag = self.message.from_user.mention
 
     @new_task
-    async def run_multi(self, input_list, folder_name, obj):
+    async def run_multi(self, input_list, folder_name, obj, gofile=False):
         await sleep(7)
         if not self.multiTag and self.multi > 1:
             self.multiTag = token_urlsafe(3)
@@ -363,16 +365,30 @@ class TaskConfig:
             nextmsg.from_user = self.user
         else:
             nextmsg.sender_chat = self.user
-        obj(
-            self.client,
-            nextmsg,
-            self.isQbit,
-            self.isLeech,
-            self.sameDir,
-            self.bulk,
-            self.multiTag,
-            self.options,
-        ).newEvent()
+        
+        if gofile:
+            obj(
+                self.client,
+                nextmsg,
+                self.isQbit,
+                self.isLeech,
+                self.sameDir,
+                self.bulk,
+                self.multiTag,
+                self.options,
+                gofile=True
+            ).newEvent()
+        else:
+            obj(
+                self.client,
+                nextmsg,
+                self.isQbit,
+                self.isLeech,
+                self.sameDir,
+                self.bulk,
+                self.multiTag,
+                self.options,
+            ).newEvent()
 
     async def initBulk(self, input_list, bulk_start, bulk_end, obj):
         try:
