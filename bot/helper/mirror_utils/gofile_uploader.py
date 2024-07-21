@@ -1,5 +1,5 @@
 import asyncio
-import aiohttp
+import requests
 import json
 from random import choice
 
@@ -8,31 +8,33 @@ class GofileUploader:
     def __init__(self, listener):
         self.l = listener
     
-    async def fetch_servers(self):
-        url = "https://api.gofile.io/servers"
+    def fetch_servers(self):
         headers = {
-        "User-Agent": user_agent
-    }
+        "User-Agent": user_agent,
+        "Accept-Encoding": "gzip, deflate, br",
+        "Accept": "*/*",
+        "Connection": "keep-alive",
+        }
+        url = f"https://api.gofile.io/servers"
         try:
-            async with aiohttp.ClientSession() as client:
-                async with client.get(url, headers=headers) as r:
-                    json.loads(r)
-                    if r["status"] == "ok":
-                        return r["data"]
-                    else:
-                        return None
+            with requests.Session() as session:
+                r = session.get(url, headers=headers).json()
+                if r["status"] == "ok":
+                    return r["data"]
+                else:
+                    raise Exception
         except:
-            raise None
+            raise Exception
 
     async def gofile_upload(self, item_path):
         try:
-            list_server = await self.fetch_servers()
+            list_server = self.fetch_servers()
         except:
             list_server = None
         if list_server:
             server = choice(list_server["servers"])["name"]
         else:
-            server = "store1"
+            return {"status": "error", "message": f"Tidak ada server gofile yang tersedia, silahkan coba beberapa saat lagi !"}
         
         command = [
             'curl',
@@ -51,10 +53,10 @@ class GofileUploader:
             try:
                 response_data = json.loads(stdout.decode())
                 if response_data.get('status') == 'ok':
-                    return response_data
+                    return response_data, server
                 else:
                     return {"status": "error", "message": f"Terjadi kesalahan saat mencoba upload ke Gofile: {response_data.get('message')}"}
             except json.JSONDecodeError as e:
                 return {"status": "error", "message": f"{e}"}
         else:
-            return {"status": "error", "message": f"{stderr.decode()}", "server": server}
+            return {"status": "error", "message": f"{stderr.decode()}"}

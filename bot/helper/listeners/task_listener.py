@@ -465,7 +465,7 @@ class TaskListener(TaskConfig):
             )
         gofile_tasks[token] = up_gofile
         try:
-            response = await up_gofile
+            response, server = await up_gofile
         except asyncio.CancelledError:
             LOGGER.error(f"Upload gofile canceled")
             await editMessage(mess, f"<b>Hai {self.tag}, Proses upload ke Gofile dibatalkan !</b>")
@@ -491,6 +491,7 @@ class TaskListener(TaskConfig):
                 msg += f"<blockquote><b>📄 Nama File:</b> <code>{data.get('fileName')}</code></blockquote>\n"
                 msg += f"<b>📦 Ukuran:</b> <code>{get_readable_file_size(size)}</code>\n"
                 msg += f"<b>🏷️ Code:</b> <code>{data.get('code')}</code>\n"
+                msg += f"<b>🖥️ Server:</b> <code>{server}</code>\n"
                 msg += f"<b>⚙️ MD5:</b> <code>{data.get('md5')}</code>"
                 butt = ButtonMaker()
                 butt.ubutton("🔗 Link Download", data.get('downloadPage'))
