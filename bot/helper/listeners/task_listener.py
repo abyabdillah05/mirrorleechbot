@@ -485,7 +485,7 @@ class TaskListener(TaskConfig):
                 await clean_download(self.newDir)
             return
         
-        if isinstance(response, list):
+        if isinstance(response, dict):
             if response.get('status') == 'ok':
                     data = response.get('data', {})
                     msg = f"<b>✅ <b>Hai {self.tag}, File anda berhasil diupload ke Gofile !!</b>\n\n"
