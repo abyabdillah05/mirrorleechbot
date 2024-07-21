@@ -485,21 +485,25 @@ class TaskListener(TaskConfig):
                 await clean_download(self.newDir)
             return
         
-        if response.get('status') == 'ok':
-                data = response.get('data', {})
-                msg = f"<b>✅ <b>Hai {self.tag}, File anda berhasil diupload ke Gofile !!</b>\n\n"
-                msg += f"<blockquote><b>📄 Nama File:</b> <code>{data.get('fileName')}</code></blockquote>\n"
-                msg += f"<b>📦 Ukuran:</b> <code>{get_readable_file_size(size)}</code>\n"
-                msg += f"<b>🏷️ Code:</b> <code>{data.get('code')}</code>\n"
-                msg += f"<b>🖥️ Server:</b> <code>{server}</code>\n"
-                msg += f"<b>⚙️ MD5:</b> <code>{data.get('md5')}</code>"
-                butt = ButtonMaker()
-                butt.ubutton("🔗 Link Download", data.get('downloadPage'))
-                butts = butt.build_menu(1)
-                await sendMessage(self.message, msg, butts)
+        if isinstance(response, list):
+            if response.get('status') == 'ok':
+                    data = response.get('data', {})
+                    msg = f"<b>✅ <b>Hai {self.tag}, File anda berhasil diupload ke Gofile !!</b>\n\n"
+                    msg += f"<blockquote><b>📄 Nama File:</b> <code>{data.get('fileName')}</code></blockquote>\n"
+                    msg += f"<b>📦 Ukuran:</b> <code>{get_readable_file_size(size)}</code>\n"
+                    msg += f"<b>🏷️ Code:</b> <code>{data.get('code')}</code>\n"
+                    msg += f"<b>🖥️ Server:</b> <code>{server}</code>\n"
+                    msg += f"<b>⚙️ MD5:</b> <code>{data.get('md5')}</code>"
+                    butt = ButtonMaker()
+                    butt.ubutton("🔗 Link Download", data.get('downloadPage'))
+                    butts = butt.build_menu(1)
+                    await sendMessage(self.message, msg, butts)
+                    await deleteMessage(mess)
+            else:
+                await sendMessage(self.message, f'<b>❌ Hai {self.tag}, File anda gagal diupload ke Gofile :(</b> \n\n<blockquote>{response.get("message")}</blockquote>')
                 await deleteMessage(mess)
         else:
-            await sendMessage(self.message, f'<b>❌ Hai {self.tag}, File anda gagal diupload ke Gofile :(</b> \n\n<blockquote>{response.get("message")}</blockquote>')
+            await sendMessage(self.message, f'<b>❌ Hai {self.tag}, File anda gagal diupload ke Gofile :(</b> \n\n<blockquote>Gofile uploader belum support untuk upload folder !</blockquote></b>')
             await deleteMessage(mess)
         await sleep(3)
         await clean_download(self.dir)
