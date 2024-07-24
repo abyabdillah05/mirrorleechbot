@@ -2,6 +2,7 @@ import base64
 import urllib3
 import requests
 import re
+import httpx
 
 from hashlib import sha256
 from http.cookiejar import MozillaCookieJar
@@ -2078,6 +2079,18 @@ def qiwi(url):
                     "url": flink,
                     "filename": name[0],
                 }
+        async def get_size(link):
+            async with httpx.AsyncClient() as client:
+                r = await client.head(link)
+                size = r.headers.get('Content-Length')
+                return int(size) if size is not None else None
+            
+        size = async_to_sync(get_size, flink)
+        if size:
+            if isinstance(size, str) and size.isdigit():
+                size = float(size)
+                details["total_size"] += size
+                details["contents"].append(item)
         details["contents"].append(item)
         return details
 
