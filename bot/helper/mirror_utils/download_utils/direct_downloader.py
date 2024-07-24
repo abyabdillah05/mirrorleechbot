@@ -25,6 +25,7 @@ async def add_direct_download(listener, path):
     size = details["total_size"]
     if limit_exceeded := await limit_checker(size, listener, isDirect=True):
         await listener.onDownloadError(limit_exceeded)
+        return
 
     if not listener.name:
         listener.name = details["title"]
