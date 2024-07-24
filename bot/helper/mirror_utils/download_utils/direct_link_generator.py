@@ -2079,18 +2079,16 @@ def qiwi(url):
                     "url": flink,
                     "filename": name[0],
                 }
-        async def get_size(link):
-            async with httpx.AsyncClient() as client:
-                r = await client.head(link)
-                size = r.headers.get('Content-Length')
-                return int(size) if size is not None else None
+        def get_size(link):
+            r = requests.head(link)
+            file_size = r.headers.get('Content-Length')
+            return int(file_size) if file_size is not None else None
             
-        size = async_to_sync(get_size, flink)
+        size = get_size(flink)
         if size:
-            if isinstance(size, str) and size.isdigit():
-                size = float(size)
-                details["total_size"] += size
-                details["contents"].append(item)
+            size = float(size)
+            details["total_size"] += size
+            details["contents"].append(item)
         details["contents"].append(item)
         return details
 
