@@ -65,6 +65,7 @@ class Mirror(TaskListener):
         auto_mode=False,
         button_mode=False,
         gofile=False,
+        buzzheavier=False,
         auto_url="",
         options="",
     ):
@@ -84,6 +85,7 @@ class Mirror(TaskListener):
         self.auto_url = auto_url
         self.button_mode = button_mode
         self.gofile = gofile
+        self.buzzheavier = buzzheavier
 
     @new_task
     async def newEvent(self):
@@ -129,6 +131,8 @@ class Mirror(TaskListener):
 
         if self.gofile:
             arg_base["-up"] = "gofile"
+        elif self.buzzheavier:
+            arg_base["-up"] = "buzzheavier"
 
         args = arg_parser(input_list[1:], arg_base)
 
@@ -194,6 +198,8 @@ class Mirror(TaskListener):
                 try:
                     if self.gofile:
                         auto_args = await AutoMirror(self).main_pesan_custom(self.link, _type, gofile=True)
+                    elif self.buzzheavier:
+                        auto_args = await AutoMirror(self).main_pesan_custom(self.link, _type, buzzheavier=True)
                     elif not self.link:
                         if _type:
                             auto_args = await AutoMirror(self).main_pesan_custom("Files", _type)
@@ -269,6 +275,8 @@ class Mirror(TaskListener):
 
         if self.gofile:
             self.run_multi(input_list, folder_name, Mirror, gofile=True)
+        elif self.buzzheavier:
+            self.run_multi(input_list, folder_name, Mirror, buzzheavier=True)
         else:
             self.run_multi(input_list, folder_name, Mirror)
 
@@ -488,6 +496,9 @@ async def mirror(client, message):
 
 async def gofile(client, message):
     Mirror(client, message, gofile=True).newEvent()
+    
+async def buzz(client, message):
+    Mirror(client, message, buzzheavier=True).newEvent()
 
 
 async def qb_mirror(client, message):
@@ -574,7 +585,15 @@ bot.add_handler(
     MessageHandler(
         gofile, 
         filters=command(
-            BotCommands.Upload_ddlCommand
-        ) & CustomFilters.authorized
+            BotCommands.Upload_gofileCommand
+        ) & CustomFilters.owner
+    )
+)
+bot.add_handler(
+    MessageHandler(
+        buzz, 
+        filters=command(
+            BotCommands.Upload_buzzCommand
+        ) & CustomFilters.owner
     )
 )

@@ -5,8 +5,8 @@ from random import choice
 
 user_agent  = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0"
 class GofileUploader:
-    def __init__(self, listener):
-        self.l = listener
+    def __init__(self):
+        pass
     
     def fetch_servers(self):
         headers = {

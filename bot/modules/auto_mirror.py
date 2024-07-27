@@ -98,6 +98,7 @@ class AutoMirror:
         self._type = None
         self._url = None
         self.gofile = False
+        self.buzzheavier = False
 
     @new_thread
     async def _event_handler(self):
@@ -131,12 +132,15 @@ class AutoMirror:
             await deleteMessage(self._reply_to)
             return self._auto_args
     
-    async def main_pesan_custom(self, url, type, gofile=False):
+    async def main_pesan_custom(self, url, type, gofile=False, buzzheavier=False):
         if type:
             self._type = type
         if gofile:
             self.gofile = True
             self._auto_args["custom_upload"] = "gofile"
+        elif buzzheavier:
+            self.buzzheavier = True
+            self._auto_args["custom_upload"] = "buzzheavier"
         self._url = url
         future = self._event_handler()
         msg, buttons = await self.sub_button()
@@ -181,7 +185,7 @@ class AutoMirror:
         s = "" if "custom_upload" not in auto_args else "✅"
         butt.ibutton(f"Cstm Upload {s}", f"auto custom_upload")
         
-        if not self.gofile:
+        if not self.gofile and not self.buzzheavier:
             s = "" if "extract" not in auto_args else "✅"
             butt.ibutton(f"Extract {s}", f"auto extract")
 

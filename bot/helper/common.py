@@ -195,7 +195,7 @@ class TaskConfig:
                 raise ValueError("<b>Tujuan upload tidak ditemukan!</b>")
                 
             if not is_gdrive_id(self.upDest) and not is_rclone_path(self.upDest):
-                if not self.upDest == "gf" and not self.upDest == "gofile":
+                if self.upDest not in ("gf", "gofile", "bh", "buzzheavier"):
                     raise ValueError("<b>Tujuan upload salah!</b>")
             if self.upDest not in ["rcl", "gdl"]:
                 await self.isTokenExists(self.upDest, "up")
@@ -323,7 +323,7 @@ class TaskConfig:
             self.tag = self.message.from_user.mention
 
     @new_task
-    async def run_multi(self, input_list, folder_name, obj, gofile=False):
+    async def run_multi(self, input_list, folder_name, obj, gofile=False, buzzheavier=False):
         await sleep(7)
         if not self.multiTag and self.multi > 1:
             self.multiTag = token_urlsafe(3)
@@ -377,6 +377,18 @@ class TaskConfig:
                 self.multiTag,
                 self.options,
                 gofile=True
+            ).newEvent()
+        elif buzzheavier:
+            obj(
+                self.client,
+                nextmsg,
+                self.isQbit,
+                self.isLeech,
+                self.sameDir,
+                self.bulk,
+                self.multiTag,
+                self.options,
+                buzzheavier=True
             ).newEvent()
         else:
             obj(
