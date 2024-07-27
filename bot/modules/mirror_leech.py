@@ -586,7 +586,7 @@ bot.add_handler(
         gofile, 
         filters=command(
             BotCommands.Upload_gofileCommand
-        ) & CustomFilters.owner
+        ) & CustomFilters.authorized
     )
 )
 bot.add_handler(
@@ -594,6 +594,6 @@ bot.add_handler(
         buzz, 
         filters=command(
             BotCommands.Upload_buzzCommand
-        ) & CustomFilters.owner
+        ) & CustomFilters.authorized
     )
 )
