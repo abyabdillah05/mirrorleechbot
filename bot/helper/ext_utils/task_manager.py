@@ -141,26 +141,42 @@ async def limit_checker(size, listener, isTorrent=False, isMega=False, isGdrive=
             limit_exceeded = f'Limit download Mega: {get_readable_file_size(limit)}'
     elif isTorrent:
         limit = 15 * 1024**3
-        if listener.isLeech or listener.upDest.startswith("mrcc:"):
-            limit = 90 * 1024**3
+        if listener.upDest and listener.upDest.startswith("mrcc:"):
+            limit = 50 * 1024**3
+        elif listener.isLeech:
+            limit = 50 * 1024**3
+        if size > limit:
+            limit_exceeded = f'Limit Mirror Torrent: {get_readable_file_size(limit)}'
+    elif isTorrent:
+        limit = 15 * 1024**3
+        if listener.upDest and listener.upDest.startswith("mrcc:"):
+            limit = 50 * 1024**3
+        elif listener.isLeech:
+            limit = 50 * 1024**3
         if size > limit:
             limit_exceeded = f'Limit Mirror Torrent: {get_readable_file_size(limit)}'
     elif isGdrive:
         limit = 15 * 1024**3
-        if listener.isLeech or listener.upDest.startswith("mrcc:"):
-            limit = 90 * 1024**3
+        if listener.upDest and listener.upDest.startswith("mrcc:"):
+            limit = 50 * 1024**3
+        elif listener.isLeech:
+            limit = 50 * 1024**3
         if size > limit:
             limit_exceeded = f'Limit Mirror Gdrive: {get_readable_file_size(limit)}'
     elif isDirect:
         limit = 15 * 1024**3
-        if listener.isLeech or listener.upDest.startswith("mrcc:"):
-            limit = 90 * 1024**3
+        if listener.upDest and listener.upDest.startswith("mrcc:"):
+            limit = 50 * 1024**3
+        elif listener.isLeech:
+            limit = 50 * 1024**3
         if size > limit:
             limit_exceeded = f'Limit Mirror Direct: {get_readable_file_size(limit)}'
     elif isRclone:
         limit = 15 * 1024**3
-        if listener.isLeech or listener.upDest.startswith("mrcc:"):
-            limit = 90 * 1024**3
+        if listener.upDest and listener.upDest.startswith("mrcc:"):
+            limit = 50 * 1024**3
+        elif listener.isLeech:
+            limit = 50 * 1024**3
         if size > limit:
             limit_exceeded = f'Limit Mirror Rclone: {get_readable_file_size(limit)}'
 
