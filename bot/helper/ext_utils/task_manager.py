@@ -135,7 +135,9 @@ async def start_from_queued():
 
 async def limit_checker(size, listener, isTorrent=False, isMega=False, isGdrive=False, isDirect=False, isRclone=False):
     limit_exceeded = ''
-    if isMega:
+    if size is None:
+        return None
+    elif isMega:
         limit = 4 * 1024**3
         if size > limit:
             limit_exceeded = f'Limit download Mega: {get_readable_file_size(limit)}'
