@@ -1,5 +1,6 @@
 import asyncio
 import uuid
+import os
 
 from requests import utils as rutils
 from aiofiles.os import path as aiopath, listdir, makedirs
@@ -232,12 +233,18 @@ class TaskListener(TaskConfig):
                 tg.upload(o_files, m_size, size),
             )
         elif self.upDest == "gf" or self.upDest == "gofile":
-            size = await get_path_size(up_dir)
-            await self.ddlUpload_task(item_path, size, isGofile=True)
+            if os.path.isdir(up_path):
+                await self.onUploadError("Gofile Uploader belum bisa untuk upload folder !")
+                return
+            size = await get_path_size(up_path)
+            await self.ddlUpload_task(up_path, size, isGofile=True)
 
         elif self.upDest == "bh" or self.upDest == "buzzheavier":
-            size = await get_path_size(up_dir)
-            await self.ddlUpload_task(item_path, size, isBuzzheavier=True)
+            if os.path.isdir(up_path):
+                await self.onUploadError("Buzzheavier Uploader belum bisa untuk upload folder !")
+                return
+            size = await get_path_size(up_path)
+            await self.ddlUpload_task(up_path, size, isBuzzheavier=True)
 
         elif is_gdrive_id(self.upDest):
             size = await get_path_size(up_path)
@@ -481,10 +488,7 @@ class TaskListener(TaskConfig):
                 )
         ddl_tasks[token] = up_ddl
         try:
-            if isGofile:
-                response, server = await up_ddl
-            elif isBuzzheavier:
-                response = await up_ddl
+            response, server = await up_ddl
         except asyncio.CancelledError:
             LOGGER.error(f"Upload ddl canceled")
             await editMessage(mess, f"<b>Hai {self.tag}, Proses upload ke {ddlServer} dibatalkan !</b>")
@@ -511,8 +515,8 @@ class TaskListener(TaskConfig):
                 msg += f"<blockquote><b>📄 Nama File:</b> <code>{data.get('fileName')}</code></blockquote>\n"
                 msg += f"<b>📦 Ukuran:</b> <code>{get_readable_file_size(size)}</code>\n"
                 msg += f"<b>🏷️ Code:</b> <code>{data.get('code')}</code>\n"
+                msg += f"<b>🖥️ Server:</b> <code>{server}</code>\n"
                 if isGofile:
-                    msg += f"<b>🖥️ Server:</b> <code>{server}</code>\n"
                     msg += f"<b>⚙️ MD5:</b> <code>{data.get('md5')}</code>"
                 butt = ButtonMaker()
                 butt.ubutton("🔗 Link Download", data.get('downloadPage'))
@@ -523,7 +527,7 @@ class TaskListener(TaskConfig):
                 await sendMessage(self.message, f'<b>❌ Hai {self.tag}, File anda gagal diupload ke {ddlServer} :(</b> \n\n<blockquote>{response.get("message")}</blockquote>')
                 await deleteMessage(mess)
         else:
-            await sendMessage(self.message, f'<b>❌ Hai {self.tag}, File anda gagal diupload ke {ddlServer} :(</b> \n\n<blockquote>Silahkan coba kembali dan pastikan file yang anda coba upload adalah bukan sebuah folder !\n\n{response}</blockquote></b>')
+            await sendMessage(self.message, f'<b>❌ Hai {self.tag}, Terjadi kesalahan saat mencoba mengupload file anda ke {ddlServer}, silahkan coba kembali !</b>')
             await deleteMessage(mess)
         await sleep(3)
         await clean_download(self.dir)

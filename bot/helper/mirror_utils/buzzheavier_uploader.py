@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+from random import choice
 
 class BuzzheavierUploader:
     def __init__(self):
@@ -8,11 +9,13 @@ class BuzzheavierUploader:
     
     async def buzzheavier_upload(self, item_path):
         file_name = os.path.basename(item_path)
+        servers = ["buzzheavier.com", "trashbytes.net", "flashbang.sh"]
+        server = choice(servers)
         command = [
             "curl",
             "-#o", "-",
             "-T", f"{item_path}",
-            f"https://w.buzzheavier.com/t/{file_name}",
+            f"https://w.{server}/t/{file_name}",
         ]
         process = await asyncio.create_subprocess_exec(
             *command,
@@ -33,7 +36,7 @@ class BuzzheavierUploader:
                             },
                             "status": "ok"
                             }
-                    return hasil
+                    return hasil, server
                 else:
                     return {"status": "error", "message": f"Error saat upload ke buzzheavier, {stderr.decode()}"}
             except Exception as e:
