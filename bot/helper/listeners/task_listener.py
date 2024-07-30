@@ -512,7 +512,7 @@ class TaskListener(TaskConfig):
             if response.get('status') == 'ok':
                 data = response.get('data', {})
                 msg = f"<b>✅ <b>Hai {self.tag}, File anda berhasil diupload ke {ddlServer} !!</b>\n\n"
-                msg += f"<blockquote><b>📄 Nama File:</b> <code>{data.get('fileName')}</code></blockquote>\n"
+                msg += f"<blockquote><b>📄 Nama File:</b> <code>{data.get('name')}</code></blockquote>\n"
                 msg += f"<b>📦 Ukuran:</b> <code>{get_readable_file_size(size)}</code>\n"
                 msg += f"<b>🏷️ Code:</b> <code>{data.get('code')}</code>\n"
                 msg += f"<b>🖥️ Server:</b> <code>{server}</code>\n"

@@ -32,7 +32,7 @@ class BuzzheavierUploader:
                             "data": {
                                 "code": f"{response_data['id']}",
                                 "downloadPage": f"https://buzzheavier.com/f/{response_data['id']}",
-                                "fileName": file_name,
+                                "name": file_name,
                             },
                             "status": "ok"
                             }
