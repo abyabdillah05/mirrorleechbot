@@ -6,7 +6,6 @@ from bot import bot
 from bot.helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.telegram_helper.message_utils import editMessage, deleteMessage
 from bot.helper.ext_utils.help_messages import MIRROR_HELP, LEECH_HELP, TORRENT_HELP, YTDLP_HELP, OTHER_HELP
-from bot.helper.listeners.task_listener import ddl_tasks
 
 
 async def pikaquery(_, query):
@@ -47,18 +46,4 @@ async def pikaquery(_, query):
             if message.reply_to_message.reply_to_message:
                 await deleteMessage(message.reply_to_message.reply_to_message)
 
-async def ddl_query(_, query):
-        user_id = query.from_user.id
-        data = query.data.split()
-        if user_id != int(data[1]):
-            return await query.answer(text="Bukan tugas darimu!", show_alert=True)
-        elif data[2] == "cancel":
-            if data[3] in ddl_tasks:
-                try:
-                    ddl_tasks[data[3]].cancel()
-                except:
-                    return await query.answer(text="Tugas tidak ditemukan, atau sudah dibatalkan !", show_alert=True)
-
-
 bot.add_handler(CallbackQueryHandler(pikaquery, filters=regex(r'^pika')))
-bot.add_handler(CallbackQueryHandler(ddl_query, filters=regex(r'^ddl_cancel')))

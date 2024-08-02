@@ -1,7 +1,4 @@
-import asyncio
-import uuid
 import os
-
 from requests import utils as rutils
 from aiofiles.os import path as aiopath, listdir, makedirs
 from html import escape
@@ -48,6 +45,7 @@ from bot.helper.mirror_utils.status_utils.gdrive_status import GdriveStatus
 from bot.helper.mirror_utils.status_utils.telegram_status import TelegramStatus
 from bot.helper.mirror_utils.status_utils.rclone_status import RcloneStatus
 from bot.helper.mirror_utils.status_utils.queue_status import QueueStatus
+from bot.helper.mirror_utils.status_utils.ddlupload_status import DdlUploadStatus
 from bot.helper.mirror_utils.gdrive_utils.upload import gdUpload
 from bot.helper.mirror_utils.telegram_uploader import TgUploader
 from bot.helper.mirror_utils.rclone_utils.transfer import RcloneTransferHelper
@@ -55,10 +53,8 @@ from bot.helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.ext_utils.db_handler import DbManger
 from bot.helper.common import TaskConfig
 
-from bot.helper.mirror_utils.gofile_uploader import GofileUploader
-from bot.helper.mirror_utils.buzzheavier_uploader import BuzzheavierUploader
-
-ddl_tasks = {}
+from bot.helper.mirror_utils.ddl_uploader import DdlUploader
+from bot.helper.ext_utils.files_utils import get_mime_type
 
 class TaskListener(TaskConfig):
     def __init__(self, message):
@@ -88,14 +84,9 @@ class TaskListener(TaskConfig):
             await DbManger().add_incomplete_task(
                 self.message.chat.id, self.message.link, self.tag
             )
+        self.extra_details = {'startTime': time()}
 
     async def onDownloadComplete(self):
-        item_path = f"{self.dir}/{self.name}"
-        self.md5 = None
-        #try:
-        #    self.md5 = await get_md5(item_path)
-        #except:
-        #    pass
         multi_links = False
         if self.sameDir and self.mid in self.sameDir["tasks"]:
             while not (
@@ -131,11 +122,6 @@ class TaskListener(TaskConfig):
             download = task_dict[self.mid]
             self.name = download.name()
             gid = download.gid()
-            spath = f"{self.dir}"
-            #for item in await listdir(spath):
-            #    item_path = f"{self.dir}/{item}"
-            #self.md5 = get_md5(item_path)
-            self.extra_details = {'startTime': time()}
         LOGGER.info(f"Download completed: {self.name}")
 
         if multi_links:
@@ -180,13 +166,12 @@ class TaskListener(TaskConfig):
             up_path = await self.proceedCompress(up_path, size, gid)
             if not up_path:
                 return
-
-        up_dir, self.name = up_path.rsplit("/", 1)
-        spath = f"{self.dir}"
-        #for item in await listdir(spath):
-        #    item_path = f"{self.dir}/{item}"
-        #self.md5_zip = get_md5(item_path)
-        size = await get_path_size(up_dir)
+            
+        if self.upDest == "bh" or self.upDest == "buzzheavier":
+            if os.path.isdir(up_path):
+                up_path = await self.proceedCompress(up_path, size, gid)
+                if not up_path:
+                    return
         
         if self.isLeech:
             m_size = []
@@ -232,19 +217,39 @@ class TaskListener(TaskConfig):
                 update_status_message(self.message.chat.id),
                 tg.upload(o_files, m_size, size),
             )
-        elif self.upDest == "gf" or self.upDest == "gofile":
-            if os.path.isdir(up_path):
-                await self.onUploadError("Gofile Uploader belum bisa untuk upload folder !")
-                return
-            size = await get_path_size(up_path)
-            await self.ddlUpload_task(up_path, size, isGofile=True)
 
-        elif self.upDest == "bh" or self.upDest == "buzzheavier":
+        elif self.upDest == "gf" or self.upDest == "gofile":
+            self.isGofile = True
+            size = await get_path_size(up_path)
+            LOGGER.info(f"Upload to Gofile, Name: {self.name}")
+            gf = DdlUploader(self, up_path)
+            async with task_dict_lock:
+                task_dict[self.mid] = DdlUploadStatus(self, gf, size, gid)
             if os.path.isdir(up_path):
-                await self.onUploadError("Buzzheavier Uploader belum bisa untuk upload folder !")
+                await gather(
+                    update_status_message(self.message.chat.id),
+                    sync_to_async(gf.gf_uploadFolder, size),
+                )
+            else:
+                await gather(
+                    update_status_message(self.message.chat.id),
+                    sync_to_async(gf.gf_upload),
+                )
+        
+        elif self.upDest == "bh" or self.upDest == "buzzheavier":
+            self.isBuzzheavier = True
+            if os.path.isdir(up_path):
+                await self.onUploadError("Folder anda gagal dicompress dan tidak bisa diupload ke Buzzheavier")
                 return
             size = await get_path_size(up_path)
-            await self.ddlUpload_task(up_path, size, isBuzzheavier=True)
+            LOGGER.info(f"Upload to Buzzheavier, Name: {self.name}")
+            bh = DdlUploader(self, up_path)
+            async with task_dict_lock:
+                task_dict[self.mid] = DdlUploadStatus(self, bh, size, gid)
+            await gather(
+                update_status_message(self.message.chat.id),
+                sync_to_async(bh.bh_upload, size),
+            )
 
         elif is_gdrive_id(self.upDest):
             size = await get_path_size(up_path)
@@ -268,7 +273,7 @@ class TaskListener(TaskConfig):
             )
 
     async def onUploadComplete(
-        self, link, size, files, folders, mime_type, rclonePath="", dir_id=""
+        self, link, size, files, folders, mime_type, rclonePath="", dir_id="", server="",
     ):
         if (
             self.isSuperChat
@@ -316,9 +321,9 @@ class TaskListener(TaskConfig):
         else:
             msg += f"\n<b>🏷️ Tipe :</b> <code>{mime_type}</code>"
             msg += f'\n<b>⏱ Waktu:</b> {get_readable_time(time() - self.extra_details["startTime"])}'
-            if mime_type != "Folder" and not self.isClone:
-                if self.md5:
-                    msg += f"\n<b>🛡️ MD5 Checksum:</b> <code>{self.md5}</code>"
+            #if mime_type != "Folder" and not self.isClone:
+                #if self.md5:
+                #    msg += f"\n<b>🛡️ MD5 Checksum:</b> <code>{self.md5}</code>"
             #    else:
             #        msg += f"\n<b>🛡️ MD5 Checksum:</b> <code>{self.md5}</code>"
             if mime_type == "Folder":
@@ -332,9 +337,16 @@ class TaskListener(TaskConfig):
             ):
                 buttons = ButtonMaker()
                 if link:
-                    buttons.ubutton("☁️ Cloud", link, position="header")
+                    if self.isGofile:
+                        buttons.ubutton("☁️ Gofile Link", link, position="header")
+                    elif self.isBuzzheavier:
+                        buttons.ubutton("☁️ Buzzheavier Link", link, position="header")
+                    else:
+                        buttons.ubutton("☁️ Cloud", link, position="header")
                 if rclonePath:
                     msg += f"\n\n<b>📁 Path :</b> <code>{rclonePath}</code>"
+                if server:
+                    msg += f"\n<b>🖥️ Server :</b> <code>{server}</code>"
                 if (
                     rclonePath
                     and (RCLONE_SERVE_URL := config_dict["RCLONE_SERVE_URL"])
@@ -435,105 +447,6 @@ class TaskListener(TaskConfig):
                 non_queued_up.remove(self.mid)
 
         await start_from_queued()
-    
-    #Upload Gofile
-    async def ddlUpload_task(self, item_path, size, isGofile=False, isBuzzheavier=False):
-        if isGofile:
-            ddlServer = "Gofile"
-        elif isBuzzheavier:
-            ddlServer = "Buzzheavier"
-        async with task_dict_lock:
-            if self.mid in task_dict:
-                del task_dict[self.mid]
-            count = len(task_dict)
-            self.removeFromSameDir()
-
-        if count == 0:
-            await self.clean()
-        else:
-            await update_status_message(self.message.chat.id)
-
-        if (
-            self.isSuperChat
-            and config_dict["INCOMPLETE_TASK_NOTIFIER"]
-            and DATABASE_URL
-        ):
-            await DbManger().rm_complete_task(self.message.link)
-
-        async with queue_dict_lock:
-            if self.mid in queued_dl:
-                queued_dl[self.mid].set()
-                del queued_dl[self.mid]
-            if self.mid in queued_up:
-                queued_up[self.mid].set()
-                del queued_up[self.mid]
-            if self.mid in non_queued_dl:
-                non_queued_dl.remove(self.mid)
-            if self.mid in non_queued_up:
-                non_queued_up.remove(self.mid)
-
-        await start_from_queued()
-        token = uuid.uuid4().hex[:6]
-        butt = ButtonMaker()
-        butt.ibutton("⛔️ Batalkan Tugas", f"ddl_cancel {self.user_id} cancel {token}")
-        butts = butt.build_menu(1)
-        mess = await sendMessage(self.message, f"<b>⏳ Silahkan tunggu proses Upload ke {ddlServer}:</b> <blockquote><code>📄 {self.name}</code></blockquote>", butts)
-        if isGofile:
-            up_ddl = asyncio.create_task(
-                GofileUploader().gofile_upload(item_path)
-            )
-        elif isBuzzheavier:
-            up_ddl = asyncio.create_task(
-                BuzzheavierUploader().buzzheavier_upload(item_path)
-                )
-        ddl_tasks[token] = up_ddl
-        try:
-            response, server = await up_ddl
-        except asyncio.CancelledError:
-            LOGGER.error(f"Upload ddl canceled")
-            await editMessage(mess, f"<b>Hai {self.tag}, Proses upload ke {ddlServer} dibatalkan !</b>")
-            await sleep(3)
-            await clean_download(self.dir)
-            ddl_tasks.pop(token)
-            if self.newDir:
-                await clean_download(self.newDir)
-            return
-        except Exception as e:
-            LOGGER.error(f"Failed when upload to Gofile => {str(e)}")
-            await editMessage(mess, f"<b>Hai {self.tag}, Proses upload ke {ddlServer} gagal\n\n<blockquote>{e}</blockquote> !</b>")
-            await sleep(3)
-            await clean_download(self.dir)
-            ddl_tasks.pop(token)
-            if self.newDir:
-                await clean_download(self.newDir)
-            return
-        
-        if isinstance(response, dict):
-            if response.get('status') == 'ok':
-                data = response.get('data', {})
-                msg = f"<b>✅ <b>Hai {self.tag}, File anda berhasil diupload ke {ddlServer} !!</b>\n\n"
-                msg += f"<blockquote><b>📄 Nama File:</b> <code>{data.get('name')}</code></blockquote>\n"
-                msg += f"<b>📦 Ukuran:</b> <code>{get_readable_file_size(size)}</code>\n"
-                msg += f"<b>🏷️ Code:</b> <code>{data.get('code')}</code>\n"
-                msg += f"<b>🖥️ Server:</b> <code>{server}</code>\n"
-                if isGofile:
-                    msg += f"<b>⚙️ MD5:</b> <code>{data.get('md5')}</code>"
-                butt = ButtonMaker()
-                butt.ubutton("🔗 Link Download", data.get('downloadPage'))
-                butts = butt.build_menu(1)
-                await sendMessage(self.message, msg, butts)
-                await deleteMessage(mess)
-            else:
-                await sendMessage(self.message, f'<b>❌ Hai {self.tag}, File anda gagal diupload ke {ddlServer} :(</b> \n\n<blockquote>{response.get("message")}</blockquote>')
-                await deleteMessage(mess)
-        else:
-            await sendMessage(self.message, f'<b>❌ Hai {self.tag}, Terjadi kesalahan saat mencoba mengupload file anda ke {ddlServer}, silahkan coba kembali !</b>')
-            await deleteMessage(mess)
-        await sleep(3)
-        await clean_download(self.dir)
-        ddl_tasks.pop(token)
-        if self.newDir:
-            await clean_download(self.newDir)
 
     async def onDownloadError(self, error, button=None):
         async with task_dict_lock:

@@ -102,6 +102,8 @@ class TaskConfig:
         self.suproc = None
         self.client = None
         self.thumb = None
+        self.isGofile = False
+        self.isBuzzheavier = False
         self.extension_filter = []
         self.isSuperChat = bool(self.message.chat.type.name in ["SUPERGROUP", "CHANNEL"])
         self.isPrivateChat = bool(self.message.chat.type == ChatType.PRIVATE)
