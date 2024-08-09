@@ -135,7 +135,7 @@ async def start_from_queued():
 
 async def limit_checker(size, listener, isTorrent=False, isMega=False, isGdrive=False, isDirect=False, isRclone=False):
     limit_exceeded = ''
-    bypass_limit = {"rcl", "gdl", "buzzheavier", "gofile", "gf", "bh"}
+    bypass_limit = {"rcl", "gdl", "buzzheavier", "gofile", "gf", "bh", "pd", "pixeldrain"}
     if size is None:
         return
     elif isMega:

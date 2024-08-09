@@ -66,6 +66,7 @@ class Mirror(TaskListener):
         button_mode=False,
         gofile=False,
         buzzheavier=False,
+        pixeldrain=False,
         auto_url="",
         options="",
     ):
@@ -86,6 +87,7 @@ class Mirror(TaskListener):
         self.button_mode = button_mode
         self.gofile = gofile
         self.buzzheavier = buzzheavier
+        self.pixeldrain = pixeldrain
 
     @new_task
     async def newEvent(self):
@@ -133,6 +135,8 @@ class Mirror(TaskListener):
             arg_base["-up"] = "gofile"
         elif self.buzzheavier:
             arg_base["-up"] = "buzzheavier"
+        elif self.pixeldrain:
+            arg_base["-up"] = "pixeldrain"
 
         args = arg_parser(input_list[1:], arg_base)
 
@@ -200,6 +204,8 @@ class Mirror(TaskListener):
                         auto_args = await AutoMirror(self).main_pesan_custom(self.link, _type, gofile=True)
                     elif self.buzzheavier:
                         auto_args = await AutoMirror(self).main_pesan_custom(self.link, _type, buzzheavier=True)
+                    elif self.pixeldrain:
+                        auto_args = await AutoMirror(self).main_pesan_custom(self.link, _type, pixeldrain=True)
                     elif not self.link:
                         if _type:
                             auto_args = await AutoMirror(self).main_pesan_custom("Files", _type)
@@ -500,6 +506,8 @@ async def gofile(client, message):
 async def buzz(client, message):
     Mirror(client, message, buzzheavier=True).newEvent()
 
+async def pixeldrain(client, message):
+    Mirror(client, message, pixeldrain=True).newEvent()
 
 async def qb_mirror(client, message):
     Mirror(client, message, isQbit=True).newEvent()
@@ -594,6 +602,14 @@ bot.add_handler(
         buzz, 
         filters=command(
             BotCommands.Upload_buzzCommand
+        ) & CustomFilters.authorized
+    )
+)
+bot.add_handler(
+    MessageHandler(
+        pixeldrain, 
+        filters=command(
+            BotCommands.Upload_pixelCommand
         ) & CustomFilters.authorized
     )
 )

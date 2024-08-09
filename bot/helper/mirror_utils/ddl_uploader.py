@@ -7,6 +7,7 @@ from logging import getLogger
 from time import time
 from io import BytesIO
 from random import choice
+from urllib.parse import quote
 from bot.helper.ext_utils.bot_utils import async_to_sync
 from bot.helper.ext_utils.files_utils import get_mime_type
 
@@ -14,7 +15,7 @@ LOGGER = getLogger(__name__)
 user_agent  = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0"
 
 class DdlUploader:
-    def __init__(self, listener, path):
+    def __init__(self, listener, path, gofile=False, buzzheavier=False):
         self._last_uploaded = 0
         self._processed_bytes = 0
         self.listener = listener
@@ -23,6 +24,8 @@ class DdlUploader:
         self._start_time = time()
         self._is_cancelled = False
         self._pycurl = pycurl.Curl()
+        self._isgofile = gofile
+        self._isbuzzheavier = buzzheavier
 
     def _upload_progress(self, download_t, download_d, upload_t, upload_d):
         if self._is_cancelled:
@@ -176,11 +179,11 @@ class DdlUploader:
         if isfolder:
             self._pycurl.setopt(self._pycurl.HTTPPOST, [
                 ('folderId', folder_id),
-                ('file', (self._pycurl.FORM_FILE, file_path))
+                ('file', (self._pycurl.FORM_FILE, f"{file_path}".encode("UTF-8"))),
             ])
         else:
             self._pycurl.setopt(self._pycurl.HTTPPOST, [
-                ('file', (self._pycurl.FORM_FILE, self._path))
+                ('file', (self._pycurl.FORM_FILE, f"{self._path}".encode("UTF-8")))
             ])
         try:
             self._pycurl.perform()
@@ -191,15 +194,16 @@ class DdlUploader:
             response_data = response_buffer.getvalue()
             if not response_data:
                 async_to_sync(self.listener.onUploadError, "Terjadi kesalahan saat proses upload ke gofile")
+                return
             response = response_data.decode()
             try:
                 r = json.loads(response)
-            except json.JSONDecodeError as e:
-                async_to_sync(self.listener.onUploadError, e)
+            except Exception as e:
+                async_to_sync(self.listener.onUploadError, "Terjadi kesalahan saat mengupload file ke gofile: " + str(e))
                 return
             if isfolder:
                 return
-            else:
+            elif r.get('status') == 'ok':
                 data = r.get('data', {})
                 link = data.get('downloadPage')
                 size = data.get('size')
@@ -207,23 +211,24 @@ class DdlUploader:
                 folders = 0
                 mime_type = data.get('mimetype')
                 async_to_sync(self.listener.onUploadComplete, link, size, files, folders, mime_type, None, None, server)
-
+            else:
+                async_to_sync(self.listener.onUploadError, f"Terjadi kesalahan saat mengupload file ke gofile: {r.get('message')}")
+                return
         except pycurl.error as e:
             if not self._is_cancelled:
                 async_to_sync(self.listener.onUploadError, e)
                 return
-
         except Exception as e:
             async_to_sync(self.listener.onUploadError, e)
             return
         
     def bh_upload(self, size):
         file_name = os.path.basename(self._path)
-        servers = ["buzzheavier.com", "trashbytes.net", "flashbang.sh"]
+        servers = ["trashbytes.net", "flashbang.sh"]
         server = choice(servers)
         response_buffer = BytesIO()
         ca_cert_path = '/etc/ssl/certs/ca-certificates.crt'
-        self._pycurl.setopt(self._pycurl.URL, f"https://w.{server}/{file_name}")
+        self._pycurl.setopt(self._pycurl.URL, f"https://w.{server}/{quote(file_name)}")
         self._pycurl.setopt(pycurl.CAINFO, ca_cert_path)
         self._pycurl.setopt(self._pycurl.UPLOAD, 1)
         self._pycurl.setopt(self._pycurl.READFUNCTION, open(self._path, 'rb').read)
@@ -238,12 +243,14 @@ class DdlUploader:
                 return
             response_data = response_buffer.getvalue()
             if not response_data:
-                async_to_sync(self.listener.onUploadError,'Received empty response from server')
-            response = response_data.decode()
+                async_to_sync(self.listener.onUploadError,'Terjadi kesalahan saat proses upload ke buzzheavier')
+                return
+            response = response_data.decode('utf-8')
             try:
                 r = json.loads(response)
-            except json.JSONDecodeError as e:
-                async_to_sync(self.listener.onUploadError,f'Error decoding JSON: {e}')
+            except Exception as e:
+                async_to_sync(self.listener.onUploadError,f'Terjadi kesalahan saat proses upload ke buzzheavier: {e}')
+                return
             data = r.get('id')
             link = f"https://buzzheavier.com/f/{data}"
             files = 1
@@ -255,11 +262,62 @@ class DdlUploader:
             if not self._is_cancelled:
                 async_to_sync(self.listener.onUploadError, f'{e}')
                 return
-
         except Exception as e:
             async_to_sync(self.listener.onUploadError, f'{e}')
             return
-
+        finally:
+            self._pycurl.close()
+            if self._is_cancelled:
+                LOGGER.info("Upload was cancelled")
+                return
+    
+    def pd_upload(self, size):
+        file_name = f"{os.path.basename(self._path)}".encode("UTF-8")
+        api_key = "a0ac91f8-dabb-40b1-b81c-17b237a3df49"
+        server = "pixeldrain.com"
+        response_buffer = BytesIO()
+        ca_cert_path = '/etc/ssl/certs/ca-certificates.crt'
+        self._pycurl.setopt(self._pycurl.URL, f"https://{server}/api/file")
+        self._pycurl.setopt(pycurl.CAINFO, ca_cert_path)
+        self._pycurl.setopt(self._pycurl.POST, 1)
+        self._pycurl.setopt(self._pycurl.USERPWD, f":{api_key}")
+        self._pycurl.setopt(self._pycurl.WRITEDATA, response_buffer)
+        self._pycurl.setopt(self._pycurl.NOPROGRESS, False)
+        self._pycurl.setopt(self._pycurl.XFERINFOFUNCTION, self._upload_progress)
+        self._pycurl.setopt(self._pycurl.HTTPPOST, [
+                ('name', file_name),
+                ('anonymouse', 'false'),
+                ('file', (self._pycurl.FORM_FILE, f"{self._path}".encode("UTF-8"))),
+            ])
+        try:
+            self._pycurl.perform()
+            if self._is_cancelled:
+                LOGGER.info("Upload was cancelled during the process")
+                return
+            response_data = response_buffer.getvalue()
+            if not response_data:
+                async_to_sync(self.listener.onUploadError,'Terjadi kesalahan saat proses upload ke pixeldrain')
+                return
+            response = response_data.decode()
+            try:
+                r = json.loads(response)
+            except Exception as e:
+                async_to_sync(self.listener.onUploadError,f'Terjadi kesalahan saat proses upload ke pixeldrain: {e}')
+                return
+            data = r.get('id')
+            link = f"https://{server}/u/{data}"
+            files = 1
+            folders = 0
+            mime_type = get_mime_type(self._path)
+            async_to_sync(self.listener.onUploadComplete, link, size, files, folders, mime_type, None, None, server)
+            
+        except pycurl.error as e:
+            if not self._is_cancelled:
+                async_to_sync(self.listener.onUploadError, f'Pycurl error:{e}')
+                return
+        except Exception as e:
+            async_to_sync(self.listener.onUploadError, f'Error: {e}')
+            return
         finally:
             self._pycurl.close()
             if self._is_cancelled:
@@ -279,5 +337,5 @@ class DdlUploader:
 
     async def cancel_task(self):
         self._is_cancelled = True
-        LOGGER.info(f"Cancelling Upload: {self._listener.name}")
+        LOGGER.info(f"Cancelling Upload: {self.listener.name}")
         await self.listener.onUploadError("Upload dibatalkan oleh User !")

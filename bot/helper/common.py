@@ -104,6 +104,7 @@ class TaskConfig:
         self.thumb = None
         self.isGofile = False
         self.isBuzzheavier = False
+        self.isPixeldrain = False
         self.extension_filter = []
         self.isSuperChat = bool(self.message.chat.type.name in ["SUPERGROUP", "CHANNEL"])
         self.isPrivateChat = bool(self.message.chat.type == ChatType.PRIVATE)
@@ -197,7 +198,7 @@ class TaskConfig:
                 raise ValueError("<b>Tujuan upload tidak ditemukan!</b>")
                 
             if not is_gdrive_id(self.upDest) and not is_rclone_path(self.upDest):
-                if self.upDest not in ("gf", "gofile", "bh", "buzzheavier"):
+                if self.upDest not in ("gf", "gofile", "bh", "buzzheavier", "pd", "pixeldrain"):
                     raise ValueError("<b>Tujuan upload salah!</b>")
             if self.upDest not in ["rcl", "gdl"]:
                 await self.isTokenExists(self.upDest, "up")
@@ -325,7 +326,7 @@ class TaskConfig:
             self.tag = self.message.from_user.mention
 
     @new_task
-    async def run_multi(self, input_list, folder_name, obj, gofile=False, buzzheavier=False):
+    async def run_multi(self, input_list, folder_name, obj, gofile=False, buzzheavier=False, pixeldrain=False):
         await sleep(7)
         if not self.multiTag and self.multi > 1:
             self.multiTag = token_urlsafe(3)
@@ -391,6 +392,18 @@ class TaskConfig:
                 self.multiTag,
                 self.options,
                 buzzheavier=True
+            ).newEvent()
+        elif pixeldrain:
+            obj(
+                self.client,
+                nextmsg,
+                self.isQbit,
+                self.isLeech,
+                self.sameDir,
+                self.bulk,
+                self.multiTag,
+                self.options,
+                pixeldrain=True
             ).newEvent()
         else:
             obj(

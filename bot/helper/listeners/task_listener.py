@@ -167,12 +167,12 @@ class TaskListener(TaskConfig):
             if not up_path:
                 return
             
-        if self.upDest == "bh" or self.upDest == "buzzheavier":
+        if self.upDest in ("pd", "pixeldrain", "bh", "buzzheavier"):
             if os.path.isdir(up_path):
                 up_path = await self.proceedCompress(up_path, size, gid)
                 if not up_path:
                     return
-
+        
         up_dir, self.name = up_path.rsplit("/", 1)
         spath = f"{self.dir}"
         size = await get_path_size(up_dir)
@@ -252,6 +252,21 @@ class TaskListener(TaskConfig):
             await gather(
                 update_status_message(self.message.chat.id),
                 sync_to_async(bh.bh_upload, size),
+            )
+
+        elif self.upDest == "pd" or self.upDest == "pixeldrain":
+            self.isPixeldrain = True
+            if os.path.isdir(up_path):
+                await self.onUploadError("Folder anda gagal dicompress dan tidak bisa diupload ke Pixeldrain")
+                return
+            size = await get_path_size(up_path)
+            LOGGER.info(f"Upload to Pixeldrain, Name: {self.name}")
+            pd = DdlUploader(self, up_path)
+            async with task_dict_lock:
+                task_dict[self.mid] = DdlUploadStatus(self, pd, size, gid)
+            await gather(
+                update_status_message(self.message.chat.id),
+                sync_to_async(pd.pd_upload, size),
             )
 
         elif is_gdrive_id(self.upDest):

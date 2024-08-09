@@ -132,7 +132,7 @@ class AutoMirror:
             await deleteMessage(self._reply_to)
             return self._auto_args
     
-    async def main_pesan_custom(self, url, type, gofile=False, buzzheavier=False):
+    async def main_pesan_custom(self, url, type, gofile=False, buzzheavier=False, pixeldrain=False):
         if type:
             self._type = type
         if gofile:
@@ -141,6 +141,9 @@ class AutoMirror:
         elif buzzheavier:
             self.buzzheavier = True
             self._auto_args["custom_upload"] = "buzzheavier"
+        elif pixeldrain:
+            self.pixeldrain = True
+            self._auto_args["custom_upload"] = "pixeldrain"
         self._url = url
         future = self._event_handler()
         msg, buttons = await self.sub_button()
