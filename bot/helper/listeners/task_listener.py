@@ -359,6 +359,8 @@ class TaskListener(TaskConfig):
                         buttons.ubutton("☁️ Gofile Link", link, position="header")
                     elif self.isBuzzheavier:
                         buttons.ubutton("☁️ Buzzheavier Link", link, position="header")
+                    elif self.isPixeldrain:
+                        buttons.ubutton("☁️ Pixeldrain Link", link, position="header")
                     else:
                         buttons.ubutton("☁️ Cloud", link, position="header")
                 if rclonePath:
