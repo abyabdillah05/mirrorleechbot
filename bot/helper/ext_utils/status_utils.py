@@ -15,17 +15,17 @@ from bot.helper.telegram_helper.button_build import ButtonMaker
 SIZE_UNITS = ["B", "KB", "MB", "GB", "TB", "PB"]
 
 class MirrorStatus:
-    STATUS_DOWNLOADING = "Downloading..."
-    STATUS_UPLOADING = "Uploading..."
-    STATUS_QUEUEDL = "Antrian download..."
-    STATUS_QUEUEUP = "Antrian upload..."
-    STATUS_PAUSED = "Dihentikan..."
-    STATUS_ARCHIVING = "Mengarsip..."
-    STATUS_EXTRACTING = "Mengextract..."
-    STATUS_CLONING = "Cloning..."
-    STATUS_SEEDING = "Seeding..."
-    STATUS_SPLITTING = "Memecah..."
-    STATUS_CHECKING = "Mengecek..."
+    STATUS_DOWNLOADING = "Download.."
+    STATUS_UPLOADING = "Upload.."
+    STATUS_QUEUEDL = "Antrian.."
+    STATUS_QUEUEUP = "Antrian.."
+    STATUS_PAUSED = "Berhenti.."
+    STATUS_ARCHIVING = "Arsip.."
+    STATUS_EXTRACTING = "Extract.."
+    STATUS_CLONING = "Cloning.."
+    STATUS_SEEDING = "Seeding.."
+    STATUS_SPLITTING = "Split.."
+    STATUS_CHECKING = "Mengecek.."
     STATUS_SAMVID = "Sample Video"
      
 STATUS_VALUES = [
@@ -137,10 +137,11 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1):
             msg += f"<blockquote><b>🔐 Nama :</b> <code>Private Task</code></b></blockquote>"
         else: 
             msg += f"<blockquote>📄 <b>Nama :</b> <code>{escape(f'{task.name()}')}</code></blockquote>"
-        msg += f"\n<b>┌ {tstatus}</b> <code>({task.progress()})</code>"
+        msg += f"\n<b>┌ Status : <a href='{task.listener.message.link}'>{tstatus}</a></b> <code>({task.progress()})</code>"
         msg += f"\n<b>├ </b>{get_progress_bar_string(task.progress())}"
-        user = f'<a href="{task.listener.message.link}">{task.listener.user.first_name}</a>'
+        user = f'<a href="tg://openmessage?user_id={task.listener.user.id}">{task.listener.user.first_name}</a>'
         msg += f"\n<b>├ Oleh :</b> {user}"
+        msg += f"\n<b>├ UserID :</b> <code>[{task.listener.user.id}]</code>"
         if tstatus not in [
             MirrorStatus.STATUS_SPLITTING,
             MirrorStatus.STATUS_SEEDING,
@@ -164,11 +165,6 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1):
             msg += f"\n<b>├ Kecepatan :</b> <code>{task.seed_speed()}</code>"
         else:
             msg += f"\n<b>├ Ukuran :</b> <code>{task.size()}</code>"
-        #if task.listener.isPrivateChat: 
-            #msg += f"\n<b>├ ID :</b> <code>PRIVATE</code>"
-            #msg += f"\n<b>├👨‍💻 User : <b>Anonymous 👻</b>" 
-        #else:
-            #msg += f"\n<b>├ ID :</b> <code>{task.listener.user_id}</code>"
         msg += f"\n<b>└⛔️ /{BotCommands.CancelTaskCommand[0]}_{task.gid()}\n\n"
 
     if len(msg) == 0 and status == "All":
