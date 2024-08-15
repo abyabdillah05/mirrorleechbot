@@ -1201,11 +1201,11 @@ def gofile(url):
             "Accept": "*/*",
             "Connection": "keep-alive",
         }
-        __url = f"https://api.gofile.io/accounts"
+        __url = "https://api.gofile.io/accounts"
         try:
             __res = session.post(__url, headers=headers).json()
             if __res["status"] != "ok":
-                raise DirectDownloadLinkException(f"ERROR: Gagal mengambil token.")
+                raise DirectDownloadLinkException("ERROR: Gagal mengambil token.")
             return __res["data"]["token"]
         except Exception as e:
             raise e
@@ -1226,18 +1226,22 @@ def gofile(url):
         except Exception as e:
             raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}")
         if _json["status"] in "error-passwordRequired":
-            raise DirectDownloadLinkException(f"ERROR: {PASSWORD_ERROR_MESSAGE.format(url)}")
+            raise DirectDownloadLinkException(
+                f"ERROR: Silahkan masukkan password untuk file ini"
+            )
         if _json["status"] in "error-passwordWrong":
-            raise DirectDownloadLinkException("ERROR: Password salah!")
+            raise DirectDownloadLinkException("ERROR: Password salah !")
         if _json["status"] in "error-notFound":
-            raise DirectDownloadLinkException("ERROR: Link File tidak ditemukan! \n Pastikan anda tidak menggunakan direct link untuk gofile, gunakan link <code>https://gofile.io/xxxxxx</code>")
+            raise DirectDownloadLinkException(
+                "ERROR: File tidak ditemukan, pastikan anda memberikan link yang benar \n\n <b>Contoh:</b>\n<blockquote><code>https://gofile.io/d/xxxxxxxx</code></blockquote>"
+            )
         if _json["status"] in "error-notPublic":
-            raise DirectDownloadLinkException("ERROR: Folder tidak dapat diunduh!")
+            raise DirectDownloadLinkException("ERROR: Folder ini privat !")
 
         data = _json["data"]
 
         if not details["title"]:
-            details["title"] = data["name"] if data["type"] == "folder" else _id  
+            details["title"] = data["name"] if data["type"] == "folder" else _id
 
         contents = data["children"]
         for content in contents.values():
@@ -1248,7 +1252,7 @@ def gofile(url):
                     newFolderPath = path.join(details["title"], content["name"])
                 else:
                     newFolderPath = path.join(folderPath, content["name"])
-                __fetch_links(content["id"], newFolderPath)
+                __fetch_links(session, content["id"], newFolderPath)
             else:
                 if not folderPath:
                     folderPath = details["title"]
@@ -1264,7 +1268,7 @@ def gofile(url):
                     details["total_size"] += size
                 details["contents"].append(item)
 
-    details = {"contents":[], "title": "", "total_size": 0}
+    details = {"contents": [], "title": "", "total_size": 0}
     with Session() as session:
         try:
             token = __get_token(session)
@@ -1274,7 +1278,7 @@ def gofile(url):
         try:
             __fetch_links(session, _id)
         except Exception as e:
-            raise DirectDownloadLinkException (f"ERROR: {e}")
+            raise DirectDownloadLinkException(e)
 
     if len(details["contents"]) == 1:
         return (details["contents"][0]["url"], details["header"])
