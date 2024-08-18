@@ -23,7 +23,10 @@ async def add_direct_download(listener, path):
         await sendMessage(listener.message, "<b>Tidak ada file untuk diunduh!</b>")
         return
     size = details["total_size"]
-
+    if limit_exceeded := await limit_checker(size, listener, isDirect=True):
+        await sendMessage(listener.message, limit_exceeded)
+        return
+    
     if not listener.name:
         listener.name = details["title"]
     path = f"{path}/{listener.name}"

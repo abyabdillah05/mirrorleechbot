@@ -134,54 +134,33 @@ async def start_from_queued():
 
 
 async def limit_checker(size, listener, isTorrent=False, isMega=False, isGdrive=False, isDirect=False, isRclone=False):
+    pixeldrain = {"pixeldrain", "pd"}
     limit_exceeded = ''
-    bypass_limit = {"rcl", "gdl", "buzzheavier", "gofile", "gf", "bh", "pd", "pixeldrain"}
+    bypass_limit = {"rcl", "gdl", "buzzheavier", "gofile", "gf", "bh"}
     if size is None:
-        return
+        return  
+    elif listener.upDest in pixeldrain:
+        limit = 20 * 1024**3
+        if size > limit:
+            limit_exceeded = f'Limit upload ke Pixeldrain: {get_readable_file_size(limit)}'
     elif isMega:
         limit = 4 * 1024**3
         if size > limit:
             limit_exceeded = f'Limit download Mega: {get_readable_file_size(limit)}'
-    elif isTorrent:
+    else:
         limit = 20 * 1024**3
         if listener.upDest in bypass_limit:
-            limit = 40 * 1024**3
+            limit = 35 * 1024**3
         elif listener.isLeech:
-            limit = 40 * 1024**3
+            limit = 35 * 1024**3
         if size > limit:
-            limit_exceeded = f'Limit Mirror Torrent: {get_readable_file_size(limit)}'
-    elif isTorrent:
-        limit = 20 * 1024**3
-        if listener.upDest in bypass_limit:
-            limit = 40 * 1024**3
-        elif listener.isLeech:
-            limit = 40 * 1024**3
-        if size > limit:
-            limit_exceeded = f'Limit Mirror Torrent: {get_readable_file_size(limit)}'
-    elif isGdrive:
-        limit = 20 * 1024**3
-        if listener.upDest in bypass_limit:
-            limit = 40 * 1024**3
-        elif listener.isLeech:
-            limit = 40 * 1024**3
-        if size > limit:
-            limit_exceeded = f'Limit Mirror Gdrive: {get_readable_file_size(limit)}'
-    elif isDirect:
-        limit = 20 * 1024**3
-        if listener.upDest in bypass_limit:
-            limit = 40 * 1024**3
-        elif listener.isLeech:
-            limit = 40 * 1024**3
-        if size > limit:
-            limit_exceeded = f'Limit Mirror Direct: {get_readable_file_size(limit)}'
-    elif isRclone:
-        limit = 20 * 1024**3
-        if listener.upDest in bypass_limit:
-            limit = 40 * 1024**3
-        elif listener.isLeech:
-            limit = 40 * 1024**3
-        if size > limit:
-            limit_exceeded = f'Limit Mirror Rclone: {get_readable_file_size(limit)}'
+            if listener.isLeech:
+                limit_exceeded = f'Limit Task Leech: {get_readable_file_size(limit)}'
+            elif listener.upDest in bypass_limit:
+                limit_exceeded = f'Limit Task Custom Upload: {get_readable_file_size(limit)}'
+            elif isTorrent:
+                limit_exceeded = f'Limit Task Torrent: {get_readable_file_size(limit)}'
+            limit_exceeded = f'Limit Task Mirror: {get_readable_file_size(limit)}'
 
     if limit_exceeded:
-        return f"<b>Task anda dibatalkan karena diatas batas limit download !</b>\n\n<b>{limit_exceeded}.\nUkuran file anda: {get_readable_file_size(size)}"
+        return f"<b>Task anda dibatalkan karena diatas batas limit size yang ditetapkan !</b>\n\n<b>{limit_exceeded}.\nUkuran file anda: {get_readable_file_size(size)}"
