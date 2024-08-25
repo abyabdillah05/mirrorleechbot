@@ -12,6 +12,7 @@ class YtDlpDownloadStatus:
         self._obj = obj
         self._gid = gid
         self.listener = listener
+        self.engine = "YtDlp"
 
     def gid(self):
         return self._gid

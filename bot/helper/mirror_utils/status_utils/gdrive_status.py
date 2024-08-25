@@ -12,6 +12,7 @@ class GdriveStatus:
         self._gid = gid
         self._status = status
         self.listener = listener
+        self.engine = "GdriveAPI"
 
     def processed_bytes(self):
         return get_readable_file_size(self._obj.processed_bytes)

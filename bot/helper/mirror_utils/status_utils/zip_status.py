@@ -16,6 +16,7 @@ class ZipStatus:
         self._gid = gid
         self._start_time = time()
         self.listener = listener
+        self.engine = "7z"
 
     def gid(self):
         return self._gid

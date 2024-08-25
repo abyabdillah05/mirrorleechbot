@@ -12,6 +12,8 @@ class TelegramStatus:
         self._gid = gid
         self._status = status
         self.listener = listener
+        self.start_time = 0
+        self.engine = "Pyrofork"
 
     def processed_bytes(self):
         return get_readable_file_size(self._obj.processed_bytes)

@@ -21,6 +21,8 @@ class Aria2Status:
         self.queued = queued
         self.start_time = 0
         self.seeding = seeding
+        self._start_time = time()
+        self.engine = "Aria2"
 
     def _update(self):
         if self._download is None:
@@ -81,7 +83,7 @@ class Aria2Status:
 
     def seeding_time(self):
         return get_readable_time(time() - self.start_time)
-
+    
     def task(self):
         return self
 

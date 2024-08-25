@@ -10,6 +10,8 @@ class DirectStatus:
         self._gid = gid
         self._obj = obj
         self.listener = listener
+        self.start_time = 0
+        self.engine = "Aria2"
 
     def gid(self):
         return self._gid

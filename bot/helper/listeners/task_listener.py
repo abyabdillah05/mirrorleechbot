@@ -84,7 +84,6 @@ class TaskListener(TaskConfig):
             await DbManger().add_incomplete_task(
                 self.message.chat.id, self.message.link, self.tag
             )
-        self.extra_details = {'startTime': time()}
 
     async def onDownloadComplete(self):
         multi_links = False
@@ -299,7 +298,8 @@ class TaskListener(TaskConfig):
             and DATABASE_URL
         ):
             await DbManger().rm_complete_task(self.message.link)
-        lmsg = f"<b>✅ Tugas leech anda sudah selesai, total ada</b> <code>{folders}</code> <b>file.</b>\n<i>Oleh:{self.tag}</i>\n\n"
+        lmsg = f"<b>✅ Tugas leech anda sudah selesai, total ada</b> <code>{folders}</code> <b>file.</b>\n"
+        lmsg += f'<b>Waktu:</b> {get_readable_time(time() - self.extra_details["startTime"])}\n<i>Oleh:{self.tag}</i>\n\n'
         msg = f"<blockquote><b>📄 Nama :</b> <code>{escape(self.name)}</code></blockquote>"
         msg += f"\n<b>📦 Ukuran :</b> <code>{get_readable_file_size(size)}</code>"
         LOGGER.info(f"Task Done: {self.name}")

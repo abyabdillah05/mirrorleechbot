@@ -15,7 +15,7 @@ LOGGER = getLogger(__name__)
 user_agent  = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0"
 
 class DdlUploader:
-    def __init__(self, listener, path, gofile=False, buzzheavier=False):
+    def __init__(self, listener, path):
         self._last_uploaded = 0
         self._processed_bytes = 0
         self.listener = listener
@@ -24,8 +24,6 @@ class DdlUploader:
         self._start_time = time()
         self._is_cancelled = False
         self._pycurl = pycurl.Curl()
-        self._isgofile = gofile
-        self._isbuzzheavier = buzzheavier
 
     def _upload_progress(self, download_t, download_d, upload_t, upload_d):
         if self._is_cancelled:

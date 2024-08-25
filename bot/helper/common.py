@@ -4,6 +4,7 @@ from secrets import token_urlsafe
 from os import walk, path as ospath
 from pyrogram.enums import ChatType
 from asyncio.subprocess import PIPE
+from time import time
 
 from bot import (
     DOWNLOAD_DIR,
@@ -105,6 +106,7 @@ class TaskConfig:
         self.isGofile = False
         self.isBuzzheavier = False
         self.isPixeldrain = False
+        self.extra_details = {'startTime': time()}
         self.extension_filter = []
         self.isSuperChat = bool(self.message.chat.type.name in ["SUPERGROUP", "CHANNEL"])
         self.isPrivateChat = bool(self.message.chat.type == ChatType.PRIVATE)
