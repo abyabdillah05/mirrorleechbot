@@ -4,6 +4,7 @@ import requests
 import re
 import httpx
 
+from random import choice
 from hashlib import sha256
 from http.cookiejar import MozillaCookieJar
 from json import loads, dump
@@ -287,6 +288,8 @@ def direct_link_generator(link: str):
         return qiwi(link)
     elif 'berkasdrive.com' in domain:
         return berkasdrive(link)
+    elif 'sourceforge.net' in domain:
+        return sourceforge(link)
     elif 'seikel.adventure.workers.dev' in domain:
         return seikel(link)
     # Add AllDebrid supported link here
@@ -2215,3 +2218,29 @@ def sharemods(url):
         except Exception as e:
             session.close()
             raise DirectDownloadLinkException(f"ERROR: Link file tidak ditemukan")
+        
+def sourceforge(url: str):
+    with Session() as session:
+        try:
+            if "master.dl.sourceforge.net" in url:
+                return f"{url}?viasf=1"
+            if url.endswith("/download"):
+                url = url.split("/download")[0]
+            try:
+                link = findall(r"\bhttps?://sourceforge\.net\S+", url)[0]
+            except IndexError:
+                raise DirectDownloadLinkException(
+                    "ERROR: Link SourceForge tidak ditemukan!"
+                )
+            file_id = findall(r"files(.*)", link)[0]
+            project = findall(r"projects?/(.*?)/files", link)[0]
+            req = session.get(
+                f"https://sourceforge.net/settings/mirror_choices?projectname={project}&filename={file_id}",
+            ).content
+            soup = BeautifulSoup(req, "html.parser")
+            mirror = soup.find("ul", {"id": "mirrorList"}).findAll("li")
+            r = choice(mirror)
+            direct_link = f"https://{r['id']}.dl.sourceforge.net/project/{project}/{file_id}?viasf=1"
+            return direct_link
+        except Exception:
+            raise DirectDownloadLinkException("ERROR: Link File tidak ditemukan!")
