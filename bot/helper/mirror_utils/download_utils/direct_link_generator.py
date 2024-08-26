@@ -680,6 +680,15 @@ def pixeldrain(url):
     else:
         info_link = f"https://pixeldrain.com/api/file/{file_id}/info"
         dl_link = f"https://pixeldrain.com/api/file/{file_id}?download"
+    
+    new_link = f"https://pd.cybar.xyz/{file_id}"
+    try:
+        c = async_to_sync(get_content_type, new_link)
+        if c is not None and not re.match(r"text/html|application/json", c):
+            return new_link
+        
+    except Exception as e:
+        raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}")
     with create_scraper() as session:
         try:
             resp = session.get(info_link).json()
@@ -2213,8 +2222,15 @@ def sourceforge(url: str):
             ).content
             soup = BeautifulSoup(req, "html.parser")
             mirror = soup.find("ul", {"id": "mirrorList"}).findAll("li")
-            r = choice(mirror)
-            direct_link = f"https://{r['id']}.dl.sourceforge.net/project/{project}/{file_id}?viasf=1"
+            list_mirror = []
+            for i in mirror:
+                list_mirror.append(f"{i['id']}")
+            server = choice(list_mirror)
+            if 'autoselect' in list_mirror:
+                list_mirror.remove('autoselect')
+            if 'ixpeering' in list_mirror:
+                server = 'ixpeering'
+            direct_link = f"https://{server}.dl.sourceforge.net/project/{project}/{file_id}?viasf=1"
             return direct_link
         except Exception:
             raise DirectDownloadLinkException("ERROR: Link File tidak ditemukan!")
