@@ -429,7 +429,7 @@ class Mirror(TaskListener):
             and not is_gdrive_id(self.link)
         ):
             content_type = await get_content_type(self.link)
-            if content_type is None or "application/zip" and "bigota" in self.link or "application/zip" and "hugeota" in self.link or re_match(r"text/html|text/plain", content_type) or "sourceforge.net" in self.link or "filelions" in self.link:
+            if content_type is None or "application/zip" and "bigota" in self.link or "application/zip" and "hugeota" in self.link or re_match(r"text/html|text/plain", content_type):
                 if "uptobox" in self.link:
                     ddl = await sendMessage(
                         self.message,
@@ -440,13 +440,6 @@ class Mirror(TaskListener):
                         self.message,
                         f"<b>Mengubah server Bigota :</b>\n<code>{self.link}</code>"
                     )
-                elif "udomain" in self.link:
-                    await sendMessage(
-                        self.message,
-                        f"ERROR: Mirror server Udomain dari Sourceforge sedang bermasalah dan akan membuat speed download sangat lambat, silahkan ganti ke server lain !"
-                    )
-                    self.removeFromSameDir()
-                    return
                 else:
                     ddl = await sendMessage(
                         self.message,

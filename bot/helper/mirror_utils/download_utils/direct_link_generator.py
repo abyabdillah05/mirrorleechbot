@@ -1783,32 +1783,6 @@ def apkadmin(url: str) -> str:
         except:
             session.close()
             raise DirectDownloadLinkException(f"ERROR: Link File tidak ditemukan!")
-    
-
-def sourceforge(url: str) -> str:
-    with Session() as session:
-        try:
-            if "master.dl.sourceforge.net" in url:
-                return f"{url}?viasf=1"
-            if url.endswith("/download"):
-                url = url.split("/download")[0]
-            try:
-                link = findall(r"\bhttps?://sourceforge\.net\S+", url)[0]
-            except IndexError:
-                session.close()
-                raise DirectDownloadLinkException("ERROR: Link SourceForge tidak ditemukan!")
-            file_id = findall(r"files(.*)", link)[0]
-            project = findall(r"projects?/(.*?)/files", link)[0]
-            req = session.get(f"https://sourceforge.net/settings/mirror_choices?projectname={project}&filename={file_id}").content
-            soup = BeautifulSoup(req, "html.parser")
-            mirror = soup.find("ul", {"id": "mirrorList"}).findAll("li")
-            for i in mirror[1:]:
-                direct_link = f"https://{i['id']}.dl.sourceforge.net/project/{project}/{file_id}?viasf=1"
-            return direct_link
-        except:
-            session.close()
-            raise DirectDownloadLinkException(f"ERROR: Link File tidak ditemukan!")
-
 
 def androidfilehost(url):
     with Session() as session:
