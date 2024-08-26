@@ -588,22 +588,7 @@ class TgUploader:
                 not self._is_cancelled
                 and not self._is_corrupted
             ):
-                max_retries = 3
-                for attempt in range(max_retries):
-                    try:
-                        if self._forwardChatId != "":
-                            await copyMessage(
-                                chat_id=self._forwardChatId, 
-                                from_chat_id=self._sent_msg.chat.id, 
-                                message_id=self._sent_msg.id, 
-                                message_thread_id=self._forwardThreadId
-                            )
-                        break
-                    except Exception as e:
-                        LOGGER.error(f"Failed when forward message (attempt {attempt + 1}/{max_retries}) => {e}")
-                        if attempt == max_retries - 1:
-                            raise
-                        await sleep(1)
+                await self.copy_message()
         except FloodWait as f:
             LOGGER.warning(str(f))
             await sleep(f.value)
@@ -620,6 +605,25 @@ class TgUploader:
                 LOGGER.error(f"Retrying As Document. Path: {self._up_path}")
                 return await self._upload_file(cap_mono, file, True)
             raise err
+    
+    async def copy_message(self):
+        max_retries = 3
+        for attempt in range(max_retries):
+            LOGGER.info(f"Forwarding message (attempt {attempt + 1}/{max_retries})")
+            try:
+                if self._forwardChatId != "":
+                    await copyMessage(
+                        chat_id=self._forwardChatId, 
+                        from_chat_id=self._sent_msg.chat.id, 
+                        message_id=self._sent_msg.id, 
+                        message_thread_id=self._forwardThreadId
+                    )
+                break
+            except Exception as e:
+                LOGGER.error(f"Failed when forward message (attempt {attempt + 1}/{max_retries}) => {e}")
+                if attempt == max_retries - 1:
+                    await self._listener.onUploadError("Terjadi kesalahan saat forward hasil leech, silahkan coba kembali.")
+                await sleep(1)
 
     @property
     def speed(self):
