@@ -199,7 +199,7 @@ class TgUploader:
                 await rename(self._up_path, new_path)
                 self._up_path = new_path
         else:
-            cap_mono = f"{capt}>"
+            cap_mono = f"{capt}"
         if len(file_) > 54:
             if is_archive(file_):
                 name = get_base_name(file_)
