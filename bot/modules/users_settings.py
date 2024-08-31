@@ -154,6 +154,10 @@ async def get_user_settings(from_user):
     if user_dict:
         buttons.ibutton("Reset All", f"userset {user_id} reset")
     buttons.ibutton("Close", f"userset {user_id} close")
+    if user_dict.get("caption", False):
+        capt = user_dict["caption"]
+    else:
+        capt = "Monospace"
 
     text = f"""
 <b>Pengaturan untuk user</b> <code>{name}</code>
@@ -162,6 +166,7 @@ async def get_user_settings(from_user):
 <b>Leech Type       :</b> <code>{ltype}</code>
 <b>Leech Prefix     :</b> <code>{escape(lprefix)}</code>
 <b>Leech Split Size :</b> <code>{split_size}</code>
+<b>Leech Caption    :</b> <code>{capt}</code>
 <b>Equal Splits     :</b> <code>{equal_splits}</code>
 <b>Media Group      :</b> <code>{media_group}</code>
 <b>Custom Thumbnail :</b> <code>{thumbmsg}</code>
@@ -202,7 +207,6 @@ async def set_thumb(_, message, pre_event):
     if DATABASE_URL:
         await DbManger().update_user_doc(user_id, "thumb", des_dir)
 
-
 async def add_rclone(_, message, pre_event):
     user_id = message.from_user.id
     handler_dict[user_id] = False
@@ -230,11 +234,13 @@ async def add_token_pickle(_, message, pre_event):
     if DATABASE_URL:
         await DbManger().update_user_doc(user_id, "token_pickle", des_dir)
 
-
-async def set_option(_, message, pre_event, option):
+async def set_option(_, message, pre_event, option, value=""):
     user_id = message.from_user.id
     handler_dict[user_id] = False
-    value = message.text
+    if value:
+        value = value
+    else:
+        value = message.text
     if option == "split_size":
         if not value.isdigit():
             value = getSplitSizeBytes(value)
@@ -242,6 +248,8 @@ async def set_option(_, message, pre_event, option):
     elif option == "leech_dest":
         if value.isdigit():
             value = int(value)
+    elif option == "caption":
+        value = value
     elif option == "excluded_extensions":
         fx = value.split()
         value = ["aria2", "!qB"]
@@ -268,6 +276,7 @@ async def event_handler(client, query, pfunc, photo=False, document=False):
         else:
             mtype = event.text
         user = event.from_user or event.sender_chat
+        
         return bool(
             user.id == user_id and event.chat.id == query.message.chat.id and mtype
         )
@@ -346,6 +355,11 @@ async def edit_user_settings(client, query):
         buttons = ButtonMaker()
         buttons.ibutton("Thumbnail", f"userset {user_id} sthumb")
         thumbmsg = "Exists" if await aiopath.exists(thumbpath) else "Not Exists"
+        buttons.ibutton("Caption", f"userset {user_id} scapt")
+        if user_dict.get("caption", False):
+            capt = user_dict["caption"] 
+        else:
+            capt = "Monospace"
         buttons.ibutton("Leech Split Size", f"userset {user_id} lss")
         if user_dict.get("split_size", False):
             split_size = user_dict["split_size"]
@@ -428,6 +442,7 @@ async def edit_user_settings(client, query):
 <b>Equal Splits     :</b> <code>{equal_splits}</code>
 <b>Media Group      :</b> <code>{media_group}</code>
 <b>Custom Thumbnail :</b> <code>{thumbmsg}</code>
+<b>Custom Caption   :</b> <code>{capt}</code>
 </pre>
 """
         await editMessage(message, text, buttons.build_menu(2))
@@ -617,6 +632,41 @@ Check all yt-dlp api options from this <a href='https://github.com/yt-dlp/yt-dlp
         )
         pfunc = partial(set_option, pre_event=query, option="lprefix")
         await event_handler(client, query, pfunc)
+
+    elif data[2] == "scapt":
+        await query.answer()
+        msg = "Select caption text format. Timeout: 60 sec\n"
+        if (
+            user_dict.get("caption", False)
+        ):
+            msg += f'\nCurrent format: <b>{user_dict["caption"]}</b>'
+        else:
+            msg += f'\nCurrent format: <b>Monospace</b>'
+        
+        format = user_dict.get("caption", False)
+        buttons = ButtonMaker()
+        s = "" if format != "Bold" else "✅"
+        buttons.ibutton(f"Bold {s}", f"userset {user_id} Bold")
+        s = "" if format != "Italic" else "✅"
+        buttons.ibutton(f"Italic {s}", f"userset {user_id} Italic")
+        s = "✅" if format == "Monospace" or format is None else ""
+        buttons.ibutton(f"Monospace {s}", f"userset {user_id} Monospace")
+        s = "" if format != "Normal" else "✅"
+        buttons.ibutton(f"Normal {s}", f"userset {user_id} Normal")
+        buttons.ibutton(f"Back", f"userset {user_id} leech")
+        buttons.ibutton(f"Close", f"userset {user_id} close")
+        await editMessage(
+            message,
+            msg,
+            buttons.build_menu(2),
+        )
+
+    elif data[2] in ["Bold", "Italic", "Monospace", "Normal"]:
+            update_user_ldata(user_id, "caption", data[2])
+            await update_user_settings(query)
+            if DATABASE_URL:
+                await DbManger().update_user_data(user_id)
+
     elif data[2] == "ldest":
         await query.answer()
         buttons = ButtonMaker()
@@ -721,6 +771,30 @@ async def send_users_settings(bot, message):
     else:
         await sendMessage(message, "<b>Semua User menggunakan Pengaturan Default!</b>")
 
+async def generate_caption_message(user_dict, user_id):
+    msg = "Select caption text format. Timeout: 60 sec\n"
+    current_format = user_dict.get("caption", False)
+    if current_format:
+        msg += f'\nCurrent format: <b>{current_format}</b>'
+    else:
+        msg += f'\nCurrent format: <b>Monospace</b>'
+    
+    buttons = ButtonMaker()
+    format_buttons = {
+        "Bold": "Bold",
+        "Italic": "Italic",
+        "Monospace": "Monospace",
+        "Normal": "Normal",
+    }
+    
+    for key, value in format_buttons.items():
+        s = "✅" if current_format == value or (value == "Monospace" and not current_format) else ""
+        buttons.ibutton(f"{key} {s}", f"userset {user_id} scapt {value}")
+    
+    buttons.ibutton("Back", f"userset {user_id} leech")
+    buttons.ibutton("Close", f"userset {user_id} close")
+    
+    return msg, buttons.build_menu(2)
 
 bot.add_handler(
     MessageHandler(

@@ -1,6 +1,6 @@
 import os
 from requests import utils as rutils
-from aiofiles.os import path as aiopath, listdir, makedirs
+from aiofiles.os import path as aiopath, listdir, makedirs, remove as aioremove
 from html import escape
 from aioshutil import move
 from asyncio import sleep, Event, gather
@@ -458,6 +458,8 @@ class TaskListener(TaskConfig):
                 del task_dict[self.mid]
             count = len(task_dict)
         if count == 0:
+            if self.temp_thumb and await aiopath.exists(self.temp_thumb):
+                await aioremove(self.temp_thumb)
             await self.clean()
         else:
             await update_status_message(self.message.chat.id)
@@ -465,7 +467,6 @@ class TaskListener(TaskConfig):
         async with queue_dict_lock:
             if self.mid in non_queued_up:
                 non_queued_up.remove(self.mid)
-
         await start_from_queued()
 
     async def onDownloadError(self, error, button=None):
@@ -477,6 +478,8 @@ class TaskListener(TaskConfig):
         msg = f"<b>Hai {self.tag} !</b>\n<b>Tugasmu dihentikan karena :</b>\n\n{error}"
         await sendMessage(self.message, msg, button)
         if count == 0:
+            if self.temp_thumb and await aiopath.exists(self.temp_thumb):
+                await aioremove(self.temp_thumb)
             await self.clean()
         else:
             await update_status_message(self.message.chat.id)
@@ -514,6 +517,8 @@ class TaskListener(TaskConfig):
         msg = f"<b>Hai {self.tag} !</b>\n<b>Tugasmu dihentikan karena :</b>\n\n{error}"
         await sendMessage(self.message, msg)
         if count == 0:
+            if self.temp_thumb and await aiopath.exists(self.temp_thumb):
+                await aioremove(self.temp_thumb)
             await self.clean()
         else:
             await update_status_message(self.message.chat.id)

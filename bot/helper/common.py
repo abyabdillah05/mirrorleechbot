@@ -103,6 +103,7 @@ class TaskConfig:
         self.suproc = None
         self.client = None
         self.thumb = None
+        self.temp_thumb = None
         self.isGofile = False
         self.isBuzzheavier = False
         self.isPixeldrain = False
@@ -110,6 +111,7 @@ class TaskConfig:
         self.extension_filter = []
         self.isSuperChat = bool(self.message.chat.type.name in ["SUPERGROUP", "CHANNEL"])
         self.isPrivateChat = bool(self.message.chat.type == ChatType.PRIVATE)
+        self.caption = self.user_dict.get("caption", False)
 
     def getTokenPath(self, dest):
         if dest.startswith("mtp:"):
@@ -308,9 +310,9 @@ class TaskConfig:
                 and "as_doc" not in self.user_dict
             )
 
-            if is_telegram_link(self.thumb):
-                msg = (await get_tg_link_message(self.thumb))[0]
-                self.thumb = await createThumb(msg) if msg.photo or msg.document else ""
+            #if is_telegram_link(self.thumb):
+            #    msg = (await get_tg_link_message(self.thumb))[0]
+            #    self.thumb = await createThumb(msg) if msg.photo or msg.document else ""
 
     async def getTag(self, text: list):
         if len(text) > 1 and text[1].startswith("Tag: "):
@@ -328,7 +330,7 @@ class TaskConfig:
             self.tag = self.message.from_user.mention
 
     @new_task
-    async def run_multi(self, input_list, folder_name, obj, gofile=False, buzzheavier=False, pixeldrain=False):
+    async def run_multi(self, input_list, folder_name, obj, temp_thumb="", gofile=False, buzzheavier=False, pixeldrain=False, temp_thumbs=False):
         await sleep(7)
         if not self.multiTag and self.multi > 1:
             self.multiTag = token_urlsafe(3)
@@ -406,6 +408,19 @@ class TaskConfig:
                 self.multiTag,
                 self.options,
                 pixeldrain=True
+            ).newEvent()
+        elif temp_thumb:
+            obj(
+                self.client,
+                nextmsg,
+                self.isQbit,
+                self.isLeech,
+                self.sameDir,
+                self.bulk,
+                self.multiTag,
+                self.options,
+                temp_thumb=temp_thumb,
+                temp_thumbs=True,
             ).newEvent()
         else:
             obj(

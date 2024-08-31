@@ -56,6 +56,7 @@ class TgUploader:
         self._total_files = 0
         self._is_cancelled = False
         self._thumb = self._listener.thumb or f"Thumbnails/{listener.user_id}.jpg"
+        self._temp_thumb = self._listener.temp_thumb
         self._msgs_dict = {}
         self._corrupted = 0
         self._is_corrupted = False
@@ -66,6 +67,7 @@ class TgUploader:
         self._media_group = False
         self._forwardChatId = None
         self._forwardThreadId = None
+        self._caption = self._listener.caption
 
     async def _upload_progress(self, current, _):
         if self._is_cancelled:
@@ -169,8 +171,19 @@ class TgUploader:
         return True
 
     async def _prepare_file(self, file_, dirpath):
+        if self._caption == "Monospace":
+            capt = f"<code>{file_}</code>"
+        elif self._caption == "Bold":
+            capt = f"<b>{file_}</b>"
+        elif self._caption == "Italic":
+            capt = f"<i>{file_}</i>"
+        elif self._caption == "Normal":
+            capt = f"{file_}"
+        else:
+            capt = f"<code>{file_}</code>"
+
         if self._lprefix:
-            cap_mono = f"{self._lprefix} <code>{file_}</code>"
+            cap_mono = f"{capt}\n\n{self._lprefix}"
             self._lprefix = re_sub("<.*?>", "", self._lprefix)
             if (
                 self._listener.seed
@@ -186,7 +199,7 @@ class TgUploader:
                 await rename(self._up_path, new_path)
                 self._up_path = new_path
         else:
-            cap_mono = f"<code>{file_}</code>"
+            cap_mono = f"{capt}>"
         if len(file_) > 54:
             if is_archive(file_):
                 name = get_base_name(file_)
@@ -404,6 +417,8 @@ class TgUploader:
         if self._thumb is not None and not await aiopath.exists(self._thumb):
             self._thumb = None
         thumb = self._thumb
+        if self._temp_thumb:
+            thumb = self._temp_thumb
         self._is_corrupted = False
         try:
             is_video, is_audio, is_image = await get_document_type(self._up_path)
@@ -582,6 +597,7 @@ class TgUploader:
                 self._thumb is None
                 and thumb is not None
                 and await aiopath.exists(thumb)
+                and self._temp_thumb is None
             ):
                 await remove(thumb)
             if (
@@ -597,6 +613,7 @@ class TgUploader:
                 self._thumb is None
                 and thumb is not None
                 and await aiopath.exists(thumb)
+                and self._temp_thumb is None
             ):
                 await remove(thumb)
             err_type = "RPCError: " if isinstance(err, RPCError) else ""

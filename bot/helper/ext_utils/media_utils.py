@@ -25,18 +25,18 @@ def getSplitSizeBytes(size):
         size = 0
     return size
 
-
-async def createThumb(msg, _id=""):
+async def createThumb(msg, _id="", temp=False):
     if not _id:
         _id = msg.id
     path = "Thumbnails/"
+    if temp:
+        path = "Temp_thumb/"
     await makedirs(path, exist_ok=True)
     photo_dir = await msg.download()
     des_dir = f"{path}{_id}.jpg"
     await sync_to_async(Image.open(photo_dir).convert("RGB").save, des_dir, "JPEG")
     await aioremove(photo_dir)
     return des_dir
-
 
 async def is_multi_streams(path):
     try:

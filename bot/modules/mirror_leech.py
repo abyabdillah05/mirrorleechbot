@@ -67,8 +67,10 @@ class Mirror(TaskListener):
         gofile=False,
         buzzheavier=False,
         pixeldrain=False,
+        temp_thumbs=False,
         auto_url="",
         options="",
+        temp_thumb="",
     ):
         if sameDir is None:
             sameDir = {}
@@ -88,6 +90,8 @@ class Mirror(TaskListener):
         self.gofile = gofile
         self.buzzheavier = buzzheavier
         self.pixeldrain = pixeldrain
+        self.temp_thumbs = temp_thumbs
+        self.temp_thumb = temp_thumb
 
     @new_task
     async def newEvent(self):
@@ -128,7 +132,7 @@ class Mirror(TaskListener):
             "-au": "",
             "-ap": "",
             "-h": "",
-            "-t": "",
+            "-ct": False,
         }
 
         if self.gofile:
@@ -149,10 +153,10 @@ class Mirror(TaskListener):
         self.compress = args["-z"]
         self.extract = args["-e"]
         self.join = args["-j"]
-        self.thumb = args["-t"]
         self.splitSize = args["-sp"]
         self.sampleVideo = args["-sv"]
         self.screenShots = args["-ss"]
+        self.up_thumb = args["-ct"]
 
         headers = args["-h"]
         isBulk = args["-b"]
@@ -164,6 +168,11 @@ class Mirror(TaskListener):
         seed_time = None
         reply_to = None
         file_ = None
+
+        if self.up_thumb and not self.temp_thumbs:
+            self.temp_thumb = await AutoMirror(self).upload_thumbnail()
+        else:
+            pass
 
         if self.auto_mode or self.button_mode:
             _type = None
@@ -231,6 +240,8 @@ class Mirror(TaskListener):
                         self.sampleVideo = auto_args["sv"]
                     if "leech" in auto_args:
                         self.isLeech = True
+                    if "custom_thumb" in auto_args:
+                        self.temp_thumb = auto_args["custom_thumb"]
 
                 except:
                     return None
@@ -283,6 +294,10 @@ class Mirror(TaskListener):
             self.run_multi(input_list, folder_name, Mirror, gofile=True)
         elif self.buzzheavier:
             self.run_multi(input_list, folder_name, Mirror, buzzheavier=True)
+        elif self.pixeldrain:
+            self.run_multi(input_list, folder_name, Mirror, pixeldrain=True)
+        elif self.temp_thumb:
+            self.run_multi(input_list, folder_name, Mirror, temp_thumbs=True, temp_thumb=self.temp_thumb)
         else:
             self.run_multi(input_list, folder_name, Mirror)
 
