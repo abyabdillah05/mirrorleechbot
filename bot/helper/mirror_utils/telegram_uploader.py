@@ -32,7 +32,8 @@ from bot.helper.telegram_helper.message_utils import (
     customSendDocument, 
     customSendVideo, 
     customSendAudio, 
-    customSendPhoto
+    customSendPhoto,
+    sendMessage
 )
 from bot.helper.ext_utils.media_utils import (  
     get_media_info,
@@ -639,7 +640,7 @@ class TgUploader:
             except Exception as e:
                 LOGGER.error(f"Failed when forward message (attempt {attempt + 1}/{max_retries}) => {e}")
                 if attempt == max_retries - 1:
-                    await self._listener.onUploadError("Terjadi kesalahan saat forward hasil leech, silahkan coba kembali.")
+                    await sendMessage(self._listener.message, f"Hai {self._listener.tag}, Terjadi kesalahan saat forward hasil leech anda.\n\n<code>{e}</code>")
                 await sleep(1)
 
     @property

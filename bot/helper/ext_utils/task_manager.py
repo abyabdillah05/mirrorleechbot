@@ -154,13 +154,13 @@ async def limit_checker(size, listener, isTorrent=False, isMega=False, isGdrive=
         elif listener.isLeech:
             limit = 35 * 1024**3
         if size > limit:
+            limit_exceeded = f'Limit Task Mirror: {get_readable_file_size(limit)}'
             if listener.isLeech:
                 limit_exceeded = f'Limit Task Leech: {get_readable_file_size(limit)}'
             elif listener.upDest in bypass_limit:
                 limit_exceeded = f'Limit Task Custom Upload: {get_readable_file_size(limit)}'
             elif isTorrent:
                 limit_exceeded = f'Limit Task Torrent: {get_readable_file_size(limit)}'
-            limit_exceeded = f'Limit Task Mirror: {get_readable_file_size(limit)}'
 
     if limit_exceeded:
         return f"<b>Task anda dibatalkan karena diatas batas limit size yang ditetapkan !</b>\n\n<b>{limit_exceeded}.\nUkuran file anda: {get_readable_file_size(size)}"
