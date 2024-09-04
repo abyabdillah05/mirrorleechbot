@@ -173,7 +173,6 @@ class TaskListener(TaskConfig):
                     return
         
         up_dir, self.name = up_path.rsplit("/", 1)
-        spath = f"{self.dir}"
         size = await get_path_size(up_dir)
         if self.isLeech:
             m_size = []

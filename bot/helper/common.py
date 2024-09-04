@@ -409,7 +409,7 @@ class TaskConfig:
                 self.options,
                 pixeldrain=True
             ).newEvent()
-        elif temp_thumb:
+        elif temp_thumbs:
             obj(
                 self.client,
                 nextmsg,
