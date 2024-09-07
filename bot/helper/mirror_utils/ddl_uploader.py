@@ -142,6 +142,8 @@ class DdlUploader:
         files_count = 0
         folders_count = 0
         for root, dirs, files in os.walk(dir_path):
+            if self._is_cancelled:
+                break
             files_count += len(files)
             folders_count += len(dirs)
             rel_path = os.path.relpath(root, dir_path)
@@ -200,7 +202,8 @@ class DdlUploader:
                 async_to_sync(self.listener.onUploadError, "Terjadi kesalahan saat mengupload file ke gofile: " + str(e))
                 return
             if isfolder:
-                return
+                if not self._is_cancelled:
+                    return
             elif r.get('status') == 'ok':
                 data = r.get('data', {})
                 link = data.get('downloadPage')

@@ -57,6 +57,7 @@ from bot.helper.mirror_utils.status_utils.zip_status import ZipStatus
 from bot.helper.mirror_utils.status_utils.split_status import SplitStatus
 from bot.helper.mirror_utils.status_utils.sample_video_status import SampleVideoStatus
 from bot.helper.ext_utils.exceptions import NotSupportedExtractionArchive
+from bot.helper.mirror_utils.status_utils.dumpStatus import DumpStatus
 
 
 class TaskConfig:
@@ -107,6 +108,7 @@ class TaskConfig:
         self.isGofile = False
         self.isBuzzheavier = False
         self.isPixeldrain = False
+        self.dump=False
         self.extra_details = {'startTime': time()}
         self.extension_filter = []
         self.isSuperChat = bool(self.message.chat.type.name in ["SUPERGROUP", "CHANNEL"])
@@ -471,6 +473,57 @@ class TaskConfig:
                 "<b>Balas file .txt atau balas pesan Telegram yang memiliki banyak link dan dipisahkan menggunakan line baru!</b>",
             )
 
+    async def proceedDump(self, dl_path, size, gid):
+        partition = self.dump if isinstance(self.dump, str) else ""
+        try:
+            LOGGER.info(f"Dumping: {self.name}")
+            async with task_dict_lock:
+                task_dict[self.mid] = DumpStatus(self, size, gid)
+            if await aiopath.isdir(dl_path):
+                return
+            else:
+                up_path = get_base_name(dl_path)
+                if self.seed:
+                    self.newDir = f"{self.dir}10000"
+                    up_path = up_path.replace(self.dir, self.newDir)
+                cmd = [
+                    "payload_dumper",
+                    "--partitions",
+                    f"{partition}",
+                    f"{dl_path}",
+                    "--out",
+                    f"{up_path}",
+                ]
+                if not partition:
+                    del cmd[1:3]
+                async with subprocess_lock:
+                    if self.suproc == "cancelled":
+                        return False
+                    self.suproc = await create_subprocess_exec(*cmd, stderr=PIPE)
+                _, stderr = await self.suproc.communicate()
+                code = self.suproc.returncode
+                if code == 0:
+                    LOGGER.info(f"Dump Path Path: {up_path}")
+                    if not self.seed:
+                        try:
+                            await aioremove(dl_path)
+                        except:
+                            return False
+                    return up_path
+                else:
+                    stderr = stderr.decode().strip()
+                    LOGGER.error(
+                        f"{stderr}. Unable to dumping Path: {dl_path}"
+                    )
+                    self.newDir = ""
+                    return None
+        except Exception as e:
+            LOGGER.info(
+                f"Error when dumping: {e}"
+            )
+            self.newDir = ""
+            return None
+        
     async def proceedExtract(self, dl_path, size, gid):
         pswd = self.extract if isinstance(self.extract, str) else ""
         try:

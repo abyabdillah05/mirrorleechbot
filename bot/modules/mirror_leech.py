@@ -68,6 +68,7 @@ class Mirror(TaskListener):
         buzzheavier=False,
         pixeldrain=False,
         temp_thumbs=False,
+        dump=False,
         auto_url="",
         options="",
         temp_thumb="",
@@ -92,6 +93,7 @@ class Mirror(TaskListener):
         self.pixeldrain = pixeldrain
         self.temp_thumbs = temp_thumbs
         self.temp_thumb = temp_thumb
+        self.dump = dump
 
     @new_task
     async def newEvent(self):
@@ -133,6 +135,7 @@ class Mirror(TaskListener):
             "-ap": "",
             "-h": "",
             "-ct": False,
+            "-dump": False
         }
 
         if self.gofile:
@@ -157,6 +160,7 @@ class Mirror(TaskListener):
         self.sampleVideo = args["-sv"]
         self.screenShots = args["-ss"]
         self.up_thumb = args["-ct"]
+        self.dump = args["-dump"]
 
         headers = args["-h"]
         isBulk = args["-b"]

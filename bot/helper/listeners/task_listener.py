@@ -153,6 +153,18 @@ class TaskListener(TaskConfig):
                 return
             up_dir, self.name = up_path.rsplit("/", 1)
             size = await get_path_size(up_dir)
+        
+        if self.dump:
+            _, ext = os.path.splitext(up_path)
+            if os.path.isdir(up_path) or ext.lower() != '.zip':
+                await self.onUploadError("Silahkan berikan link atau file ROM yang berisi <code>payload.bin</code> untuk didump !")
+                return
+            up_path = await self.proceedDump(up_path, size, gid)
+            if not up_path:
+                await self.onUploadError("Proses Dumping gagal, pastikan ROM yang anda berikan berisi <code>payload.bin</code> yang valid !")
+                return
+            up_dir, self.name = up_path.rsplit("/", 1)
+            size = await get_path_size(up_dir)
 
         if self.sampleVideo:
             up_path = await self.generateSampleVideo(up_path, size, gid)

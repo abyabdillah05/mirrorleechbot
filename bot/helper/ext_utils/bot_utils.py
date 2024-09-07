@@ -83,7 +83,7 @@ async def get_telegraph_list(telegraph_content):
 def arg_parser(items, arg_base):
     if not items:
         return arg_base
-    bool_arg_set = {"-b", "-e", "-z", "-s", "-j", "-d", "-sv", "-ss", "-ct"}
+    bool_arg_set = {"-b", "-e", "-z", "-s", "-j", "-d", "-sv", "-ss", "-ct", "-dump"}
     t = len(items)
     i = 0
     arg_start = -1
