@@ -50,19 +50,26 @@ def direct_link_generator(link: str):
     ):
         raise DirectDownloadLinkException(
             "ERROR: <b>Gunakan perintah YT-Dlp untuk link ini:</b> \n<code>/ytdl</code> Untuk mirror ke Gdrive\n<code>/ytdlleech</code> Untuk leech ke telegram")
-    elif any(
+    
+    if any(
         x in domain
         for x in [
-            "devuploads.com",
-            "get.pixelexperience.org",
-            "arrowos.net"
+            "instagram.com",
         ]
     ):
         raise DirectDownloadLinkException(
-            "ERROR: <b>Situs ini belum bisa dimirror oleh bot.</b>")
-    elif "drive.usercontent.google.com" in domain:
+            "ERROR: <b>Gunakan Gallery-DL untuk instagram:</b> \n<code>/gdl Link</code>")
+    elif any(
+        x in domain
+        for x in [
+            "devuploads.com"
+        ]
+    ):
         raise DirectDownloadLinkException(
-            "ERROR: Link Gdrive yang anda berikan salah, gunakan link <code>drive.google.com</code>")
+            "ERROR: <b>Link devuploads error, Silahkan baca <a href='https://telegra.ph/Devuploads-Mirror-09-28'><b>Disini</b></a> cara mirror devuploads !")
+    #elif "drive.usercontent.google.com" in domain:
+    #    raise DirectDownloadLinkException(
+    #        "ERROR: Link Gdrive yang anda berikan salah, gunakan link <code>drive.google.com</code>")
     elif "mediafire.com" in domain:
         return mediafire(link)
     elif "uptobox.com" in domain:
@@ -176,7 +183,9 @@ def direct_link_generator(link: str):
             "gibibox.com",
         ]
     ):
-        return terabox(link)
+        #return terabox(link)
+        raise DirectDownloadLinkException(
+            "ERROR: <b>Downloader terabox sementara lagi bermasalah.</b>")
     elif any(
         x in domain
         for x in [

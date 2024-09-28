@@ -823,7 +823,7 @@ async def downloader(url):
     # Perintah untuk menjalankan gallery-dl
     command = ['gallery-dl', '-d', output_dir, url]
     if "instagram" in url:
-        command.extend(['--cookies', 'cookies.txt'])
+        command.extend(['--cookies', 'instagram.txt'])
         
     process = await create_subprocess_exec(
         *command,

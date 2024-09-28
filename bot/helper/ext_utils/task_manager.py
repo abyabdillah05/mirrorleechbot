@@ -150,9 +150,9 @@ async def limit_checker(size, listener, isTorrent=False, isMega=False, isGdrive=
     else:
         limit = 20 * 1024**3
         if listener.upDest in bypass_limit:
-            limit = 35 * 1024**3
+            limit = 80 * 1024**3
         elif listener.isLeech:
-            limit = 35 * 1024**3
+            limit = 40 * 1024**3
         if size > limit:
             limit_exceeded = f'Limit Task Mirror: {get_readable_file_size(limit)}'
             if listener.isLeech:

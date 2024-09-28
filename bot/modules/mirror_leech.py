@@ -544,20 +544,23 @@ async def auto_mirror(client, message):
     if magnet:
         pass
     else:
-        domain = urlparse(urls).hostname
-        if any(
-            x in domain
-            for x in [
-                "youtube.com",
-                "youtu.be",
-                "instagram.com",
-                "facebook.com",
-                "tiktok.com",
-                "twitter.com",
-                "x.com",
-            ]
-        ):
-            return None
+        try:
+            domain = urlparse(urls).hostname
+            if any(
+                x in domain
+                for x in [
+                    "youtube.com",
+                    "youtu.be",
+                    "instagram.com",
+                    "facebook.com",
+                    "tiktok.com",
+                    "twitter.com",
+                    "x.com",
+                ]
+            ):
+                return None
+        except:
+            pass
     Mirror(client, message, auto_url=text, auto_mode=True).newEvent()
 
 bot.add_handler(
