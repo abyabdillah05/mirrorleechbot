@@ -214,7 +214,7 @@ async def start(client, message):
     buttons = ButtonMaker()
     buttons.ubutton(
         "👤 Owner", "https://t.me/XRofikX")
-    buttons.ubutton("🌟 Channel", "https://t.me/pikachukocak")
+    buttons.ubutton("🌟 Channel", "https://t.me/pikachukocak2")
     reply_markup = buttons.build_menu(2)
     if await CustomFilters.authorized(client, message):
         start_string = f'''

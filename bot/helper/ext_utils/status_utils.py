@@ -206,7 +206,7 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1):
     #    for label, status_value in STATUS_VALUES:
     #        if status_value != status:
     #            buttons.ibutton(label, f"status {sid} st {status_value}")
-    buttons.ubutton("*⃣", "https://t.me/pikachukocak", position="header")
+    buttons.ubutton("*⃣", "https://t.me/pikachukocak2", position="header")
     buttons.ibutton("🔄", f"status {sid} ref", position="header")
     buttons.ibutton("🔽 Tutup", f"status {sid} close", position="footer")
     button = buttons.build_menu(3)

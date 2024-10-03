@@ -326,7 +326,7 @@ class TaskListener(TaskConfig):
             else:
                 fmsg = ""
                 buttons = ButtonMaker()
-                buttons.ubutton("♻️ Leech Dump Channel", "https://t.me/+pXpR1L9BVoQ5N2Vl")
+                buttons.ubutton("♻️ Leech Dump Channel", "https://t.me/+bzqjzHqeO8xjM2E1")
                 #buttons.ubutton("❤️ Support For Pikabot", "https://telegra.ph/Pikabot-Donate-10-01", "footer")
                 button = buttons.build_menu(1)
                 for index, (link, name) in enumerate(files.items(), start=1):
