@@ -466,6 +466,13 @@ def mediafire(url, session=None):
                 return final_link[0]
         except Exception as e:
             raise DirectDownloadLinkException (f"ERROR: {e}")
+    def _repair_download(url, session):
+        try:
+            html = HTML(session.get(url).text)
+            if new_link := html.xpath('//a[@id="continue-btn"]/@href'):
+                return mediafire(f"https://mediafire.com/{new_link[0]}")
+        except Exception as e:
+            raise DirectDownloadLinkException (f"ERROR: Error saat repair download {e}")
     if session is None:
         session = create_scraper()
         parsed_url = urlparse(url)
@@ -479,7 +486,8 @@ def mediafire(url, session=None):
         session.close()
         raise DirectDownloadLinkException(f"ERROR: {error[0]}")
     if not (final_link := html.xpath('//a[@aria-label="Download file"]/@href')):
-        session.close()
+        if repair_link := html.xpath("//a[@class='retry']/@href"):
+            return _repair_download(repair_link[0], session)
         raise DirectDownloadLinkException("ERROR: Link File tidak ditemukan!")
     if final_link[0].startswith("//"):
         return mediafire(f"https://{final_link[0][2:]}", session)
@@ -539,13 +547,27 @@ def mediafireFolder(url):
 
     details["title"] = folder_infos[0]["name"]
 
+    def __repair_download(url, session):
+            try:
+                html = HTML(session.get(url).text)
+                new_link = html.xpath('//a[@id="continue-btn"]/@href')
+                return f"https://mediafire.com/{new_link[0]}"
+            except:
+                return
+
     def __scraper(url):
+        parsed_url = urlparse(url)
+        url = f"{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}"
         try:
             html = HTML(session.get(url).text)
         except:
             return
         if final_link := html.xpath('//a[@aria-label="Download file"]/@href'):
+            if final_link[0].startswith("//"):
+                return __scraper(f"https://{final_link[0][2:]}")
             return final_link[0]
+        if repair_link := html.xpath("//a[@class='retry']/@href"):
+                return __scraper(__repair_download(repair_link[0], session))
 
     def __get_content(folderKey, folderPath="", content_type="folders"):
         try:
