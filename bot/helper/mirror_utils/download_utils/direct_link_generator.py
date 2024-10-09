@@ -547,17 +547,17 @@ def mediafireFolder(url):
 
     details["title"] = folder_infos[0]["name"]
 
-    def __repair_download(url, session):
-            try:
-                html = HTML(session.get(url).text)
-                new_link = html.xpath('//a[@id="continue-btn"]/@href')
-                return f"https://mediafire.com/{new_link[0]}"
-            except:
-                return
-
     def __scraper(url):
+        session = create_scraper()
         parsed_url = urlparse(url)
         url = f"{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}"
+        def __repair_download(url):
+            try:
+                html = HTML(session.get(url).text)
+                if new_link := html.xpath('//a[@id="continue-btn"]/@href'):
+                    return __scraper(f"https://mediafire.com/{new_link[0]}")
+            except:
+                return
         try:
             html = HTML(session.get(url).text)
         except:
@@ -567,7 +567,8 @@ def mediafireFolder(url):
                 return __scraper(f"https://{final_link[0][2:]}")
             return final_link[0]
         if repair_link := html.xpath("//a[@class='retry']/@href"):
-                return __scraper(__repair_download(repair_link[0], session))
+            return __repair_download(repair_link[0])
+        
 
     def __get_content(folderKey, folderPath="", content_type="folders"):
         try:
