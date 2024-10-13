@@ -225,7 +225,7 @@ class DdlUploader:
         
     def bh_upload(self, size):
         file_name = os.path.basename(self._path)
-        servers = ["buzzheavier.com"]
+        servers = ["buzzheavier.com", "flashbang.sh", "trashbytes.sh"]
         server = choice(servers)
         response_buffer = BytesIO()
         ca_cert_path = '/etc/ssl/certs/ca-certificates.crt'

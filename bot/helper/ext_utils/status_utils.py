@@ -145,7 +145,7 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1):
             msg += f"\n<b>┌ Status : <a href='{task.listener.message.link}'>{tstatus}</a></b>"
         if tstatus != MirrorStatus.STATUS_DUMPING:
             msg += f"\n<b>├ </b>{get_progress_bar_string(task.progress())}"
-        user = f'<a href="tg://openmessage?user_id={task.listener.user.id}">{task.listener.user.first_name}</a>'
+        user = f'<a href="tg://user?id={task.listener.user.id}">{task.listener.user.first_name}</a>'
         msg += f"\n<b>├ Oleh :</b> {user}"
         msg += f"\n<b>├ UserID :</b> [<code>{task.listener.user.id}</code>]"
         if tstatus not in [
