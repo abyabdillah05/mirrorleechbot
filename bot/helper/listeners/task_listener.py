@@ -156,7 +156,7 @@ class TaskListener(TaskConfig):
         
         if self.dump:
             _, ext = os.path.splitext(up_path)
-            if os.path.isdir(up_path) or ext.lower() not in ['.zip', '.tgz']:
+            if os.path.isdir(up_path) or ext.lower() not in ('.zip', '.tgz'):
                 await self.onUploadError("Silahkan berikan link atau file ROM yang berisi <code>payload.bin</code> untuk didump !")
                 return
             up_path = await self.proceedDump(up_path, size, gid)
