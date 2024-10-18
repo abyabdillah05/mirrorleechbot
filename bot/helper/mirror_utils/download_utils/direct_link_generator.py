@@ -482,11 +482,25 @@ def mediafire(url, session=None):
         session = create_scraper()
         parsed_url = urlparse(url)
         url = f"{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}"
-    try:
-        html = HTML(session.get(url).text)
-    except Exception as e:
-        session.close()
-        raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}")
+    #try:
+    #    html = HTML(session.get(url).text)
+    #except Exception as e:
+    #    session.close()
+    #    raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}")
+    retries = 0
+    max_retries = 10
+    while retries < max_retries:
+        try:
+            req = session.get(url)
+            if req.status_code == 200:
+                html = HTML(req.text)
+                break
+        except:
+            pass
+        retries += 1
+        
+    if retries == max_retries:
+        raise DirectDownloadLinkException("ERROR: Gagal saat mencoba request ke mediafire")    
     if error:= html.xpath("//p[@class='notranslate']/text()"):
         session.close()
         raise DirectDownloadLinkException(f"ERROR: {error[0]}")
