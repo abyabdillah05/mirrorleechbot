@@ -454,6 +454,19 @@ def uptobox(url):
         except Exception as e:
             raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}")
 
+def req_url(url, session):
+        coba = 0
+        max_coba = 10
+        while coba < max_coba:
+            try:
+                req = session.get(url)
+                if req.status_code == 200:
+                    return req.text
+            except:
+                pass
+            coba += 1
+        if coba == max_coba:
+            return None
 
 def mediafire(url, session=None):
     if "/folder/" in url:
@@ -462,8 +475,8 @@ def mediafire(url, session=None):
         try:
             c = async_to_sync(get_content_type, final_link[0])
             if c is None or re.match(r"text/html|text/plain", c):
-                session = Session()
-                html = HTML(session.get(url).text)
+                session = create_scraper()
+                html = HTML(req_url(url, session))
                 new_link = html.xpath('//a[@id="continue-btn"]/@href')
                 new_link = f"https://mediafire.com/{new_link[0]}"
                 return mediafire(new_link)
@@ -471,9 +484,10 @@ def mediafire(url, session=None):
                 return final_link[0]
         except Exception as e:
             raise DirectDownloadLinkException (f"ERROR: {e}")
+        
     def _repair_download(url, session):
         try:
-            html = HTML(session.get(url).text)
+            html = HTML(req_url(url, session))
             if new_link := html.xpath('//a[@id="continue-btn"]/@href'):
                 return mediafire(f"https://mediafire.com/{new_link[0]}")
         except Exception as e:
@@ -487,20 +501,12 @@ def mediafire(url, session=None):
     #except Exception as e:
     #    session.close()
     #    raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}")
-    retries = 0
-    max_retries = 10
-    while retries < max_retries:
-        try:
-            req = session.get(url)
-            if req.status_code == 200:
-                html = HTML(req.text)
-                break
-        except:
-            pass
-        retries += 1
-        
-    if retries == max_retries:
-        raise DirectDownloadLinkException("ERROR: Gagal saat mencoba request ke mediafire")    
+    try:
+        html = HTML(req_url(url, session))
+    except Exception as e:
+        session.close()
+        raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}")
+    
     if error:= html.xpath("//p[@class='notranslate']/text()"):
         session.close()
         raise DirectDownloadLinkException(f"ERROR: {error[0]}")
@@ -572,13 +578,13 @@ def mediafireFolder(url):
         url = f"{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}"
         def __repair_download(url):
             try:
-                html = HTML(session.get(url).text)
+                html = HTML(req_url(url, session))
                 if new_link := html.xpath('//a[@id="continue-btn"]/@href'):
                     return __scraper(f"https://mediafire.com/{new_link[0]}")
             except:
                 return
         try:
-            html = HTML(session.get(url).text)
+            html = HTML(req_url(url, session))
         except:
             return
         if final_link := html.xpath('//a[@aria-label="Download file"]/@href'):
