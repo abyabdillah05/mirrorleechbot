@@ -304,8 +304,8 @@ def direct_link_generator(link: str):
         return berkasdrive(link)
     elif 'sourceforge.net' in domain:
         return sourceforge(link)
-    elif 'seikel.adventure.workers.dev' in domain:
-        return seikel(link)
+    elif 'database.s3cr3t.workers.dev' in domain:
+        return index(link)
     # Add AllDebrid supported link here
     elif any(
         x in domain
@@ -2185,18 +2185,17 @@ def files_fm(url):
             f_link = re.sub(r"thumb_video_picture\.php", "down.php", link)
             return f_link
     
-def seikel(url): 
+def index(url): 
     with Session() as session:
-        s = "http://seikel.adventure.workers.dev"
         payload = {
-            "username": "SEIKEL",
-            "password": "SEIKEL",
+            "username": "S3CR3T",
+            "password": "S3CR3T",
         }
         try:
             data = (session.post(url, json=payload)).json()
-            return f'{s}{data["link"]}'
-        except:
-            raise DirectDownloadLinkException(f"ERROR: Gagal mendapatkan data")
+            return f'http://database.s3cr3t.workers.dev{data["link"]}'
+        except Exception as e:
+            raise DirectDownloadLinkException(f"ERROR: Gagal mendapatkan data {e}")
 
 def uploadlinks(url):
     """uploadlinks.com link generator
