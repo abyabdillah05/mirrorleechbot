@@ -180,15 +180,15 @@ class Mirror(TaskListener):
         reply_to = None
         file_ = None
 
-        if self.ve:
-            try:
-                self.video_editor = await VideEditor(self).main_pesan()
-                if self.video_editor is None:
-                    self.removeFromSameDir()
-                    return
-            except:
-                self.removeFromSameDir()
-                return
+        #if self.ve:
+        #    try:
+        #        self.video_editor = await VideEditor(self).main_pesan()
+        #        if self.video_editor is None:
+        #            self.removeFromSameDir()
+        #            return
+        #    except:
+        #        self.removeFromSameDir()
+        #        return
 
         if self.up_thumb and not self.temp_thumbs:
             self.temp_thumb = await AutoMirror(self).upload_thumbnail()

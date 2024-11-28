@@ -257,19 +257,21 @@ class TaskListener(TaskConfig):
                 )
         
         elif self.upDest == "bh" or self.upDest == "buzzheavier":
-            self.isBuzzheavier = True
-            if os.path.isdir(up_path):
-                await self.onUploadError("Folder anda gagal dicompress dan tidak bisa diupload ke Buzzheavier")
-                return
-            size = await get_path_size(up_path)
-            LOGGER.info(f"Upload to Buzzheavier, Name: {self.name}")
-            bh = DdlUploader(self, up_path)
-            async with task_dict_lock:
-                task_dict[self.mid] = DdlUploadStatus(self, bh, size, gid)
-            await gather(
-                update_status_message(self.message.chat.id),
-                sync_to_async(bh.bh_upload, size),
-            )
+            await self.onUploadError("Upload ke Buzzheavier sementara dinonaktifkan")
+            return
+            #self.isBuzzheavier = True
+            #if os.path.isdir(up_path):
+            #    await self.onUploadError("Folder anda gagal dicompress dan tidak bisa diupload ke Buzzheavier")
+            #    return
+            #size = await get_path_size(up_path)
+            #LOGGER.info(f"Upload to Buzzheavier, Name: {self.name}")
+            #bh = DdlUploader(self, up_path)
+            #async with task_dict_lock:
+            #    task_dict[self.mid] = DdlUploadStatus(self, bh, size, gid)
+            #await gather(
+            #    update_status_message(self.message.chat.id),
+            #    sync_to_async(bh.bh_upload, size),
+            #)
 
         elif self.upDest == "pd" or self.upDest == "pixeldrain":
             self.isPixeldrain = True
