@@ -41,6 +41,7 @@ from bot.helper.ext_utils.files_utils import (
     is_archive_split,
     get_path_size,
     clean_target,
+    get_mime_type,
 )
 from bot.helper.ext_utils.bulk_links import extractBulkLinks
 from bot.helper.ext_utils.media_utils import split_file, get_document_type
@@ -49,6 +50,7 @@ from bot.helper.ext_utils.media_utils import (
     createThumb,
     getSplitSizeBytes,
     createSampleVideo,
+    PerformVideoEditor,
 )
 from bot.helper.mirror_utils.rclone_utils.list import RcloneList
 from bot.helper.mirror_utils.gdrive_utils.list import gdriveList
@@ -56,6 +58,7 @@ from bot.helper.mirror_utils.status_utils.extract_status import ExtractStatus
 from bot.helper.mirror_utils.status_utils.zip_status import ZipStatus
 from bot.helper.mirror_utils.status_utils.split_status import SplitStatus
 from bot.helper.mirror_utils.status_utils.sample_video_status import SampleVideoStatus
+from bot.helper.mirror_utils.status_utils.video_editor_status import VideoEditorStatus
 from bot.helper.ext_utils.exceptions import NotSupportedExtractionArchive
 from bot.helper.mirror_utils.status_utils.dumpStatus import DumpStatus
 
@@ -114,6 +117,8 @@ class TaskConfig:
         self.isSuperChat = bool(self.message.chat.type.name in ["SUPERGROUP", "CHANNEL"])
         self.isPrivateChat = bool(self.message.chat.type == ChatType.PRIVATE)
         self.caption = self.user_dict.get("caption", False)
+        self.video_editor = None
+        self.ve = False
 
     def getTokenPath(self, dest):
         if dest.startswith("mtp:"):
@@ -738,6 +743,9 @@ class TaskConfig:
         async with cpu_eater_lock:
             checked = False
             if await aiopath.isfile(dl_path):
+                mime_type = get_mime_type(dl_path)
+                if mime_type not in ("video/mp4", "video/x-matroska", "video/webm"):
+                    return dl_path
                 if (await get_document_type(dl_path))[0]:
                     if not checked:
                         checked = True
@@ -752,6 +760,9 @@ class TaskConfig:
                 ):
                     for file_ in files:
                         f_path = ospath.join(dirpath, file_)
+                        mime_type = get_mime_type(f_path)
+                        if mime_type not in ("video/mp4", "video/x-matroska", "video/webm"):
+                            continue
                         if (await get_document_type(f_path))[0]:
                             if not checked:
                                 checked = True
@@ -761,4 +772,46 @@ class TaskConfig:
                             )
                             if not res:
                                 return res
+                return dl_path
+    
+    async def VideoEditor(self, dl_path, size, gid):
+        async with task_dict_lock:
+            task_dict[self.mid] = VideoEditorStatus(self, size, gid)
+
+        async with cpu_eater_lock:
+            checked = False
+            if await aiopath.isfile(dl_path):
+                mime_type = get_mime_type(dl_path)
+                if mime_type not in ("video/mp4", "video/x-matroska", "video/webm"):
+                    return dl_path
+                if (await get_document_type(dl_path))[0]:
+                    if not checked:
+                        checked = True
+                        LOGGER.info(f"Editing Video: {self.name}")
+                    res = await PerformVideoEditor(
+                        self, dl_path, True
+                    )
+                    return res
+            else:
+                for dirpath, _, files in await sync_to_async(
+                    walk, dl_path, topdown=False
+                ):
+                    for file_ in files:
+                        f_path = ospath.join(dirpath, file_)
+                        mime_type = get_mime_type(f_path)
+                        if mime_type not in ("video/mp4", "video/x-matroska", "video/webm"):
+                            continue
+                        if (await get_document_type(f_path))[0]:
+                            if not checked:
+                                checked = True
+                                LOGGER.info(f"Editing Video: {self.name}")
+                            res = await PerformVideoEditor(
+                                self, f_path
+                            )
+                            if not res:
+                                return res
+                            try:
+                                await aioremove(f_path)
+                            except Exception as e:
+                                LOGGER.error(f"Failed to delete file {f_path}: {e}")
                 return dl_path

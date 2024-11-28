@@ -48,6 +48,7 @@ from bot.helper.telegram_helper.message_utils import (
 )
 from bot.helper.listeners.task_listener import TaskListener
 from bot.modules.auto_mirror import AutoMirror
+from bot.modules.video_editor import VideEditor
 from urllib.parse import urlparse
 
 urlregex = r"^(?!\/)(rtmps?:\/\/|mms:\/\/|rtsp:\/\/|https?:\/\/|ftp:\/\/)?([^\/:]+:[^\/@]+@)?(www\.)?(?=[^\/:\s]+\.[^\/:\s]+)([^\/:\s]+\.[^\/:\s]+)(:\d+)?(\/[^#\s]*[\s\S]*)?(\?[^#\s]*)?(#.*)?$"
@@ -69,6 +70,8 @@ class Mirror(TaskListener):
         pixeldrain=False,
         temp_thumbs=False,
         dump=False,
+        ve=False,
+        video_editor=None,
         auto_url="",
         options="",
         temp_thumb="",
@@ -94,6 +97,8 @@ class Mirror(TaskListener):
         self.temp_thumbs = temp_thumbs
         self.temp_thumb = temp_thumb
         self.dump = dump
+        self.ve = ve
+        self.video_editor = video_editor
 
     @new_task
     async def newEvent(self):
@@ -135,7 +140,8 @@ class Mirror(TaskListener):
             "-ap": "",
             "-h": "",
             "-ct": False,
-            "-dump": False
+            "-dump": False,
+            "-ve": False
         }
 
         if self.gofile:
@@ -161,6 +167,7 @@ class Mirror(TaskListener):
         self.screenShots = args["-ss"]
         self.up_thumb = args["-ct"]
         self.dump = args["-dump"]
+        self.ve = args["-ve"]
 
         headers = args["-h"]
         isBulk = args["-b"]
@@ -173,10 +180,18 @@ class Mirror(TaskListener):
         reply_to = None
         file_ = None
 
+        if self.ve:
+            try:
+                self.video_editor = await VideEditor(self).main_pesan()
+                if self.video_editor is None:
+                    self.removeFromSameDir()
+                    return
+            except:
+                self.removeFromSameDir()
+                return
+
         if self.up_thumb and not self.temp_thumbs:
             self.temp_thumb = await AutoMirror(self).upload_thumbnail()
-        else:
-            pass
 
         if self.auto_mode or self.button_mode:
             _type = None
@@ -248,9 +263,8 @@ class Mirror(TaskListener):
                         self.temp_thumb = auto_args["custom_thumb"]
 
                 except:
-                    return None
-            else:
-                pass
+                    self.removeFromSameDir()
+                    return
 
         try:
             self.multi = int(args["-i"])

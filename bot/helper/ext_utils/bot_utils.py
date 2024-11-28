@@ -1,3 +1,6 @@
+import os
+import re
+
 from asyncio import (
     create_subprocess_exec,
     create_subprocess_shell,
@@ -83,7 +86,7 @@ async def get_telegraph_list(telegraph_content):
 def arg_parser(items, arg_base):
     if not items:
         return arg_base
-    bool_arg_set = {"-b", "-e", "-z", "-s", "-j", "-d", "-sv", "-ss", "-ct", "-dump"}
+    bool_arg_set = {"-b", "-e", "-z", "-s", "-j", "-d", "-sv", "-ss", "-ct", "-dump", "-ve"}
     t = len(items)
     i = 0
     arg_start = -1
@@ -168,5 +171,11 @@ def new_thread(func):
     def wrapper(*args, wait=False, **kwargs):
         future = run_coroutine_threadsafe(func(*args, **kwargs), bot_loop)
         return future.result() if wait else future
-
     return wrapper
+
+def clean_video_name(file_path, compress=False):
+    base_name = os.path.basename(file_path)
+    final_name = os.path.splitext(base_name)[0]
+    if compress:
+        final_name = re.sub(r'[-._]?(360|480|540|720|1080)(p)?', '', final_name, flags=re.IGNORECASE)
+    return final_name

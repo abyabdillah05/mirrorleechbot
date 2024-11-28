@@ -172,6 +172,13 @@ class TaskListener(TaskConfig):
                 return
             up_dir, self.name = up_path.rsplit("/", 1)
             size = await get_path_size(up_dir)
+        
+        if self.video_editor:
+            up_path = await self.VideoEditor(up_path, size, gid)
+            if not up_path:
+                return
+            up_dir, self.name = up_path.rsplit("/", 1)
+            size = await get_path_size(up_dir)
 
         if self.compress:
             up_path = await self.proceedCompress(up_path, size, gid)

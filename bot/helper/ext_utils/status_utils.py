@@ -28,6 +28,7 @@ class MirrorStatus:
     STATUS_CHECKING = "Mengecek.."
     STATUS_SAMVID = "Sample Video"
     STATUS_DUMPING = "Dumping.."
+    STATUS_VIDEDIT = "Video Editor. ."
      
 STATUS_VALUES = [
     ("ALL", "All"),
@@ -41,6 +42,7 @@ STATUS_VALUES = [
     ("SD", MirrorStatus.STATUS_SEEDING),
     ("SV", MirrorStatus.STATUS_SAMVID),
     ("DM", MirrorStatus.STATUS_DUMPING),
+    ("VE", MirrorStatus.STATUS_VIDEDIT),
 ]
 
 
@@ -139,24 +141,31 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1):
             msg += f"<blockquote><b>🔐 Nama :</b> <code>Private Task</code></b></blockquote>"
         else: 
             msg += f"<blockquote>📄 <b>Nama :</b> <code>{escape(f'{task.name()}')}</code></blockquote>"
-        if tstatus != MirrorStatus.STATUS_DUMPING:
+        if tstatus not in [
+            MirrorStatus.STATUS_DUMPING,
+            MirrorStatus.STATUS_VIDEDIT,
+        ]:
             msg += f"\n<b>┌ Status : <a href='{task.listener.message.link}'>{tstatus}</a></b> <code>({task.progress()})</code>"
         else:
             msg += f"\n<b>┌ Status : <a href='{task.listener.message.link}'>{tstatus}</a></b>"
-        if tstatus != MirrorStatus.STATUS_DUMPING:
+        if tstatus not in [
+            MirrorStatus.STATUS_DUMPING,
+            MirrorStatus.STATUS_VIDEDIT,
+        ]:
             msg += f"\n<b>├ </b>{get_progress_bar_string(task.progress())}"
         user = f'<a href="tg://user?id={task.listener.user.id}">{task.listener.user.first_name}</a>'
-        msg += f"\n<b>├ Oleh :</b> {user}"
+        msg += f"\n<b>├ Oleh :</b> <code>@{task.listener.user.username}</code>"
         msg += f"\n<b>├ UserID :</b> [<code>{task.listener.user.id}</code>]"
+        msg += f"\n<b>├ Waktu :</b> <code>{get_readable_time(time() - task.listener.extra_details['startTime'])}</code>"
+        msg += f"\n<b>├ Ukuran :</b> {task.size()}"
         if tstatus not in [
             MirrorStatus.STATUS_SPLITTING,
             MirrorStatus.STATUS_SEEDING,
             MirrorStatus.STATUS_SAMVID,
             MirrorStatus.STATUS_DUMPING,
+            MirrorStatus.STATUS_VIDEDIT,
         ]:
-            msg += f"\n<b>├ Ukuran :</b> {task.size()}"
             msg += f"\n<b>├ Diproses :</b> <code>{task.processed_bytes()}</code>"
-            msg += f"\n<b>├ Waktu :</b> <code>{get_readable_time(time() - task.listener.extra_details['startTime'])}</code>"
             msg += f"\n<b>├ Estimasi :</b> <code>{task.eta()}</code>"
             msg += f"\n<b>├ Kecepatan :</b> <code>{task.speed()}</code>"
             if hasattr(task, "seeders_num"):
@@ -171,8 +180,8 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1):
             msg += f"\n<b>├ Ukuran :</b> <code>{task.size()}</code>"
             msg += f"\n<b>├ Diupload :</b> <code>{task.uploaded_bytes()}</code>"
             msg += f"\n<b>├ Kecepatan :</b> <code>{task.seed_speed()}</code>"
-        else:
-            msg += f"\n<b>├ Ukuran :</b> <code>{task.size()}</code>"
+        #else:
+        #    msg += f"\n<b>├ Ukuran :</b> <code>{task.size()}</code>"
         engine = ""
         ddl = task.listener
         if ddl.isGofile:
