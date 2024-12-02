@@ -117,6 +117,9 @@ class TaskConfig:
         self.isSuperChat = bool(self.message.chat.type.name in ["SUPERGROUP", "CHANNEL"])
         self.isPrivateChat = bool(self.message.chat.type == ChatType.PRIVATE)
         self.caption = self.user_dict.get("caption", False)
+        self.pd_api = self.user_dict.get("pixeldrain_apikey", False)
+        self.gf_api = self.user_dict.get("gofile_apitoken", False)
+        self.gf_folder = self.user_dict.get("gofile_folder_id", False)
         self.video_editor = None
         self.ve = False
 

@@ -151,6 +151,28 @@ async def get_user_settings(from_user):
         ytopt = YTO
     else:
         ytopt = "None"
+
+    buttons.ibutton("PixelDrain APIKey", f"userset {user_id} pd_api")
+    if user_dict.get("pixeldrain_apikey", None):
+        pd_api = user_dict["pixeldrain_apikey"]
+        pd_api = pd_api[:-8] + "X" * 8
+    else:
+        pd_api = "None"
+
+    buttons.ibutton("Gofile APIToken", f"userset {user_id} gf_api")
+    if user_dict.get("gofile_apitoken", None):
+        gf_api = user_dict["gofile_apitoken"]
+        gf_api = gf_api[:-8] + "X" * 8
+    else:    
+        gf_api = "None"
+    
+    buttons.ibutton("Gofile Folder ID", f"userset {user_id} gf_folder")
+    if user_dict.get("gofile_folder_id", None):
+        gf_folder = user_dict["gofile_folder_id"]
+        gf_folder = gf_folder[:-8] + "X" * 8
+    else:    
+        gf_folder = "None"
+
     if user_dict:
         buttons.ibutton("Reset All", f"userset {user_id} reset")
     buttons.ibutton("Close", f"userset {user_id} close")
@@ -179,6 +201,9 @@ async def get_user_settings(from_user):
 <b>Default Upload   :</b> <code>{du}</code>
 <b>Excluded Ext     :</b> <code>{ex_ex}</code>
 <b>YT-DLP Options   :</b> <code>{escape(ytopt)}</code>
+<b>PixelDrain API   :</b> <code>{pd_api}</code>
+<b>GoFile API       :</b> <code>{gf_api}</code>
+<b>Gofile F_ID      :</b> <code>{gf_folder}</code>
 </pre>
 """
 
@@ -249,6 +274,12 @@ async def set_option(_, message, pre_event, option, value=""):
         if value.isdigit():
             value = int(value)
     elif option == "caption":
+        value = value
+    elif option == "pixeldrain_apikey":
+        value = value
+    elif option == "gofile_apitoken":
+        value = value
+    elif option == "gofile_folder_id":
         value = value
     elif option == "excluded_extensions":
         fx = value.split()
@@ -336,7 +367,7 @@ async def edit_user_settings(client, query):
         else:
             await query.answer("Old Settings", show_alert=True)
             await update_user_settings(query)
-    elif data[2] in ["yt_opt", "lprefix", "index_url", "excluded_extensions"]:
+    elif data[2] in ["yt_opt", "lprefix", "index_url", "excluded_extensions", "pixeldrain_apikey", "gofile_apitoken", "gofile_folder_id"]:
         await query.answer()
         update_user_ldata(user_id, data[2], "")
         await update_user_settings(query)
@@ -613,6 +644,39 @@ Check all yt-dlp api options from this <a href='https://github.com/yt-dlp/yt-dlp
         rmsg = "Send Index URL. Timeout: 60 sec"
         await editMessage(message, rmsg, buttons.build_menu(1))
         pfunc = partial(set_option, pre_event=query, option="index_url")
+        await event_handler(client, query, pfunc)
+    elif data[2] == "pd_api":
+        await query.answer()
+        buttons = ButtonMaker()
+        if user_dict.get("pixeldrain_apikey", None):
+            buttons.ibutton("Remove Pixeldrain Apikey", f"userset {user_id} pixeldrain_apikey")
+        buttons.ibutton("Back", f"userset {user_id} back")
+        buttons.ibutton("Close", f"userset {user_id} close")
+        rmsg = "Send Pixeldrain Apikey. Timeout: 60 sec"
+        await editMessage(message, rmsg, buttons.build_menu(1))
+        pfunc = partial(set_option, pre_event=query, option="pixeldrain_apikey")
+        await event_handler(client, query, pfunc)
+    elif data[2] == "gf_api":
+        await query.answer()
+        buttons = ButtonMaker()
+        if user_dict.get("gofile_apitoken", None):
+            buttons.ibutton("Remove Gofile Apitoken", f"userset {user_id} gofile_apitoken")
+        buttons.ibutton("Back", f"userset {user_id} back")
+        buttons.ibutton("Close", f"userset {user_id} close")
+        rmsg = "Send Gofile Apitoken. Timeout: 60 sec"
+        await editMessage(message, rmsg, buttons.build_menu(1))
+        pfunc = partial(set_option, pre_event=query, option="gofile_apitoken")
+        await event_handler(client, query, pfunc)
+    elif data[2] == "gf_folder":
+        await query.answer()
+        buttons = ButtonMaker()
+        if user_dict.get("gofile_folder_id", None):
+            buttons.ibutton("Remove Gofile Folder ID", f"userset {user_id} gofile_folder_id")
+        buttons.ibutton("Back", f"userset {user_id} back")
+        buttons.ibutton("Close", f"userset {user_id} close")
+        rmsg = "Send Gofile Folder ID. Timeout: 60 sec"
+        await editMessage(message, rmsg, buttons.build_menu(1))
+        pfunc = partial(set_option, pre_event=query, option="gofile_folder_id")
         await event_handler(client, query, pfunc)
     elif data[2] == "leech_prefix":
         await query.answer()
