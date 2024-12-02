@@ -33,13 +33,13 @@ class DdlUploader:
         self._pycurl = pycurl.Curl()
 
         self.cookie = MozillaCookieJar()
-        self.cookie.load("buzzheavier.txt", ignore_discard=True, ignore_expires=True)
+        #self.cookie.load("buzzheavier.txt", ignore_discard=True, ignore_expires=True)
         self._cookies ={}
-        for cookie in self.cookie:
-            self._cookies[cookie.name] = cookie.value
+        #for cookie in self.cookie:
+        #    self._cookies[cookie.name] = cookie.value
         self.session: Session = Session()
-        self.session.cookies.update(other=self.cookie)
-        self.session.cookies.update(self.session.cookies.get_dict())
+        #self.session.cookies.update(other=self.cookie)
+        #self.session.cookies.update(self.session.cookies.get_dict())
 
     def _upload_progress(self, download_t, download_d, upload_t, upload_d):
         if self._is_cancelled:
