@@ -681,8 +681,7 @@ class VideEditor:
             hs_path = hardsub.get("file", None)
             if hs_path:
                 await aioremove(hs_path)
-        softsub = self.video_editor.get("softsub", [])
-        softsub_path = softsub.get("file", None)
-        if softsub_path:
+        softsub = self.video_editor.get("softsub", None)
+        if softsub:
             for sub in softsub:
                 await aioremove(sub["file"])
