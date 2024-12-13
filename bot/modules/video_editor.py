@@ -24,8 +24,7 @@ async def main_select(_, query, obj):
     data = query.data.split()
     message = query.message
     if data[1] == "paid":
-        #query.answer(text="⛔ Fitur ini hanya dapat digunakan oleh user premium !!", show_alert=True)
-        await query.answer("Not Yours!", show_alert=True)
+        await query.answer("⛔ Fitur ini hanya dapat digunakan oleh user premium !!", show_alert=True)
     await query.answer()
 
     if data[1] == "compress":
@@ -127,9 +126,6 @@ async def main_select(_, query, obj):
 
     elif data[1] == "start":
         await obj.start()
-    
-    #elif data[1] == "paid":
-    #    await obj.paid_feature()
     
     elif data[1] == "cancel":
         await editMessage(message, "<b>Tugas dibatalkan !</b>")
@@ -240,11 +236,11 @@ class VideEditor:
         s = "" if "1920:1080" not in resolution else "✅"
         butt.ibutton(f"1080p {s}", f"ve paid")
         s = "" if "1280:720" not in resolution else "✅"
-        butt.ibutton(f"720p {s}", f"ve 1280:720")
+        butt.ibutton(f"720p {s}", f"ve paid")
         s = "" if "854:480" not in resolution else "✅"
-        butt.ibutton(f"480p {s}", f"ve 854:480")
+        butt.ibutton(f"480p {s}", f"ve paid")
         s = "" if "640:360" not in resolution else "✅"
-        butt.ibutton(f"360p {s}", f"ve 640:360")
+        butt.ibutton(f"360p {s}", f"ve paid")
 
         butt.ibutton("↩️ Kembali", f"ve back")
         butt.ibutton("⛔️ Batal", f"ve cancel")
@@ -676,13 +672,15 @@ class VideEditor:
     
     async def cancel(self):
         watermark = self.video_editor.get("watermark", None)
-        wm_path = watermark.get("file", None) 
-        if wm_path:
-            await aioremove(wm_path)
+        if watermark:
+            wm_path = watermark.get("file", None) 
+            if wm_path:
+                await aioremove(wm_path)
         hardsub = self.video_editor.get("hardsub", None)
-        hs_path = hardsub.get("file", None)
-        if hs_path:
-            await aioremove(hs_path)
+        if hardsub:
+            hs_path = hardsub.get("file", None)
+            if hs_path:
+                await aioremove(hs_path)
         softsub = self.video_editor.get("softsub", [])
         softsub_path = softsub.get("file", None)
         if softsub_path:
