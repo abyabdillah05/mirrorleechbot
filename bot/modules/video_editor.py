@@ -296,7 +296,7 @@ class VideEditor:
         msg += f"\n\n<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
 
         butt = ButtonMaker()
-        s = "" if not path else "✅"
+        s = "🔒" if not path else "✅"
         if path:
             butt.ibutton(f"Hapus Watermark {s}", f"ve paid", position="header")
         else:
@@ -418,11 +418,11 @@ class VideEditor:
             msg += f"<b>▪️ Bold:</b> <code>Mati</code>\n"
         msg += f"\n\n<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
         butt = ButtonMaker()
-        s = "" if not hardsub_file else "✅"
+        s = "🔒" if not hardsub_file else "✅"
         if hardsub_file:
-            butt.ibutton(f"Hapus Subtitle {s}", f"ve hs_file", position="header")
+            butt.ibutton(f"Hapus Subtitle {s}", f"ve paid", position="header")
         else:
-            butt.ibutton(f"Tambahkan Subtitle {s}", f"ve hs_file", position="header")
+            butt.ibutton(f"Tambahkan Subtitle {s}", f"ve paid", position="header")
         butt.ibutton(f"Ukuran Teks", f"ve hs_size")
         butt.ibutton(f"Warna Teks", f"ve hs_color")
         butt.ibutton(f"Jenis Font", f"ve hs_font")
@@ -686,8 +686,3 @@ class VideEditor:
         if softsub_path:
             for sub in softsub:
                 await aioremove(sub["file"])
-    
-    async def paid_feature(self):
-        msg = "⛔ Fitur ini hanya dapat digunakan oleh user premium !!"
-        msg += f"\n\n<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
-        await editMessage(self._reply_to, msg, None)
