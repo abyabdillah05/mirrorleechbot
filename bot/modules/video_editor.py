@@ -657,7 +657,6 @@ class VideEditor:
         await editMessage(self._reply_to, msg, buttons)
     
     async def cancel(self):
-        await self._listener.delete()
         watermark = self.video_editor.get("watermark", None)
         wm_path = watermark.get("file", None) 
         if wm_path:
