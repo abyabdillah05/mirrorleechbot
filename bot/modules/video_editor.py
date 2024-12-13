@@ -24,7 +24,8 @@ async def main_select(_, query, obj):
     data = query.data.split()
     message = query.message
     if data[1] == "paid":
-        query.answer(text="⛔ Fitur ini hanya dapat digunakan oleh user premium !!", show_alert=True)
+        #query.answer(text="⛔ Fitur ini hanya dapat digunakan oleh user premium !!", show_alert=True)
+        await query.answer("Not Yours!", show_alert=True)
     await query.answer()
 
     if data[1] == "compress":
