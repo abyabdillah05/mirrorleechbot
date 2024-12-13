@@ -575,22 +575,22 @@ async def PerformVideoEditor(
     if resolution:
         resolution_label = f"-{resolution.split(':')[1]}p"
         base_name = clean_video_name(video_file, compress=True)
-    output_file = f"{dir}/{base_name}{resolution_label}.{ext}"
+    output_file = f"{dir}/{base_name}{resolution_label}"
 
     # Rename
     rename = listener.video_editor.get("rename")
     if rename:
-        output_file = f"{dir}/{rename}{resolution_label}.{ext}"
+        output_file = f"{dir}/{rename}{resolution_label}"
         if not resolution:
-            output_file = f"{dir}/{rename}.{ext}"
+            output_file = f"{dir}/{rename}"
 
     # Watermark
     watermark = listener.video_editor.get("watermark", {})
     watermark_file = watermark.get("file", None)
     watermark_position = watermark.get("position", "top_left")
     watermark_size = watermark.get("size", "sedang")
-    if watermark and not (resolution or rename):
-        output_file = f"{dir}/{base_name}_wm.{ext}"
+    if watermark_file and not (resolution or rename):
+        output_file += f"_WM"
 
     # Hardsub
     hardsub = listener.video_editor.get("hardsub", {})
@@ -600,8 +600,8 @@ async def PerformVideoEditor(
     hardsub_font = hardsub.get("font", 5)
     hardsub_bold = hardsub.get("bold", False)
     bold = 1 if hardsub_bold else 0
-    if hardsub and not (resolution or rename or watermark):
-        output_file = f"{dir}/{base_name}_hs.{ext}"
+    if hardsub_file and not (resolution or rename or watermark):
+        output_file += f"_HS"
 
     # Softsub
     softsub = listener.video_editor.get("softsub", [])
@@ -613,8 +613,9 @@ async def PerformVideoEditor(
             language = sub.get("language", "Tidak diketahui")
             cmd.extend([f"-metadata:s:s:{index}", f"language={language}"])
     if softsub and not (resolution or rename or watermark):
-        output_file = f"{dir}/{base_name}_ss.{ext}"
-
+        output_file += f"_SS"
+    
+    output_file += f".{ext}"
     filter_str = []
     if watermark_file and watermark_position and watermark_size:
         watermark_filter = (
