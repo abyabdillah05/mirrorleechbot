@@ -654,8 +654,10 @@ async def PerformVideoEditor(
     if not (resolution or watermark or hardsub):
         cmd.extend(["-c:v", "copy", "-c:a", "copy"])
     else:
-        if resolution or watermark or hardsub:
+        if resolution or watermark_file or hardsub_file:
             cmd.extend(["-c:v", f"{video_codec}", "-preset", f"{preset}", "-crf", f"{crf}"])
+        else:
+            cmd.extend(["-c:v", "copy"])
         if audio_codec == "default":
             cmd.extend(["-c:a", "copy"])
         else:
@@ -688,7 +690,7 @@ async def PerformVideoEditor(
                 await aioremove(sub["file"])
             except:
                 continue
-            
+
     if code == -9:
         return False
     elif code != 0:
