@@ -672,16 +672,23 @@ async def PerformVideoEditor(
     _, stderr = await listener.suproc.communicate()
     code = listener.suproc.returncode
 
-    if watermark:
-        if ospath.exists(watermark_file):
+    if watermark_file:
+        try:
             await aioremove(watermark_file)
-    if hardsub:
-        if ospath.exists(hardsub_file):
+        except:
+            pass
+    if hardsub_file:
+        try:
             await aioremove(hardsub_file)
+        except:
+            pass
     if softsub:
         for sub in softsub:
-            if ospath.exists(sub["file"]):
+            try:
                 await aioremove(sub["file"])
+            except:
+                continue
+            
     if code == -9:
         return False
     elif code != 0:
