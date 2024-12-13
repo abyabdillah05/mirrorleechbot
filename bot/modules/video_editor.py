@@ -671,17 +671,22 @@ class VideEditor:
         await editMessage(self._reply_to, msg, buttons)
     
     async def cancel(self):
-        watermark = self.video_editor.get("watermark", None)
+        watermark = self.video_editor.get("watermark", {})
+        hardsub = self.video_editor.get("hardsub", {})
+        softsub = self.video_editor.get("softsub", [])
         if watermark:
-            wm_path = watermark.get("file", None) 
-            if wm_path:
-                await aioremove(wm_path)
-        hardsub = self.video_editor.get("hardsub", None)
+            try:
+                await aioremove(watermark["file"])
+            except:
+                pass
         if hardsub:
-            hs_path = hardsub.get("file", None)
-            if hs_path:
-                await aioremove(hs_path)
-        softsub = self.video_editor.get("softsub", None)
+            try:
+                await aioremove(hardsub["file"])
+            except:
+                pass
         if softsub:
             for sub in softsub:
-                await aioremove(sub["file"])
+                try:
+                    await aioremove(sub["file"])
+                except:
+                    continue
