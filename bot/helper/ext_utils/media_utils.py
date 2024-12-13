@@ -589,7 +589,7 @@ async def PerformVideoEditor(
     watermark_file = watermark.get("file", None)
     watermark_position = watermark.get("position", "top_left")
     watermark_size = watermark.get("size", "sedang")
-    if watermark_file and not (resolution or rename):
+    if watermark_file:
         output_file += f"_WM"
 
     # Hardsub
@@ -600,7 +600,7 @@ async def PerformVideoEditor(
     hardsub_font = hardsub.get("font", 5)
     hardsub_bold = hardsub.get("bold", False)
     bold = 1 if hardsub_bold else 0
-    if hardsub_file and not (resolution or rename or watermark):
+    if hardsub_file:
         output_file += f"_HS"
 
     # Softsub
@@ -612,7 +612,7 @@ async def PerformVideoEditor(
         for index, sub in enumerate(softsub):
             language = sub.get("language", "Tidak diketahui")
             cmd.extend([f"-metadata:s:s:{index}", f"language={language}"])
-    if softsub and not (resolution or rename or watermark):
+    if softsub:
         output_file += f"_SS"
     
     output_file += f".{ext}"
