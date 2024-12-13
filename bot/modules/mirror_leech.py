@@ -1,4 +1,3 @@
-import re
 from pyrogram.handlers import MessageHandler
 from pyrogram import filters
 from pyrogram.filters import command
@@ -6,6 +5,7 @@ from base64 import b64encode
 from re import match as re_match
 from aiofiles.os import path as aiopath
 from asyncio import sleep
+import re
 
 from bot import bot, DOWNLOAD_DIR, LOGGER
 from bot.helper.ext_utils.links_utils import (
@@ -180,15 +180,15 @@ class Mirror(TaskListener):
         reply_to = None
         file_ = None
 
-        #if self.ve:
-        #    try:
-        #        self.video_editor = await VideEditor(self).main_pesan()
-        #        if self.video_editor is None:
-        #            self.removeFromSameDir()
-        #            return
-        #    except:
-        #        self.removeFromSameDir()
-        #        return
+        if self.ve:
+            try:
+                self.video_editor = await VideEditor(self).main_pesan()
+                if self.video_editor is None:
+                    self.removeFromSameDir()
+                    return
+            except:
+                self.removeFromSameDir()
+                return
 
         if self.up_thumb and not self.temp_thumbs:
             self.temp_thumb = await AutoMirror(self).upload_thumbnail()

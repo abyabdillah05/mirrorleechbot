@@ -1,3 +1,4 @@
+import os
 from aiofiles.os import remove as aioremove, path as aiopath
 from bot import bot
 from pyrogram import filters
@@ -9,7 +10,7 @@ from bot.helper.ext_utils.bot_utils import (
     new_task,
     new_thread,
 )
-from bot.helper.ext_utils.media_utils import storeSubFile, createWM
+from bot.helper.ext_utils.media_utils import storeSubFile, createWM, fonts_dict
 from functools import partial
 from time import time
 from asyncio import wait_for, Event, wrap_future
@@ -29,13 +30,17 @@ async def main_select(_, query, obj):
     elif data[1] == "watermark":
         await obj.watermark_main_button()
     elif data[1] == "hardsub":
-        await obj.belum_siap()
+        await obj.hardsub_main_button()
     elif data[1] == "softsub":
-        await obj.belum_siap()
+        await obj.softsub_main_button()
     elif data[1] == "rename":
         await obj.rename_button()
     elif data[1] == "extension":
         await obj.extension_button()
+    elif data[1] == "extract":
+        await obj.extract_subtitle()
+    elif data[1] == "encoding":
+        await obj.belum_siap()
     
     elif data[1] == "file_wm":
         await obj.watermark_file_button()
@@ -56,11 +61,57 @@ async def main_select(_, query, obj):
         obj.video_editor['watermark']['position'] = data[1]
         await obj.watermark_main_button()
     
-    elif data[1] in ["kecil", "sedang", "besar", "extra", "super"]:
-        if 'watermark' not in obj.video_editor:
-            obj.video_editor['watermark'] = {}
-        obj.video_editor['watermark']['size'] = data[1]
-        await obj.watermark_main_button()
+    elif data[1] in ["kecil", "sedang", "besar", "extra", "ultra", "super"]:
+        if data[2] == "wm":
+            if 'watermark' not in obj.video_editor:
+                obj.video_editor['watermark'] = {}
+            obj.video_editor['watermark']['size'] = data[1]
+            await obj.watermark_main_button()
+        elif data[2] == "hs":
+            if 'hardsub' not in obj.video_editor:
+                obj.video_editor['hardsub'] = {}
+            obj.video_editor['hardsub']['size'] = data[1]
+            await obj.hardsub_main_button()
+
+    elif data[1] == "hs_file":
+        await obj.hardsub_file_button()
+    elif data[1] == "hs_font":
+        await obj.hardsub_font_button()
+    elif data[1] == "hs_color":
+        await obj.hardsub_color_button()
+    elif data[1] == "hs_size":
+        await obj.hardsub_size_button()
+    elif data[1] == "hs_bold":
+        await obj.hardsub_bold_button()
+    
+    elif data[1] == "ss_file":
+        await obj.softsub_file_button()
+    elif data[1] == "ss_del":
+        softsub = obj.video_editor.get("softsub", None)
+        if not softsub:
+            obj.video_editor['softsub'] = []
+        softsub.pop(int(data[2]))
+        await obj.softsub_main_button()
+            
+    elif data[1] == "size_hs":
+        if 'hardsub' not in obj.video_editor:
+            obj.video_editor['hardsub'] = {}
+        obj.video_editor['hardsub']['size'] = data[2]
+        await obj.hardsub_main_button()
+    elif data[1] == "hs_cs":
+        if 'hardsub' not in obj.video_editor:
+            obj.video_editor['hardsub'] = {}
+        obj.video_editor['hardsub']['color'] = data[2]
+        await obj.hardsub_main_button()
+    elif data[1] == "hs_fs":
+        if 'hardsub' not in obj.video_editor:
+            obj.video_editor['hardsub'] = {}
+        obj.video_editor['hardsub']['font'] = int(data[2])
+        await obj.hardsub_main_button()
+
+    elif data[1] == "extract_true":
+        obj.video_editor['extract'] = True
+        await obj.start()
 
     elif data[1] == "back":
         await obj.back()
@@ -68,11 +119,15 @@ async def main_select(_, query, obj):
     elif data[1] == "back_wm":
         await obj.watermark_main_button()
 
+    elif data[1] == "back_hs":
+        await obj.hardsub_main_button()
+
     elif data[1] == "start":
         await obj.start()
     
     elif data[1] == "cancel":
         await editMessage(message, "<b>Tugas dibatalkan !</b>")
+        await obj.cancel()
         obj.is_cancelled = True
         obj.event.set()
 
@@ -81,7 +136,7 @@ class VideEditor:
     def __init__(self, listener):
         self._listener = listener
         self.video_editor = {}
-        self.video_editor["extension"] = "mp4"
+        self.video_editor["extension"] = "mkv"
         self._reply_to = None
         self._sub_pesan = None
         self._time = time()
@@ -111,12 +166,16 @@ class VideEditor:
         video_editor = self.video_editor
         compress = video_editor.get("compress", None)
         watermark = video_editor.get("watermark", None)
+        if watermark:
+            watermark = watermark.get("file", None)
         hardsub = video_editor.get("hardsub", None)
+        if hardsub:
+            hardsub = hardsub.get("file", None)
         softsub = video_editor.get("softsub", None)
         rename = video_editor.get("rename", None)
-        extension = video_editor.get("extension", "mp4")
+        extension = video_editor.get("extension", "mkv")
         butt = ButtonMaker()
-        msg = "<b>Silahkan pilih menu video editor dibawah:</b>\n\n"
+        msg = "𝐕𝐢𝐝𝐞𝐨𝐄𝐝𝐢𝐭𝐨𝐫 𝐯𝟏.𝟐𝐁𝐞𝐭𝐚\n___________________________\n<b>Silahkan pilih menu video editor dibawah:</b>\n\n"
         if compress:
             reso = compress['resolution']
             reso = reso.split(':')[1] + "p"
@@ -124,19 +183,25 @@ class VideEditor:
         if rename:
             msg += f"<b>▪️ Rename ke:</b> <code>{rename}</code>\n"
         if watermark:
-            msg += f"<b>▪️ Watermark ke:</b> <code>Watermark ditambahkan</code>\n"
+            msg += f"<b>▪️ Watermark:</b> <code>Watermark ditambahkan</code>\n"
+        if hardsub:
+            msg += f"<b>▪️ Hardsub:</b> <code>Hardsub ditambahkan</code>\n"
+        if softsub:
+            msg += f"<b>▪️ Softsub:</b> <code>Softsub ditambahkan</code>\n"
         msg += f"<b>▪️ Format video:</b> <code>{extension}</code>\n"
         s = "" if not compress else "✅"
         butt.ibutton(f"{s} Kompres", f"ve compress")
         s = "" if not rename else "✅"
         butt.ibutton(f"{s} Rename", f"ve rename")
+        s = "" if not hardsub else "✅"
+        butt.ibutton(f"{s} Hardsub", f"ve hardsub")
+        s = "" if not softsub else "✅"
+        butt.ibutton(f"{s} Softsub", f"ve softsub")
         s = "" if not watermark else "✅"
         butt.ibutton(f"{s} Watermark", f"ve watermark")
-        butt.ibutton(f"✅ Convert: {extension}", f"ve extension")
-        s = "🔒" if not hardsub else "✅"
-        butt.ibutton(f"{s} Hardsub", f"ve hardsub")
-        s = "🔒" if not softsub else "✅"
-        butt.ibutton(f"{s} Softsub", f"ve softsub")
+        butt.ibutton(f"Convert: {extension}", f"ve extension")
+        butt.ibutton(f"Extract", f"ve extract")
+        butt.ibutton(f"Encoding (Soon)", f"ve encoding")
 
         butt.ibutton(f"▶️ Mulai", f"ve start")
         butt.ibutton(f"⛔️ Batal", f"ve cancel")
@@ -174,30 +239,6 @@ class VideEditor:
         butt.ibutton(f"480p {s}", f"ve 854:480")
         s = "" if "640:360" not in resolution else "✅"
         butt.ibutton(f"360p {s}", f"ve 640:360")
-
-        butt.ibutton("↩️ Kembali", f"ve back")
-        butt.ibutton("⛔️ Batal", f"ve cancel")
-        buttons = butt.build_menu(2)
-        await editMessage(self._reply_to, msg, buttons)
-    
-    async def hardsub_main_button(self):
-        msg = "<b>📌 Pilih format hardsub anda </b>\n\n"
-        hardsub = self.video_editor.get("hardsub", None)
-        if not hardsub:
-            hardsub = self.video_editor["hardsub"] = {}
-        subfile = hardsub.get("subfile", "") if hardsub else ""
-        font_size = hardsub.get("font_size", "24") if hardsub else ""
-        font_color = hardsub.get("font_color", "white") if hardsub else ""
-        font_style = hardsub.get("font_style", "Bold=1") if hardsub else ""
-        butt = ButtonMaker()
-        s = "" if not subfile else "✅"
-        butt.ibutton(f"File Sub {s}", f"ve filesub")
-        s = "" if not font_size else f"{font_size}"
-        butt.ibutton(f"Ukuran Teks {s}", f"ve fontsize")
-        s = "" if not font_color else f"{font_color}"
-        butt.ibutton(f"Warna Teks {s}", f"ve fontcolor")
-        s = "" if not font_style else f"{font_style}"
-        butt.ibutton(f"Format Teks {s}", f"ve font_style")
 
         butt.ibutton("↩️ Kembali", f"ve back")
         butt.ibutton("⛔️ Batal", f"ve cancel")
@@ -298,17 +339,17 @@ class VideEditor:
 
         butt = ButtonMaker()
         s = "" if not size == "kecil" else "✅"
-        butt.ibutton(f"Kecil {s}", f"ve kecil")
+        butt.ibutton(f"Kecil {s}", f"ve kecil wm")
         s = "" if not size == "sedang" else "✅"
-        butt.ibutton(f"Sedang {s}", f"ve sedang")
+        butt.ibutton(f"Sedang {s}", f"ve sedang wm")
         s = "" if not size == "besar" else "✅"
-        butt.ibutton(f"Besar {s}", f"ve besar")
+        butt.ibutton(f"Besar {s}", f"ve besar wm")
         s = "" if not size == "extra" else "✅"
-        butt.ibutton(f"Extra {s}", f"ve extra")
+        butt.ibutton(f"Extra {s}", f"ve extra wm")
         s = "" if not size == "ultra" else "✅"
-        butt.ibutton(f"Ultra {s}", f"ve ultra")
+        butt.ibutton(f"Ultra {s}", f"ve ultra wm")
         s = "" if not size == "super" else "✅"
-        butt.ibutton(f"Super {s}", f"ve super")
+        butt.ibutton(f"Super {s}", f"ve super wm")
 
         butt.ibutton("↩️ Kembali", f"ve back_wm", position="footer")
         butt.ibutton("⛔️ Batal", f"ve cancel", position="footer")
@@ -344,14 +385,51 @@ class VideEditor:
                 await deleteMessage(ask)
                 await self.watermark_main_button()
 
-
-    async def hardsub_file_button(self):
-        msg = "<b>📌 Silahkan kirimkan file subs anda, support jenis .srt, .ass, dan .sub </b>\n\n"
+    async def hardsub_main_button(self):
+        msg = "<b>📌 Pilih format hardsub anda </b>\n\n"
         hardsub = self.video_editor.get("hardsub", None)
         if not hardsub:
             hardsub = self.video_editor["hardsub"] = {}
-        subfile = hardsub.get("subfile", "") if hardsub else ""
-        if not subfile:
+        hardsub_file = hardsub.get("file", None)
+        font_size = hardsub.get("size", "sedang")
+        font_color = hardsub.get("color", "putih")
+        font_style = hardsub.get("font", 5)
+        bold = hardsub.get("bold", False)
+        if hardsub_file:
+            msg += f"<b>▪️ File Subtitle:</b> <code>✅Sudah Ditambahkan</code>\n"
+        else:
+            msg += f"<b>▪️ File Subtitle:</b> <code>Belum Ditambahkan !!</code>\n"
+        msg += f"<b>▪️ Ukuran Teks:</b> <code>{font_size}</code>\n"
+        msg += f"<b>▪️ Warna Teks:</b> <code>{font_color}</code>\n"
+        if font_color == "hitam":
+            msg += f"<b>(Orang gila mana pake subs hitam njir.)</b>\n"
+        msg += f"<b>▪️ Jenis Font:</b> <code>{fonts_dict[int(font_style)]}</code>\n"
+        if bold:
+            msg += f"<b>▪️ Bold:</b> <code>Hidup</code>\n"
+        else:
+            msg += f"<b>▪️ Bold:</b> <code>Mati</code>\n"
+        msg += f"\n\n<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
+        butt = ButtonMaker()
+        s = "" if not hardsub_file else "✅"
+        butt.ibutton(f"File Subtitle {s}", f"ve hs_file", position="header")
+        butt.ibutton(f"Ukuran Teks", f"ve hs_size")
+        butt.ibutton(f"Warna Teks", f"ve hs_color")
+        butt.ibutton(f"Jenis Font", f"ve hs_font")
+        s = "" if not bold else "✅"
+        butt.ibutton(f"Bold {s}", f"ve hs_bold")
+
+        butt.ibutton("↩️ Kembali", f"ve back")
+        butt.ibutton("⛔️ Batal", f"ve cancel")
+        buttons = butt.build_menu(2)
+        await editMessage(self._reply_to, msg, buttons)
+
+    async def hardsub_file_button(self):
+        msg = "<b>📌 Silahkan kirimkan file subtitle anda, support jenis subtitle .srt, .ass, .ssa, .vtt\n\n"
+        hardsub = self.video_editor.get("hardsub", None)
+        if not hardsub:
+            hardsub = self.video_editor["hardsub"] = {}
+        hardsub_path = hardsub.get("file", "") if hardsub else ""
+        if not hardsub_path:
             try:
                 ask = await sendMessage(self._listener.message, f"{msg}\n\nKlik /batal untuk membatalkan")
                 respon = await bot.listen(
@@ -361,22 +439,17 @@ class VideEditor:
                     try:
                         msg = respon
                         uid = self._listener.user_id
-                        sub = await storeSubFile(msg, uid)
-                        upd = {"subfile": sub}
-                        hardsub.update(upd)
+                        hs = await storeSubFile(msg, uid)
+                        hardsub = self.video_editor["hardsub"]
+                        hardsub["file"] = hs
                     except: 
                         pass
                 await respon.delete()
-                await self.hardsub_main_button()
                 await deleteMessage(ask)
+                await self.hardsub_main_button()
             except:
-                await self.hardsub_main_button()
                 await deleteMessage(ask)
-        else:
-            if aiopath.exists(subfile):
-                await aioremove(subfile)
-            del hardsub["subfile"]
-            await self.hardsub_main_button()
+                await self.hardsub_main_button()
     
     async def belum_siap(self):
         msg = "<b>Fitur ini belum bisa digunakan hehe 👻 </b>\n\n"
@@ -385,7 +458,196 @@ class VideEditor:
         butt.ibutton("⛔️ Batal", f"ve cancel")
         buttons = butt.build_menu(2)
         await editMessage(self._reply_to, msg, buttons)
+    
+    async def hardsub_size_button(self):
+        hardsub = self.video_editor.get("hardsub", None)
+        if not hardsub:
+            hardsub = self.video_editor["hardsub"] = {}
+        size = hardsub.get("size", "sedang")
+        msg = "<b>📌 Silahkan pilih ukuran hardsub anda !</b>\n\n"
+        msg += f"<b>Sekedar Saran:\n▪️ Gunakan size kecil sampai sedang untuk resolusi video 480p\n▪️ Gunakan sedang sampai besar untuk resolusi video 720p\n▪️ Gunakan besar besar sampai extra untuk resolusi video 1080p\n"
+        msg += f"\n\n<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
 
+        butt = ButtonMaker()
+        s = "" if not size == "kecil" else "✅"
+        butt.ibutton(f"Kecil {s}", f"ve kecil hs")
+        s = "" if not size == "sedang" else "✅"
+        butt.ibutton(f"Sedang {s}", f"ve sedang hs")
+        s = "" if not size == "besar" else "✅"
+        butt.ibutton(f"Besar {s}", f"ve besar hs")
+        s = "" if not size == "extra" else "✅"
+        butt.ibutton(f"Extra {s}", f"ve extra hs")
+        s = "" if not size == "ultra" else "✅"
+        butt.ibutton(f"Ultra {s}", f"ve ultra hs")
+        s = "" if not size == "super" else "✅"
+        butt.ibutton(f"Super {s}", f"ve super hs")
+
+        butt.ibutton("↩️ Kembali", f"ve back_hs", position="footer")
+        butt.ibutton("⛔️ Batal", f"ve cancel", position="footer")
+        buttons = butt.build_menu(3)
+        await editMessage(self._reply_to, msg, buttons)
+    
+    async def hardsub_color_button(self):
+        hardsub = self.video_editor.get("hardsub", None)
+        if not hardsub:
+            hardsub = self.video_editor["hardsub"] = {}
+        color = hardsub.get("color", "putih")
+        msg = "<b>📌 Silahkan pilih warna hardsub anda !</b>\n\n"
+        msg += f"\n\n<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
+
+        butt = ButtonMaker()
+        s = "" if not color == "putih" else "✅"
+        butt.ibutton(f"Putih {s}", f"ve hs_cs putih")
+        s = "" if not color == "merah" else "✅"
+        butt.ibutton(f"Merah {s}", f"ve hs_cs merah")
+        s = "" if not color == "hijau" else "✅"
+        butt.ibutton(f"Hijau {s}", f"ve hs_cs hijau")
+        s = "" if not color == "biru" else "✅"
+        butt.ibutton(f"Biru {s}", f"ve hs_cs biru")
+        s = "" if not color == "kuning" else "✅"
+        butt.ibutton(f"Kuning {s}", f"ve hs_cs kuning")
+        s = "" if not color == "cyan" else "✅"
+        butt.ibutton(f"Cyan {s}", f"ve hs_cs cyan")
+        s = "" if not color == "magenta" else "✅"
+        butt.ibutton(f"Magenta {s}", f"ve hs_cs magenta")
+        s = "" if not color == "purple" else "✅"
+        butt.ibutton(f"Purple {s}", f"ve hs_cs purple")
+        s = "" if not color == "hitam" else "✅"
+        butt.ibutton(f"Hitam {s}", f"ve hs_cs hitam")
+
+        butt.ibutton("↩️ Kembali", f"ve back_hs", position="footer")
+        butt.ibutton("⛔️ Batal", f"ve cancel", position="footer")
+        buttons = butt.build_menu(3)
+        await editMessage(self._reply_to, msg, buttons)
+    
+    async def hardsub_font_button(self):
+        hardsub = self.video_editor.get("hardsub", None)
+        if not hardsub:
+            hardsub = self.video_editor["hardsub"] = {}
+        font = hardsub.get("font", 5)
+        
+        msg = "<b>📌 Silahkan pilih jenis font hardsub anda !</b>\n\n"
+        msg += """<b>1.</b> Standard Symbols PS
+<b>2.</b> Century Schoolbook L
+<b>3.</b> URW Gothic
+<b>4.</b> Nimbus Roman
+<b>5.</b> DejaVu Sans Mono
+<b>6.</b> URW Palladio L
+<b>7.</b> Nimbus Sans
+<b>8.</b> URW Gothic L
+<b>9.</b> Dingbats
+<b>10.</b> URW Chancery L
+<b>11.</b> Nimbus Mono PS
+<b>12.</b> Nimbus Sans Narrow
+<b>13.</b> URW Bookman
+<b>14.</b> DejaVu Sans
+<b>15.</b> Noto Sans Mono
+<b>16.</b> C059
+<b>17.</b> Nimbus Sans L
+<b>18.</b> Droid Sans Fallback
+<b>19.</b> Z003
+<b>20.</b> Standard Symbols L
+<b>21.</b> D050000L
+<b>22.</b> Nimbus Mono L
+<b>23.</b> Nimbus Roman No9 L
+<b>24.</b> Noto Mono
+<b>25.</b> P052
+<b>26.</b> DejaVu Serif
+<b>27.</b> URW Bookman L"""
+    
+        msg += f"\n\n<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
+        butt = ButtonMaker()
+        for i in range(1, 28):
+            s = "✅" if font == i else ""
+            butt.ibutton(f"{i} {s}", f"ve hs_fs {i}")
+        butt.ibutton("↩️ Kembali", f"ve back_hs", position="footer")
+        butt.ibutton("⛔️ Batal", f"ve cancel", position="footer")
+        buttons = butt.build_menu(5)
+        await editMessage(self._reply_to, msg, buttons)
+    
+    async def hardsub_bold_button(self):
+        hardsub = self.video_editor.get("hardsub", None)
+        if not hardsub:
+            hardsub = self.video_editor["hardsub"] = {}
+        bold = hardsub.get("bold", False)
+        if bold == True:
+            bold = False
+        else:
+            bold = True
+        hardsub["bold"] = bold
+        await self.hardsub_main_button()
+    
+    async def softsub_main_button(self):
+        msg = "<b>📌 Silahkan masukkan subtitle anda (Support multi subtitle) </b>\n\n"
+        softsub = self.video_editor.get("softsub", None)
+        if not softsub:
+            softsub = self.video_editor["softsub"] = []
+        for index, sub in enumerate(softsub):
+            sub_name = os.path.basename(sub['file'])
+            msg += f"<b>{index+1}.</b>{sub_name} (<code>{sub['language']}</code>)\n"
+        msg += f"\n\n<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
+        butt = ButtonMaker()
+        s = "➕" if softsub else ""
+        if softsub:
+            butt.ibutton(f"{s} Tambah Subtitle", f"ve ss_file", position="header")
+        else:
+            butt.ibutton(f"Masukkan Subtitle", f"ve ss_file", position="header")
+        for i in range(0, len(softsub)):
+            butt.ibutton(f"Hapus Subtitle {i+1}", f"ve ss_del {i}")
+        butt.ibutton("↩️ Kembali", f"ve back", position="footer")
+        butt.ibutton("⛔️ Batal", f"ve cancel", position="footer")
+        buttons = butt.build_menu(2)
+        await editMessage(self._reply_to, msg, buttons)
+    
+    async def softsub_file_button(self):
+        msg = "<b>📌 Silahkan kirimkan file subtitle anda, support jenis subtitle .srt, .ass, .ssa, .vtt\n\n"
+        softsub = self.video_editor.get("softsub", None)
+        file = ""
+        language = ""
+        if not softsub:
+            softsub = self.video_editor["softsub"] = []
+        try:
+            ask = await sendMessage(self._listener.message, f"{msg}\n\nKlik /batal untuk membatalkan")
+            respon = await bot.listen(
+                filters= filters.user(self._listener.user_id), timeout=30
+                )
+            if respon and respon.text != "/batal" and respon.text != f"/batal@{bot.me.username}":
+                try:
+                    msg = respon
+                    uid = self._listener.user_id
+                    file += await storeSubFile(msg, uid, soft=True)
+                except: 
+                    pass
+            await respon.delete()
+            await deleteMessage(ask)
+            ask = await sendMessage(self._listener.message, "<b>📌 Silahkan masukkan keterangan bahasa untuk subtitle ini, contoh <code>Indonesia, English, Malaysia, China dll.</code></b>\n\nKlik /skip jika tidak tahu")
+            respon = await bot.listen(
+                filters= filters.user(self._listener.user_id), timeout=30
+            )
+            if respon and respon.text != "/skip" and respon.text != f"/skip@{bot.me.username}":
+                language = respon.text
+            else:
+                language = "Tidak Diketahui"
+            softsub.append({"file": file, "language": language})
+            self.video_editor["softsub"] = softsub
+            await respon.delete()
+            await deleteMessage(ask)
+            await self.softsub_main_button()
+        except:
+            await deleteMessage(ask)
+            await self.softsub_main_button()
+    
+    async def extract_subtitle(self):
+        
+        msg = "<b>📌 Anda akan mengextract semua subtitle dari video ini (Jika Ada) !!</b>"
+        msg += f"\n\n<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
+        butt = ButtonMaker()
+        butt.ibutton("👀 Mulai Extract", f"ve extract_true")
+        butt.ibutton("↩️ Kembali", f"ve back", position="footer")
+        butt.ibutton("⛔️ Batal", f"ve cancel", position="footer")
+        buttons = butt.build_menu(2)
+        await editMessage(self._reply_to, msg, buttons)
+            
     async def start(self):
         self.event.set()
 
@@ -393,3 +655,19 @@ class VideEditor:
         msg, buttons = await self.home_button()
         msg += f"\n\n<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
         await editMessage(self._reply_to, msg, buttons)
+    
+    async def cancel(self):
+        await self._listener.delete()
+        watermark = self.video_editor.get("watermark", None)
+        wm_path = watermark.get("file", None) 
+        if wm_path:
+            await aioremove(wm_path)
+        hardsub = self.video_editor.get("hardsub", None)
+        hs_path = hardsub.get("file", None)
+        if hs_path:
+            await aioremove(hs_path)
+        softsub = self.video_editor.get("softsub", [])
+        softsub_path = softsub.get("file", None)
+        if softsub_path:
+            for sub in softsub:
+                await aioremove(sub["file"])
