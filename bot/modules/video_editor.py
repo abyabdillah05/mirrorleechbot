@@ -23,6 +23,8 @@ from bot.helper.ext_utils.status_utils import get_readable_time
 async def main_select(_, query, obj):
     data = query.data.split()
     message = query.message
+    if data[1] == "paid":
+        query.answer(text="⛔ Fitur ini hanya dapat digunakan oleh user premium !!", show_alert=True)
     await query.answer()
 
     if data[1] == "compress":
@@ -124,6 +126,9 @@ async def main_select(_, query, obj):
 
     elif data[1] == "start":
         await obj.start()
+    
+    #elif data[1] == "paid":
+    #    await obj.paid_feature()
     
     elif data[1] == "cancel":
         await editMessage(message, "<b>Tugas dibatalkan !</b>")
@@ -232,7 +237,7 @@ class VideEditor:
         resolution = compress.get("resolution", "") if compress else ""
         butt = ButtonMaker()
         s = "" if "1920:1080" not in resolution else "✅"
-        butt.ibutton(f"1080p {s}", f"ve 1920:1080")
+        butt.ibutton(f"1080p {s}", f"ve paid")
         s = "" if "1280:720" not in resolution else "✅"
         butt.ibutton(f"720p {s}", f"ve 1280:720")
         s = "" if "854:480" not in resolution else "✅"
@@ -295,7 +300,10 @@ class VideEditor:
 
         butt = ButtonMaker()
         s = "" if not path else "✅"
-        butt.ibutton(f"File Watermark {s}", f"ve file_wm", position="header")
+        if path:
+            butt.ibutton(f"Hapus Watermark {s}", f"ve file_wm", position="header")
+        else:
+            butt.ibutton(f"Tambah Watermark {s}", f"ve file_wm", position="header")
         butt.ibutton(f"Ukuran", f"ve size_wm")
         butt.ibutton(f"Posisi", f"ve position_wm")
         butt.ibutton("↩️ Kembali", f"ve back")
@@ -384,6 +392,9 @@ class VideEditor:
             except:
                 await deleteMessage(ask)
                 await self.watermark_main_button()
+        else:
+            self.video_editor["watermark"].pop("file", None)
+            await self.watermark_main_button()
 
     async def hardsub_main_button(self):
         msg = "<b>📌 Pilih format hardsub anda </b>\n\n"
@@ -411,7 +422,10 @@ class VideEditor:
         msg += f"\n\n<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
         butt = ButtonMaker()
         s = "" if not hardsub_file else "✅"
-        butt.ibutton(f"File Subtitle {s}", f"ve hs_file", position="header")
+        if hardsub_file:
+            butt.ibutton(f"Hapus Subtitle {s}", f"ve hs_file", position="header")
+        else:
+            butt.ibutton(f"Tambahkan Subtitle {s}", f"ve hs_file", position="header")
         butt.ibutton(f"Ukuran Teks", f"ve hs_size")
         butt.ibutton(f"Warna Teks", f"ve hs_color")
         butt.ibutton(f"Jenis Font", f"ve hs_font")
@@ -450,6 +464,9 @@ class VideEditor:
             except:
                 await deleteMessage(ask)
                 await self.hardsub_main_button()
+        else:
+            self.video_editor["hardsub"].pop("file", None)
+            await self.hardsub_main_button()
     
     async def belum_siap(self):
         msg = "<b>Fitur ini belum bisa digunakan hehe 👻 </b>\n\n"
@@ -670,3 +687,8 @@ class VideEditor:
         if softsub_path:
             for sub in softsub:
                 await aioremove(sub["file"])
+    
+    async def paid_feature(self):
+        msg = "⛔ Fitur ini hanya dapat digunakan oleh user premium !!"
+        msg += f"\n\n<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
+        await editMessage(self._reply_to, msg, None)
