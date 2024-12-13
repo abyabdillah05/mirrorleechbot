@@ -191,15 +191,15 @@ class VideEditor:
         if softsub:
             msg += f"<b>▪️ Softsub:</b> <code>Softsub ditambahkan</code>\n"
         msg += f"<b>▪️ Format video:</b> <code>{extension}</code>\n"
-        s = "" if not compress else "✅"
+        s = "🔒" if not compress else "✅"
         butt.ibutton(f"{s} Kompres", f"ve compress")
         s = "" if not rename else "✅"
         butt.ibutton(f"{s} Rename", f"ve rename")
-        s = "" if not hardsub else "✅"
+        s = "🔒" if not hardsub else "✅"
         butt.ibutton(f"{s} Hardsub", f"ve hardsub")
         s = "" if not softsub else "✅"
         butt.ibutton(f"{s} Softsub", f"ve softsub")
-        s = "" if not watermark else "✅"
+        s = "🔒" if not watermark else "✅"
         butt.ibutton(f"{s} Watermark", f"ve watermark")
         butt.ibutton(f"Convert: {extension}", f"ve extension")
         butt.ibutton(f"Extract", f"ve extract")
@@ -298,9 +298,9 @@ class VideEditor:
         butt = ButtonMaker()
         s = "" if not path else "✅"
         if path:
-            butt.ibutton(f"Hapus Watermark {s}", f"ve file_wm", position="header")
+            butt.ibutton(f"Hapus Watermark {s}", f"ve paid", position="header")
         else:
-            butt.ibutton(f"Tambah Watermark {s}", f"ve file_wm", position="header")
+            butt.ibutton(f"Tambah Watermark {s}", f"ve paid", position="header")
         butt.ibutton(f"Ukuran", f"ve size_wm")
         butt.ibutton(f"Posisi", f"ve position_wm")
         butt.ibutton("↩️ Kembali", f"ve back")
