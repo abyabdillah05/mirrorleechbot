@@ -625,7 +625,7 @@ class TgUploader:
             raise err
     
     async def copy_message(self):
-        max_retries = 3
+        max_retries = 2
         for attempt in range(max_retries):
             LOGGER.info(f"Forwarding message (attempt {attempt + 1}/{max_retries})")
             try:
@@ -640,7 +640,8 @@ class TgUploader:
             except Exception as e:
                 LOGGER.error(f"Failed when forward message (attempt {attempt + 1}/{max_retries}) => {e}")
                 if attempt == max_retries - 1:
-                    await sendMessage(self._listener.message, f"Hai {self._listener.tag}, Terjadi kesalahan saat forward hasil leech anda.\n\n<code>{e}</code>")
+                    #await sendMessage(self._listener.message, f"Hai {self._listener.tag}, Terjadi kesalahan saat forward hasil leech anda.\n\n<code>{e}</code>")
+                    LOGGER.error(f"Failed to forward message after {max_retries} attempts. Path: {self._up_path}")
                 await sleep(1)
 
     @property

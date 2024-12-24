@@ -172,6 +172,13 @@ async def get_user_settings(from_user):
         gf_folder = gf_folder[:-8] + "X" * 8
     else:    
         gf_folder = "None"
+    
+    buttons.ibutton("Buzzheavier ID", f"userset {user_id} bh_id")
+    if user_dict.get("buzzheavier_id", None):
+        bhId = user_dict["buzzheavier_id"]
+        bhId = bhId[:-8] + "X" * 8
+    else:
+        bhId = "None"
 
     if user_dict:
         buttons.ibutton("Reset All", f"userset {user_id} reset")
@@ -204,9 +211,9 @@ async def get_user_settings(from_user):
 <b>PixelDrain API   :</b> <code>{pd_api}</code>
 <b>GoFile API       :</b> <code>{gf_api}</code>
 <b>Gofile F_ID      :</b> <code>{gf_folder}</code>
+<b>Buzzheavier ID   :</b> <code>{bhId}</code>
 </pre>
 """
-
     return text, buttons.build_menu(1)
 
 
@@ -280,6 +287,8 @@ async def set_option(_, message, pre_event, option, value=""):
     elif option == "gofile_apitoken":
         value = value
     elif option == "gofile_folder_id":
+        value = value
+    elif option == "buzzheavier_id":
         value = value
     elif option == "excluded_extensions":
         fx = value.split()
@@ -367,7 +376,7 @@ async def edit_user_settings(client, query):
         else:
             await query.answer("Old Settings", show_alert=True)
             await update_user_settings(query)
-    elif data[2] in ["yt_opt", "lprefix", "index_url", "excluded_extensions", "pixeldrain_apikey", "gofile_apitoken", "gofile_folder_id"]:
+    elif data[2] in ["yt_opt", "lprefix", "index_url", "excluded_extensions", "pixeldrain_apikey", "gofile_apitoken", "gofile_folder_id", "buzzheavier_id"]:
         await query.answer()
         update_user_ldata(user_id, data[2], "")
         await update_user_settings(query)
@@ -677,6 +686,17 @@ Check all yt-dlp api options from this <a href='https://github.com/yt-dlp/yt-dlp
         rmsg = "Send Gofile Folder ID. Timeout: 60 sec"
         await editMessage(message, rmsg, buttons.build_menu(1))
         pfunc = partial(set_option, pre_event=query, option="gofile_folder_id")
+        await event_handler(client, query, pfunc)
+    elif data[2] == "bh_id":
+        await query.answer()
+        buttons = ButtonMaker()
+        if user_dict.get("buzzheavier_id", None):
+            buttons.ibutton("Remove Buzzheavier ID", f"userset {user_id} buzzheavier_id")
+        buttons.ibutton("Back", f"userset {user_id} back")
+        buttons.ibutton("Close", f"userset {user_id} close")
+        rmsg = "Send Buzzheavier ID. Timeout: 60 sec"
+        await editMessage(message, rmsg, buttons.build_menu(1))
+        pfunc = partial(set_option, pre_event=query, option="buzzheavier_id")
         await event_handler(client, query, pfunc)
     elif data[2] == "leech_prefix":
         await query.answer()

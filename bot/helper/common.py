@@ -120,6 +120,7 @@ class TaskConfig:
         self.pd_api = self.user_dict.get("pixeldrain_apikey", False)
         self.gf_api = self.user_dict.get("gofile_apitoken", False)
         self.gf_folder = self.user_dict.get("gofile_folder_id", False)
+        self.bhId = self.user_dict.get("buzzheavier_id", False)
         self.video_editor = None
         self.ve = False
 
@@ -794,7 +795,10 @@ class TaskConfig:
                     res = await PerformVideoEditor(
                         self, dl_path, True
                     )
+                    if not res:
+                        return dl_path
                     return res
+                    
             else:
                 for dirpath, _, files in await sync_to_async(
                     walk, dl_path, topdown=False
