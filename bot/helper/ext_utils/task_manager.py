@@ -134,9 +134,12 @@ async def start_from_queued():
 
 
 async def limit_checker(size, listener, isTorrent=False, isMega=False, isGdrive=False, isDirect=False, isRclone=False):
+    bypass = False
     pixeldrain = {"pixeldrain", "pd"}
     limit_exceeded = ''
-    bypass_limit = {"rcl", "gdl", "buzzheavier", "gofile", "gf", "bh"}
+    bypass_limit = {"mrcc:", "tp:", "buzzheavier", "gofile", "gf", "bh"}
+    if any(listener.upDest.startswith(prefix) for prefix in bypass_limit):
+        bypass = True
     if size is None:
         return  
     elif listener.upDest in pixeldrain:
@@ -149,15 +152,15 @@ async def limit_checker(size, listener, isTorrent=False, isMega=False, isGdrive=
             limit_exceeded = f'Limit download Mega: {get_readable_file_size(limit)}'
     else:
         limit = 20 * 1024**3
-        if listener.upDest in bypass_limit:
-            limit = 80 * 1024**3
+        if bypass:
+            limit = 45 * 1024**3
         elif listener.isLeech:
-            limit = 40 * 1024**3
+            limit = 25 * 1024**3
         if size > limit:
             limit_exceeded = f'Limit Task Mirror: {get_readable_file_size(limit)}'
             if listener.isLeech:
                 limit_exceeded = f'Limit Task Leech: {get_readable_file_size(limit)}'
-            elif listener.upDest in bypass_limit:
+            if bypass:
                 limit_exceeded = f'Limit Task Custom Upload: {get_readable_file_size(limit)}'
             elif isTorrent:
                 limit_exceeded = f'Limit Task Torrent: {get_readable_file_size(limit)}'
