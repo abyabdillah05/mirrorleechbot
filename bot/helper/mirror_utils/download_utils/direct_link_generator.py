@@ -2,7 +2,6 @@ import base64
 import urllib3
 import requests
 import re
-import httpx
 
 from requests import Session, post, get, RequestException
 from random import choice
@@ -306,6 +305,8 @@ def direct_link_generator(link: str):
         return sourceforge(link)
     elif 'database.s3cr3t.workers.dev' in domain:
         return index(link)
+    elif 'buzzheavier.com' in domain:
+        return buzzheavier(link)
     # Add AllDebrid supported link here
     elif any(
         x in domain
@@ -454,6 +455,7 @@ def uptobox(url):
         except Exception as e:
             raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}")
 
+
 def mediafire(url, session=None):
     if "/folder/" in url:
         return mediafireFolder(url)
@@ -475,9 +477,8 @@ def mediafire(url, session=None):
         try:
             c = async_to_sync(get_content_type, final_link[0])
             if c is None or re.match(r"text/html|text/plain", c):
-                try:
-                    html = HTML(req_url(url))
-                except Exception as e:
+                html = HTML(req_url(url))
+                if html is None:
                     raise DirectDownloadLinkException(f"ERROR: Error saat coba request url {e.__class__.__name__}")
                 if new_link := html.xpath('//a[@id="continue-btn"]/@href'):
                     new_link = f"https://mediafire.com/{new_link[0]}"
@@ -488,9 +489,8 @@ def mediafire(url, session=None):
             raise DirectDownloadLinkException (f"ERROR: Error saat cek ddl mediafire {e}")
         
     def _repair_download(url):
-        try:
-            html = HTML(req_url(url))
-        except Exception as e:
+        html = HTML(req_url(url))
+        if html is None:
             raise DirectDownloadLinkException(f"ERROR: Error saat coba request url {e.__class__.__name__}")
         if new_link := html.xpath('//a[@id="continue-btn"]/@href'):
             return mediafire(f"https://mediafire.com/{new_link[0]}")
@@ -504,9 +504,8 @@ def mediafire(url, session=None):
     #except Exception as e:
     #    session.close()
     #    raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}")
-    try:
-        html = HTML(req_url(url))
-    except Exception as e:
+    html = HTML(req_url(url))
+    if html is None:
         raise DirectDownloadLinkException(f"ERROR: Error saat coba request url {e.__class__.__name__}")
     if error:= html.xpath("//p[@class='notranslate']/text()"):
         raise DirectDownloadLinkException(f"ERROR: {error[0]}")
@@ -2105,16 +2104,6 @@ def qiwi(url):
                     "url": flink,
                     "filename": name[0],
                 }
-        def get_size(link):
-            r = requests.head(link)
-            file_size = r.headers.get('Content-Length')
-            return int(file_size) if file_size is not None else None
-            
-        size = get_size(flink)
-        if size:
-            size = float(size)
-            details["total_size"] += size
-            details["contents"].append(item)
         details["contents"].append(item)
         return details
 
@@ -2269,3 +2258,7 @@ def sourceforge(url: str):
             return direct_link
         except Exception:
             raise DirectDownloadLinkException("ERROR: Link File tidak ditemukan!")
+
+def buzzheavier(url):
+    new_url = re.sub(r"(https://buzzheavier\.com/\w+)", r"\1/download", url)
+    return new_url
