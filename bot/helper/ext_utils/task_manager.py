@@ -138,7 +138,7 @@ async def limit_checker(size, listener, isTorrent=False, isMega=False, isGdrive=
     pixeldrain = {"pixeldrain", "pd"}
     limit_exceeded = ''
     bypass_limit = {"mrcc:", "tp:", "buzzheavier", "gofile", "gf", "bh"}
-    if any(listener.upDest.startswith(prefix) for prefix in bypass_limit):
+    if any(str(listener.upDest).startswith(prefix) for prefix in bypass_limit):
         bypass = True
     if size is None:
         return  
