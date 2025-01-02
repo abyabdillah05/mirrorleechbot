@@ -5,13 +5,14 @@ import httpx
 import niquests
 import os
 import subprocess
+import pickle
 
 from asyncio import sleep as asleep, create_subprocess_exec
 from http.cookiejar import MozillaCookieJar
 from random import randint
 from json import loads
-from bot import bot
-from aiofiles.os import remove as aioremove, path as aiopath, mkdir
+from bot import bot, DATABASE_URL
+from aiofiles.os import remove as aioremove, path as aiopath, mkdir, makedirs
 from os import path as ospath, getcwd
 from pyrogram.filters import command, regex
 from pyrogram.handlers import MessageHandler
@@ -32,6 +33,10 @@ from bot.helper.ext_utils.telegraph_helper import telegraph
 from bot.helper.ext_utils.bot_utils import sync_to_async
 from pyrogram.enums import ChatType
 from bot.modules.ytdlp import YtDlp
+from bot.helper.ext_utils.bot_utils import update_user_ldata
+from bot.helper.ext_utils.db_handler import DbManger
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
 
 tiktok = []
 file_url = "https://gist.github.com/aenulrofik/33be032a24c227952a4e4290a1c3de63/raw/asupan.json"
@@ -886,6 +891,68 @@ async def gallery_dl_auto(client, message):
     if len(message.text.split()) == 1:
         await gallery_dl(client, message, auto=True)
 
+###########################
+#Pickle Generator
+###########################
+
+CREDENTIALS_FILE = "credentials.json"
+OAUTH_SCOPE = ['https://www.googleapis.com/auth/drive']
+async def get_token(client, message):
+    uid = message.from_user.id
+    path = f"tokens/"
+    pickle_path = f"{path}{uid}.pickle"
+    await makedirs(path, exist_ok=True)
+    async def generate_token(message):
+        if os.path.exists(pickle_path):
+            with open(pickle_path, "rb") as f:
+                credentials = pickle.load(f)
+                if credentials and credentials.expired and credentials.refresh_token:
+                    credentials.refresh(Request())
+                raise Exception("Token google drive anda sudah ada dan sudah diperbaharui.")
+        else:
+            FLOW = InstalledAppFlow.from_client_secrets_file(
+                CREDENTIALS_FILE, 
+                OAUTH_SCOPE,
+                redirect_uri='http://localhost:1'
+            )
+            auth_url = FLOW.authorization_url()[0]
+            msg = f"• Klik link dibawah untuk autorisasi google drive\n"
+            msg += f"• Pilih akun googledrive yang akan digunakan untuk mirroring.\n"
+            msg += f"• Klik Lanjutkan dan anda akan dibawa ke halaman error.\n"
+            msg += f"• Silahkan salin semua alamat url di halaman error tersebut dan kirim ke bot.\n"
+            butt = ButtonMaker()
+            butt.ubutton("Autorisasi Google Drive", auth_url)
+            butts = butt.build_menu(1)
+            try:
+                ask = await sendMessage(message, msg, butts)
+                respon = await bot.listen(
+                        filters=filters.text & filters.user(uid)
+                        )
+                code = respon.text.split('code=')[1].split('&')[0]
+                await respon.delete()
+                wait = await editMessage(ask, f"Memferifikasi kode anda...")
+                credentials = FLOW.fetch_token(code=code)
+                with open(pickle_path, "wb") as token:
+                    pickle.dump(FLOW.credentials, token)
+                await deleteMessage(wait)
+                await deleteMessage(ask)
+                return True
+            except IndexError:
+                await deleteMessage(ask)
+                raise Exception("Kode tidak ditemukan, url yang anda berikan sepertinya tidak valid, silahkan coba lagi.")
+            except Exception as e:
+                await deleteMessage(ask)
+                raise Exception(e)
+    try:
+        credentials = await generate_token(message)
+        if credentials and os.path.exists(pickle_path):
+            update_user_ldata(uid, "token_pickle", f"tokens/{uid}.pickle")
+            if DATABASE_URL:
+                await DbManger().update_user_doc(uid, "token_pickle", pickle_path)
+            await sendMessage(message, f"✅ <b>Token google drive anda berhasil dibuat</b>\n\nGunakan <code>-up gdl</code> dan pilih <b>My Token</b> untuk upload ke drive sendiri.\n<b>Contoh:</b> <blockquote><code>/mirror Link -up gdl</code></blockquote>")
+    except Exception as e:
+        await message.reply_text(f"<b>❌ Error:</b> {e}")
+
 ########################################################################################
 
 tiktokregex = r"(https?://(?:www\.)?[a-zA-Z0-9.-]*tiktok\.com/)"
@@ -962,5 +1029,13 @@ bot.add_handler(
         filters=regex(
             r'^youtube'
         )
+    )
+)
+bot.add_handler(
+    MessageHandler(
+        get_token, 
+        filters=command(
+            BotCommands.GenTokenCommand
+        ) & CustomFilters.authorized
     )
 )
