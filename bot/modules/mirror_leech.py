@@ -7,7 +7,7 @@ from aiofiles.os import path as aiopath
 from asyncio import sleep
 import re
 
-from bot import bot, DOWNLOAD_DIR, LOGGER
+from bot import bot, DOWNLOAD_DIR, LOGGER, user_data
 from bot.helper.ext_utils.links_utils import (
     is_url,
     is_magnet,
@@ -64,7 +64,6 @@ class Mirror(TaskListener):
         bulk=None,
         multiTag=None,
         auto_mode=False,
-        button_mode=False,
         gofile=False,
         buzzheavier=False,
         pixeldrain=False,
@@ -90,7 +89,7 @@ class Mirror(TaskListener):
         self.bulk = bulk
         self.auto_mode = auto_mode
         self.auto_url = auto_url
-        self.button_mode = button_mode
+        self.button_mode = False
         self.gofile = gofile
         self.buzzheavier = buzzheavier
         self.pixeldrain = pixeldrain
@@ -99,13 +98,14 @@ class Mirror(TaskListener):
         self.dump = dump
         self.ve = ve
         self.video_editor = video_editor
-
+        self.user_id = self.message.from_user.id
+        self.disable_button = user_data.get(self.user_id, {}).get("disable_button", False)
     @new_task
     async def newEvent(self):
         rply = self.message.reply_to_message
-        if rply and len(self.message.text.split()) == 1:
+        if rply and len(self.message.text.split()) == 1 and not self.disable_button:
             self.button_mode = True
-        elif not rply and len(self.message.text.split()) == 2:
+        elif not rply and len(self.message.text.split()) == 2 and not self.disable_button:
             self.button_mode = True
 
         if not self.auto_url:
@@ -547,34 +547,27 @@ async def qb_leech(client, message):
     Mirror(client, message, isQbit=True, isLeech=True).newEvent()
 
 async def auto_mirror(client, message):
-    if message.caption is not None:
-        text = message.caption
-    else:
-        text = message.text
-    urls = text
-    if ' ' in urls.strip() or len(urls.split()) != 1:
-        return None
-    magnet = re.search(magnetregex, text)
-    if magnet:
-        pass
-    else:
-        try:
-            domain = urlparse(urls).hostname
-            if any(
-                x in domain
-                for x in [
-                    "youtube.com",
-                    "youtu.be",
-                    "instagram.com",
-                    "facebook.com",
-                    "tiktok.com",
-                    "twitter.com",
-                    "x.com",
-                ]
-            ):
-                return None
-        except:
-            pass
+    user_id = message.from_user.id
+    if user_data.get(user_id, {}).get("disable_autodetect", False):
+        return
+    text = message.caption or message.text
+    if not text:
+        return
+    if ' ' in text.strip() or len(text.split()) != 1:
+        return
+        
+    if re.search(magnetregex, text):
+        return
+    EXCLUDED_DOMAINS = {
+        "youtube.com", "youtu.be", "instagram.com",
+        "facebook.com", "tiktok.com", "twitter.com", "x.com"
+    }
+    try:
+        domain = urlparse(text).hostname
+        if domain and any(x in domain for x in EXCLUDED_DOMAINS):
+            return
+    except ValueError:
+        return
     Mirror(client, message, auto_url=text, auto_mode=True).newEvent()
 
 bot.add_handler(

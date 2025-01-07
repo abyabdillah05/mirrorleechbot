@@ -45,7 +45,7 @@ class gdDownload(GoogleDriveHelper):
                 err = err.last_attempt.exception()
             err = str(err).replace(">", "").replace("<", "")
             if "downloadQuotaExceeded" in err:
-                err = "Limit harian file tercapai!\nCoba lagi kapan kapan :D"
+                err = "File/folder yang coba anda download sudah mencapai batas quota download, silahkan coba dengan link lain !"
             elif "File not found" in err:
                 if not self.alt_auth and self.use_sa:
                     self.alt_auth = True

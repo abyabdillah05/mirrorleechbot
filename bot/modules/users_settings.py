@@ -1,7 +1,8 @@
 from pyrogram.handlers import MessageHandler, CallbackQueryHandler
 from pyrogram.filters import command, regex, create
+from pyrogram.types import InputMediaPhoto
 from aiofiles.os import remove as aioremove, path as aiopath, makedirs
-from os import getcwd
+from os import getcwd, path as ospath
 from time import time
 from functools import partial
 from html import escape
@@ -22,6 +23,7 @@ from bot.helper.telegram_helper.message_utils import (
     editMessage,
     sendFile,
     deleteMessage,
+    customSendPhoto,
 )
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.bot_commands import BotCommands
@@ -82,6 +84,11 @@ async def get_user_settings(from_user):
         lprefix = LP
     else:
         lprefix = "None"
+    
+    if user_dict.get("lsuffix", False):
+        lsuffix = user_dict["lsuffix"]
+    else:
+        lsuffix = "None"
 
     if user_dict.get("leech_dest", False):
         leech_dest = user_dict["leech_dest"]
@@ -99,6 +106,12 @@ async def get_user_settings(from_user):
         leech_method = "user"
     else:
         leech_method = "bot"
+    
+    bstatus = "❌" if user_dict.get("disable_button", False) else "✅"
+    buttons.ibutton(f"Button Mode: {bstatus}", f"userset {user_id} disable_button", position="header")
+
+    adstatus = "❌" if user_dict.get("disable_autodetect", False) else "✅"
+    buttons.ibutton(f"Auto Detect: {adstatus}", f"userset {user_id} disable_autodetect", position="header")
 
     buttons.ibutton("Leech", f"userset {user_id} leech")
 
@@ -134,9 +147,9 @@ async def get_user_settings(from_user):
     )
     du = "Gdrive API" if default_upload == "gd" else "Rclone"
     dub = "Gdrive API" if default_upload != "gd" else "Rclone"
-    buttons.ibutton(f"Upload using {dub}", f"userset {user_id} {default_upload}")
+    buttons.ibutton(f"Upload: {dub}", f"userset {user_id} {default_upload}")
 
-    buttons.ibutton("Excluded Extensions", f"userset {user_id} ex_ex")
+    buttons.ibutton("Excluded_Ext", f"userset {user_id} ex_ex")
     if user_dict.get("excluded_extensions", False):
         ex_ex = user_dict["excluded_extensions"]
     elif "excluded_extensions" not in user_dict and GLOBAL_EXTENSION_FILTER:
@@ -144,7 +157,7 @@ async def get_user_settings(from_user):
     else:
         ex_ex = "None"
 
-    buttons.ibutton("YT-DLP Options", f"userset {user_id} yto")
+    buttons.ibutton("YT-DLP Opt", f"userset {user_id} yto")
     if user_dict.get("yt_opt", False):
         ytopt = user_dict["yt_opt"]
     elif "yt_opt" not in user_dict and (YTO := config_dict["YT_DLP_OPTIONS"]):
@@ -152,28 +165,28 @@ async def get_user_settings(from_user):
     else:
         ytopt = "None"
 
-    buttons.ibutton("PixelDrain APIKey", f"userset {user_id} pd_api")
+    buttons.ibutton("PixelDrain_API", f"userset {user_id} pd_api")
     if user_dict.get("pixeldrain_apikey", None):
         pd_api = user_dict["pixeldrain_apikey"]
         pd_api = pd_api[:-8] + "X" * 8
     else:
         pd_api = "None"
 
-    buttons.ibutton("Gofile APIToken", f"userset {user_id} gf_api")
+    buttons.ibutton("Gofile_API", f"userset {user_id} gf_api")
     if user_dict.get("gofile_apitoken", None):
         gf_api = user_dict["gofile_apitoken"]
         gf_api = gf_api[:-8] + "X" * 8
     else:    
         gf_api = "None"
     
-    buttons.ibutton("Gofile Folder ID", f"userset {user_id} gf_folder")
+    buttons.ibutton("Gofile_FId", f"userset {user_id} gf_folder")
     if user_dict.get("gofile_folder_id", None):
         gf_folder = user_dict["gofile_folder_id"]
         gf_folder = gf_folder[:-8] + "X" * 8
     else:    
         gf_folder = "None"
     
-    buttons.ibutton("Buzzheavier ID", f"userset {user_id} bh_id")
+    buttons.ibutton("Buzzheavier_ID", f"userset {user_id} bh_id")
     if user_dict.get("buzzheavier_id", None):
         bhId = user_dict["buzzheavier_id"]
         bhId = bhId[:-8] + "X" * 8
@@ -194,6 +207,7 @@ async def get_user_settings(from_user):
 <b>Leech To         :</b> <code>{leech_dest}</code>
 <b>Leech Type       :</b> <code>{ltype}</code>
 <b>Leech Prefix     :</b> <code>{escape(lprefix)}</code>
+<b>Leech Suffix     :</b> <code>{escape(lsuffix)}</code>
 <b>Leech Split Size :</b> <code>{split_size}</code>
 <b>Leech Caption    :</b> <code>{capt}</code>
 <b>Equal Splits     :</b> <code>{equal_splits}</code>
@@ -214,19 +228,25 @@ async def get_user_settings(from_user):
 <b>Buzzheavier ID   :</b> <code>{bhId}</code>
 </pre>
 """
-    return text, buttons.build_menu(1)
+    if not ospath.exists(thumbpath):
+        thumbpath = "https://i.ibb.co/hHVHzvh/maxresdefault.jpg"
+    return text, buttons.build_menu(2), thumbpath
 
 
 async def update_user_settings(query):
-    msg, button = await get_user_settings(query.from_user)
-    await editMessage(query.message, msg, button)
+    msg, button, thumb = await get_user_settings(query.from_user)
+    edit_media = query.edit_message_media
+    #await editMessage(query.message, msg, button)
+    await edit_media(media=InputMediaPhoto(thumb, caption=msg), reply_markup=button)
 
 
 async def user_settings(_, message):
     from_user = message.from_user
     handler_dict[from_user.id] = False
-    msg, button = await get_user_settings(from_user)
-    await sendMessage(message, msg, button)
+    msg, button, thumbpath = await get_user_settings(from_user)
+    await message.reply_photo(photo=thumbpath, caption=msg, reply_markup=button)
+    #else:
+    #    await sendMessage(message, msg, button)
 
 
 async def set_thumb(_, message, pre_event):
@@ -376,7 +396,7 @@ async def edit_user_settings(client, query):
         else:
             await query.answer("Old Settings", show_alert=True)
             await update_user_settings(query)
-    elif data[2] in ["yt_opt", "lprefix", "index_url", "excluded_extensions", "pixeldrain_apikey", "gofile_apitoken", "gofile_folder_id", "buzzheavier_id"]:
+    elif data[2] in ["yt_opt", "lprefix", "lsuffix", "index_url", "excluded_extensions", "pixeldrain_apikey", "gofile_apitoken", "gofile_folder_id", "buzzheavier_id"]:
         await query.answer()
         update_user_ldata(user_id, data[2], "")
         await update_user_settings(query)
@@ -421,6 +441,11 @@ async def edit_user_settings(client, query):
             lprefix = LP
         else:
             lprefix = "None"
+        buttons.ibutton("Leech Suffix", f"userset {user_id} leech_suffix")
+        if user_dict.get("lsuffix", False):
+            lsuffix = user_dict["lsuffix"]
+        else:
+            lsuffix = "None"
         if (
             user_dict.get("as_doc", False)
             or "as_doc" not in user_dict
@@ -479,6 +504,7 @@ async def edit_user_settings(client, query):
 <b>Leech Type       :</b> <code>{ltype}</code>
 <b>Leech Split Size :</b> <code>{split_size}</code>
 <b>Leech Prefix     :</b> <code>{escape(lprefix)}</code>
+<b>Leech Suffix     :</b> <code>{escape(lsuffix)}</code>
 <b>Equal Splits     :</b> <code>{equal_splits}</code>
 <b>Media Group      :</b> <code>{media_group}</code>
 <b>Custom Thumbnail :</b> <code>{thumbmsg}</code>
@@ -716,6 +742,23 @@ Check all yt-dlp api options from this <a href='https://github.com/yt-dlp/yt-dlp
         )
         pfunc = partial(set_option, pre_event=query, option="lprefix")
         await event_handler(client, query, pfunc)
+    elif data[2] == "leech_suffix":
+        await query.answer()
+        buttons = ButtonMaker()
+        if (
+            user_dict.get("lsuffix", False)
+            or "lsuffix" not in user_dict
+        ):
+            buttons.ibutton("Remove Leech Suffix", f"userset {user_id} lsuffix")
+        buttons.ibutton("Back", f"userset {user_id} leech")
+        buttons.ibutton("Close", f"userset {user_id} close")
+        await editMessage(
+            message,
+            "Send Leech Filename Suffix. You can add HTML tags. Timeout: 60 sec",
+            buttons.build_menu(1),
+        )
+        pfunc = partial(set_option, pre_event=query, option="lsuffix")
+        await event_handler(client, query, pfunc)
 
     elif data[2] == "scapt":
         await query.answer()
@@ -814,6 +857,23 @@ Check all yt-dlp api options from this <a href='https://github.com/yt-dlp/yt-dlp
     elif data[2] == "back":
         await query.answer()
         await update_user_settings(query)
+    
+    elif data[2] == "disable_button":
+        await query.answer()
+        dsbutton = bool(user_dict.get("disable_button", False))
+        ds_button = not dsbutton
+        update_user_ldata(user_id, "disable_button", ds_button)
+        await update_user_settings(query)
+        if DATABASE_URL:
+            await DbManger().update_user_data(user_id)
+    elif data[2] == "disable_autodetect":
+        await query.answer()
+        ds_autodetect = bool(user_dict.get("disable_autodetect", False))
+        ds_autodetect = not ds_autodetect
+        update_user_ldata(user_id, "disable_autodetect", ds_autodetect)
+        await update_user_settings(query)
+        if DATABASE_URL:
+            await DbManger().update_user_data(user_id)
     else:
         await query.answer()
         await deleteMessage(message.reply_to_message)

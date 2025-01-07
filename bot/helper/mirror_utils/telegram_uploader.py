@@ -65,6 +65,7 @@ class TgUploader:
         self._last_msg_in_group = False
         self._up_path = ""
         self._lprefix = ""
+        self._lsuffix = ""
         self._media_group = False
         self._forwardChatId = None
         self._forwardThreadId = None
@@ -95,6 +96,8 @@ class TgUploader:
             if "lprefix" not in self._listener.user_dict
             else ""
         )
+        
+        self._lsuffix = self._listener.user_dict.get("lsuffix", "")
         
         self._forwardChatId = self._listener.user_dict.get("leech_dest")
         if not self._forwardChatId:
@@ -183,8 +186,25 @@ class TgUploader:
         else:
             capt = f"<code>{file_}</code>"
 
-        if self._lprefix:
-            cap_mono = f"{capt}\n\n{self._lprefix}"
+        if self._lprefix and self._lsuffix:
+            cap_mono = f"{self._lprefix} {capt}\n\n{self._lsuffix}"
+            self._lprefix = re_sub("<.*?>", "", self._lprefix)
+            self._lsuffix = re_sub("<.*?>", "", self._lsuffix)
+            if (
+                self._listener.seed
+                and not self._listener.newDir
+                and not dirpath.endswith("/splited_files_mltb")
+            ):
+                dirpath = f"{dirpath}/copied_mltb"
+                await makedirs(dirpath, exist_ok=True)
+                new_path = ospath.join(dirpath, f"{self._lprefix} {file_} {self._lsuffix}")
+                self._up_path = await copy(self._up_path, new_path)
+            else:
+                new_path = ospath.join(dirpath, f"{self._lprefix} {file_} {self._lsuffix}")
+                await rename(self._up_path, new_path)
+                self._up_path = new_path
+        elif self._lprefix:
+            cap_mono = f"{self._lprefix} {capt}"
             self._lprefix = re_sub("<.*?>", "", self._lprefix)
             if (
                 self._listener.seed
@@ -197,6 +217,22 @@ class TgUploader:
                 self._up_path = await copy(self._up_path, new_path)
             else:
                 new_path = ospath.join(dirpath, f"{self._lprefix} {file_}")
+                await rename(self._up_path, new_path)
+                self._up_path = new_path
+        elif self._lsuffix:
+            cap_mono = f"{capt}\n\n{self._lsuffix}"
+            self._lsuffix = re_sub("<.*?>", "", self._lsuffix)
+            if (
+                self._listener.seed
+                and not self._listener.newDir
+                and not dirpath.endswith("/splited_files_mltb")
+            ):
+                dirpath = f"{dirpath}/copied_mltb"
+                await makedirs(dirpath, exist_ok=True)
+                new_path = ospath.join(dirpath, f"{file_} {self._lsuffix}")
+                self._up_path = await copy(self._up_path, new_path)
+            else:
+                new_path = ospath.join(dirpath, f"{file_} {self._lsuffix}")
                 await rename(self._up_path, new_path)
                 self._up_path = new_path
         else:
