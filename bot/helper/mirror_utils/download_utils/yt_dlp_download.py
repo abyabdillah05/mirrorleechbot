@@ -1,3 +1,4 @@
+
 from os import path as ospath, listdir
 from secrets import token_hex
 from logging import getLogger
@@ -161,7 +162,7 @@ class YoutubeDLHelper:
                         if not self._ext:
                             self._ext = ext
             else:
-                outtmpl_ = "%(title,fulltitle,alt_title)s%(season_number& |)s%(season_number&S|)s%(season_number|)02d%(episode_number&E|)s%(episode_number|)02d%(height& |)s%(height|)s%(height&p|)s.%(ext)s"
+                outtmpl_ = "%(title,fulltitle,alt_title)s%(season_number& |)s%(season_number&S|)s%(season_number|)02d%(episode_number&E|)s%(episode_number|)02d%(height& |)s%(height|)s%(height&p|)s%(fps|)s%(fps&fps|)s%(tbr& |)s%(tbr|)d.%(ext)s"
                 realName = ydl.prepare_filename(result, outtmpl=outtmpl_)
                 ext = ospath.splitext(realName)[-1]
                 self._listener.name = (
@@ -189,8 +190,8 @@ class YoutubeDLHelper:
             if self._is_cancelled:
                 raise ValueError
             async_to_sync(self._listener.onDownloadComplete)
-        except ValueError:
-            self._onDownloadError("Tugas dibatalkan oleh User!")
+        except:
+            pass
 
     async def add_download(self, path, qual, playlist, options):
         if playlist:
@@ -252,6 +253,11 @@ class YoutubeDLHelper:
             self.opts["outtmpl"] = {
                 "default": f"{path}/{self._listener.name}/%(title,fulltitle,alt_title)s%(season_number& |)s%(season_number&S|)s%(season_number|)02d%(episode_number&E|)s%(episode_number|)02d%(height& |)s%(height|)s%(height&p|)s.%(ext)s",
                 "thumbnail": f"{path}/yt-dlp-thumb/%(title,fulltitle,alt_title)s%(season_number& |)s%(season_number&S|)s%(season_number|)02d%(episode_number&E|)s%(episode_number|)02d%(height& |)s%(height|)s%(height&p|)s%(fps|)s.%(ext)s",
+            }
+        elif "download_ranges" in options:
+            self.opts["outtmpl"] = {
+                "default": f"{path}/{base_name}/%(section_number|)s%(section_number&.|)s%(section_title|)s%(section_title&-|)s%(title,fulltitle,alt_title)s %(section_start)s to %(section_end)s.%(ext)s",
+                "thumbnail": f"{path}/yt-dlp-thumb/%(section_number|)s%(section_number&.|)s%(section_title|)s%(section_title&-|)s%(title,fulltitle,alt_title)s %(section_start)s to %(section_end)s.%(ext)s",
             }
         elif any(
             key in options
@@ -337,15 +343,14 @@ class YoutubeDLHelper:
     async def cancel_task(self):
         self._is_cancelled = True
         LOGGER.info(f"Cancelling Download: {self._listener.name}")
-        if not self._downloading:
-            await self._listener.onDownloadError("Unduhan dibatalkan oleh User!")
+        await self._listener.onDownloadError("Unduhan dibatalkan oleh User!")
 
     def _set_options(self, options):
         options = options.split("|")
         for opt in options:
             key, value = map(str.strip, opt.split(":", 1))
-            if key == "format" and value.startswith("ba/b-"):
-                continue
+            #if key == "format" and value.startswith("ba/b-"):
+            #    continue
             if value.startswith("^"):
                 if "." in value or value == "^inf":
                     value = float(value.split("^", 1)[1])
@@ -357,11 +362,13 @@ class YoutubeDLHelper:
                 value = False
             elif value.startswith(("{", "[", "(")) and value.endswith(("}", "]", ")")):
                 value = eval(value)
-
             if key == "postprocessors":
                 if isinstance(value, list):
                     self.opts[key].extend(tuple(value))
                 elif isinstance(value, dict):
                     self.opts[key].append(value)
+            elif key == "download_ranges":
+                if isinstance(value, list):
+                    self.opts[key] = lambda info, ytdl: value
             else:
                 self.opts[key] = value
