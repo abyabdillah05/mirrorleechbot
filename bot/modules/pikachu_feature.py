@@ -35,7 +35,7 @@ from pyrogram.enums import ChatType
 from bot.modules.ytdlp import YtDlp
 from bot.helper.ext_utils.bot_utils import update_user_ldata
 from bot.helper.ext_utils.db_handler import DbManger
-from google_auth_oauthlib.flow import InstalledAppFlow
+from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request
 
 tiktok = []
@@ -894,10 +894,94 @@ async def gallery_dl_auto(client, message):
 ###########################
 #Pickle Generator
 ###########################
-
-CREDENTIALS_FILE = "credentials.json"
 OAUTH_SCOPE = ['https://www.googleapis.com/auth/drive']
+client_id = "202264815644.apps.googleusercontent.com"
+client_secret = "X4Z3ca8xfWDb1Voo-F9a7ZxJ"
+
 async def get_token(client, message):
+    private = bool(message.chat.type == ChatType.PRIVATE)
+    if not private:
+        butt = ButtonMaker()
+        butt.ubutton("❇️ LETS GO", f"https://t.me/{bot.me.username}")
+        await sendMessage(message, "This command can only be used in private chat, click the button below and use /gettoken command on Private Chat.", butt.build_menu(1))
+        return
+    uid = message.from_user.id
+    path = f"tokens/{uid}/"
+    pickle_path = f"{path}/token.pickle"
+    await makedirs(path, exist_ok=True)
+    try:
+        client_config = {
+            "installed": {
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "token_uri": "https://oauth2.googleapis.com/token",
+                "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+                "redirect_uris": ["http://localhost:1"],
+            }
+        }
+        
+        flow = Flow.from_client_config(
+            client_config,
+            OAUTH_SCOPE,
+            redirect_uri='http://localhost:1'
+        )
+        
+        auth_url, _ = flow.authorization_url(access_type='offline', include_granted_scopes='true')
+        
+        msg = f"<b>Follow the steps below to get your Google Drive Token.</b>\n\n• Open the Authorization URL and login to your Google Drive account.\n"
+        msg += f"• Allow the app to access your Google Drive.\n"
+        msg += f"• Click Continue and you will redirected to error page.\n"
+        msg += f"• Copy the url from the page and Paste Here !\n"
+        butt = ButtonMaker()
+        butt.ubutton("Authorization URL", auth_url)
+        butts = butt.build_menu(1)
+        
+        try:
+            ask = await sendMessage(message, msg, butts)
+            respon = await bot.listen(
+                filters=filters.text & filters.user(uid)
+            )
+            code = respon.text.split('code=')[1].split('&')[0]
+            await respon.delete()
+            wait = await editMessage(ask, f"Memverifikasi kode anda...")
+            
+            flow.fetch_token(code=code)
+            credentials = flow.credentials
+            
+            with open(pickle_path, "wb") as token:
+                pickle.dump(credentials, token)
+            
+            caption = "📋 <b>Google Drive Token Info:</b>\n\n"
+            caption += f"🔑 <b>Client ID:</b> <code>{client_id}</code>\n"
+            caption += f"🔒 <b>Client Secret:</b> <code>{client_secret}</code>\n"
+            caption += f"🔄 <b>Refresh Token:</b> <code>{credentials.refresh_token}</code>"
+    
+            try:
+                await message.reply_document(
+                    document=pickle_path,
+                    caption=caption,
+                    )
+            except Exception as e:
+                await message.reply_text(f"Failed to send file: {str(e)}")
+            
+            await deleteMessage(wait)
+            await deleteMessage(ask)
+            return True
+            
+        except IndexError:
+            await deleteMessage(ask)
+            raise Exception("Authorization code not found, give the correct url and try again.")
+        except Exception as e:
+            await deleteMessage(ask)
+            raise Exception(str(e))
+    except Exception as e:
+        await message.reply_text(f"<b>❌ Error:</b> {e}")
+    finally:
+        if os.path.exists(pickle_path):
+            os.remove(pickle_path)
+
+async def gen_token(client, message):
     uid = message.from_user.id
     path = f"tokens/"
     pickle_path = f"{path}{uid}.pickle"
@@ -910,13 +994,24 @@ async def get_token(client, message):
                     credentials.refresh(Request())
                 raise Exception("Token google drive anda sudah ada dan sudah diperbaharui.")
         else:
-            FLOW = InstalledAppFlow.from_client_secrets_file(
-                CREDENTIALS_FILE, 
+            client_config = {
+                "installed": {
+                    "client_id": client_id,
+                    "client_secret": client_secret,
+                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                    "token_uri": "https://oauth2.googleapis.com/token",
+                    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+                    "redirect_uris": ["http://localhost:1"],
+                }
+            }
+            
+            flow = Flow.from_client_config(
+                client_config,
                 OAUTH_SCOPE,
                 redirect_uri='http://localhost:1'
             )
-            auth_url = FLOW.authorization_url()[0]
-            msg = f"• Klik link dibawah untuk autorisasi google drive\n"
+            auth_url, _ = flow.authorization_url(access_type='offline', include_granted_scopes='true')
+            msg = f"<b>Ikuti langkah dibawah untuk generate token google drive:</b>\n\n• Klik link dibawah untuk autorisasi google drive\n"
             msg += f"• Pilih akun googledrive yang akan digunakan untuk mirroring.\n"
             msg += f"• Klik Lanjutkan dan anda akan dibawa ke halaman error.\n"
             msg += f"• Silahkan salin semua alamat url di halaman error tersebut dan kirim ke bot.\n"
@@ -931,9 +1026,9 @@ async def get_token(client, message):
                 code = respon.text.split('code=')[1].split('&')[0]
                 await respon.delete()
                 wait = await editMessage(ask, f"Memferifikasi kode anda...")
-                credentials = FLOW.fetch_token(code=code)
+                credentials = flow.fetch_token(code=code)
                 with open(pickle_path, "wb") as token:
-                    pickle.dump(FLOW.credentials, token)
+                    pickle.dump(flow.credentials, token)
                 await deleteMessage(wait)
                 await deleteMessage(ask)
                 return True
@@ -1034,6 +1129,14 @@ bot.add_handler(
 bot.add_handler(
     MessageHandler(
         get_token, 
+        filters=command(
+            BotCommands.GetTokenCommand
+        ) & CustomFilters.authorized
+    )
+)
+bot.add_handler(
+    MessageHandler(
+        gen_token, 
         filters=command(
             BotCommands.GenTokenCommand
         ) & CustomFilters.authorized
