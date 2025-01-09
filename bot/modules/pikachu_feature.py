@@ -1131,7 +1131,7 @@ bot.add_handler(
         get_token, 
         filters=command(
             BotCommands.GetTokenCommand
-        ) & CustomFilters.authorized
+        )
     )
 )
 bot.add_handler(
