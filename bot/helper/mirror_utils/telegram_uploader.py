@@ -100,6 +100,8 @@ class TgUploader:
         self._lsuffix = self._listener.user_dict.get("lsuffix", "")
         
         self._forwardChatId = self._listener.user_dict.get("leech_dest")
+        if self._forwardChatId in ["pm", "PM", "Pm", "pM"]:
+            self._forwardChatId = int(self._listener.user_id)
         if not self._forwardChatId:
             self._forwardChatId = self._listener.message.chat.id
             self._forwardThreadId = (
