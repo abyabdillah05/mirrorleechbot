@@ -456,7 +456,7 @@ async def createSampleVideo(
         "-c:a",
         "aac",
         "-threads",
-        4,
+        f"{cpu_count() // 2}",
         output_file,
     ]
     async with subprocess_lock:
@@ -663,7 +663,7 @@ async def PerformVideoEditor(
             cmd.extend(["-c:a", "copy"])
         else:
             cmd.extend(["-c:a", f"{audio_codec}", "-b:a", f"{audio_bitrate}"])
-        cmd.extend(["-threads", "4"])
+        cmd.extend(["-threads", f"{cpu_count() // 2}"])
     cmd.append(output_file)
 
     LOGGER.info(f"FFmpeg filter: {','.join(filter_str)}")
