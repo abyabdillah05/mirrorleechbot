@@ -301,8 +301,8 @@ def direct_link_generator(link: str):
         return qiwi(link)
     elif 'berkasdrive.com' in domain:
         return berkasdrive(link)
-    elif 'sourceforge.net' in domain:
-        return sourceforge(link)
+    #elif 'sourceforge.net' in domain:
+    #    return sourceforge(link)
     elif 'database.s3cr3t.workers.dev' in domain:
         return index(link)
     elif 'buzzheavier.com' in domain:

@@ -50,6 +50,7 @@ from bot.helper.listeners.task_listener import TaskListener
 from bot.modules.auto_mirror import AutoMirror
 from bot.modules.video_editor import VideEditor
 from urllib.parse import urlparse
+from bot.modules.sourceforge_extract import sourceforgeExtract
 
 urlregex = r"^(?!\/)(rtmps?:\/\/|mms:\/\/|rtsp:\/\/|https?:\/\/|ftp:\/\/)?([^\/:]+:[^\/@]+@)?(www\.)?(?=[^\/:\s]+\.[^\/:\s]+)([^\/:\s]+\.[^\/:\s]+)(:\d+)?(\/[^#\s]*[\s\S]*)?(\?[^#\s]*)?(#.*)?$"
 magnetregex = r"magnet:\?xt=urn:(btih|btmh):[a-zA-Z0-9]*\s*"
@@ -244,7 +245,10 @@ class Mirror(TaskListener):
                             auto_args = await AutoMirror(self).main_pesan_custom(self.link, _type)
                         else:
                             auto_args = await AutoMirror(self).main_pesan(self.link, _type)
-                        
+
+                    if auto_args is None:
+                        self.removeFromSameDir()
+                        return
                     if "rename" in auto_args:
                         self.name = auto_args["rename"]
                     if "custom_upload" in auto_args:
@@ -462,7 +466,7 @@ class Mirror(TaskListener):
             and not is_gdrive_id(self.link)
         ):
             content_type = await get_content_type(self.link)
-            if content_type is None or "application/zip" and "bigota" in self.link or "application/zip" and "hugeota" in self.link or re_match(r"text/html|text/plain", content_type):
+            if content_type is None or "application/zip" and "bigota" in self.link or "application/zip" and "hugeota" in self.link or re_match(r"text/html|text/plain", content_type) or "https://sourceforge.net/" in self.link:
                 if "uptobox" in self.link:
                     ddl = await sendMessage(
                         self.message,
@@ -479,8 +483,14 @@ class Mirror(TaskListener):
                         f"<b>Generating Direct Link :</b>\n<code>{self.link}</code>"
                     )
                 try:
-                    
-                    self.link = await sync_to_async(direct_link_generator, self.link)
+                    if "https://sourceforge.net/" in self.link:
+                        self.link = await sourceforgeExtract(self).main(self.link)
+                        if self.link is None:
+                            self.removeFromSameDir()
+                            return
+                        #ddl = await sendMessage(self.message, f"<b>Memeriksa link sourceforge. . .</b>")
+                    else:
+                        self.link = await sync_to_async(direct_link_generator, self.link)
                     if isinstance(self.link, tuple):
                         self.link, headers = self.link
                     elif isinstance(self.link, str):
