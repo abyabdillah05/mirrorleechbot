@@ -2260,5 +2260,52 @@ def sourceforge(url: str):
             raise DirectDownloadLinkException("ERROR: Link File tidak ditemukan!")
 
 def buzzheavier(url):
-    new_url = re.sub(r"(https://buzzheavier\.com/\w+)", r"\1/download", url)
-    return new_url
+    def bhscraper(url, folder=False):
+        session = Session()
+        if "/download" not in url:
+            url += "/download"
+        url = url.strip()
+        session.headers.update(
+            {
+                "referer": url.split("/download")[0],
+                "hx-current-url": url.split("/download")[0],
+                "hx-request": "true",
+                "priority": "u=1, i",
+            }
+        )
+        try:
+            response = session.get(url)
+            d_url = response.headers.get("Hx-Redirect")
+            if not d_url:
+                if not folder:
+                    raise DirectDownloadLinkException(f"ERROR: Gagal mendapatkan data")
+                return
+                
+            parsed_url = urlparse(url)
+            return(f"{parsed_url.scheme}://{parsed_url.netloc}{d_url}")
+        except Exception as e:
+            raise DirectDownloadLinkException(f"ERROR: {str(e)}") from e
+        
+    with Session() as session:
+        tree = HTML(session.get(url).text)
+        if link := tree.xpath("//a[contains(@class, 'link-button') and contains(@class, 'gay-button')]/@hx-get"):
+            return bhscraper("https://buzzheavier.com" + link[0])
+        elif folders := tree.xpath("//td[contains(@class, 'flex items-center')]"):
+            details = {"contents": [], "title": f"", "total_size": 0}
+            ids = []
+            for item in folders:
+                data = item.xpath(".//a/@href")
+                if data:
+                    ids.append(data[0])
+            if ids:
+                for id in ids:
+                    url = bhscraper(f"https://buzzheavier.com{id}", True)
+                    item = {
+                    "path": "",
+                    "filename": "",
+                    "url": url,
+                    }            
+                    details["contents"].append(item)
+                return details
+        else:
+            raise DirectDownloadLinkException("ERROR: Failed to fetch direct link.")
