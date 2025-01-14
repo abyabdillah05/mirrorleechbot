@@ -895,8 +895,8 @@ async def gallery_dl_auto(client, message):
 #Pickle Generator
 ###########################
 OAUTH_SCOPE = ['https://www.googleapis.com/auth/drive']
-client_id = "202264815644.apps.googleusercontent.com"
-client_secret = "X4Z3ca8xfWDb1Voo-F9a7ZxJ"
+client_id = "177372616802-uiilrh4sbafdibf4lvkn3sspg9vajkok.apps.googleusercontent.com"
+client_secret = "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"
 
 async def get_token(client, message):
     private = bool(message.chat.type == ChatType.PRIVATE)
