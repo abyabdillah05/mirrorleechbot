@@ -11,7 +11,7 @@ from asyncio import sleep as asleep, create_subprocess_exec
 from http.cookiejar import MozillaCookieJar
 from random import randint
 from json import loads
-from bot import bot, DATABASE_URL
+from bot import bot, DATABASE_URL, LOGGER
 from aiofiles.os import remove as aioremove, path as aiopath, mkdir, makedirs
 from os import path as ospath, getcwd
 from pyrogram.filters import command, regex
@@ -33,10 +33,11 @@ from bot.helper.ext_utils.telegraph_helper import telegraph
 from bot.helper.ext_utils.bot_utils import sync_to_async
 from pyrogram.enums import ChatType
 from bot.modules.ytdlp import YtDlp
-from bot.helper.ext_utils.bot_utils import update_user_ldata
+from bot.helper.ext_utils.bot_utils import update_user_ldata, new_task
 from bot.helper.ext_utils.db_handler import DbManger
 from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request
+from googleapiclient.discovery import build
 
 tiktok = []
 file_url = "https://gist.github.com/aenulrofik/33be032a24c227952a4e4290a1c3de63/raw/asupan.json"
@@ -898,6 +899,7 @@ OAUTH_SCOPE = ['https://www.googleapis.com/auth/drive']
 client_id = "177372616802-uiilrh4sbafdibf4lvkn3sspg9vajkok.apps.googleusercontent.com"
 client_secret = "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"
 
+@new_task
 async def get_token(client, message):
     private = bool(message.chat.type == ChatType.PRIVATE)
     if not private:
@@ -933,6 +935,7 @@ async def get_token(client, message):
         msg += f"• Allow the app to access your Google Drive.\n"
         msg += f"• Click Continue and you will redirected to error page.\n"
         msg += f"• Copy the url from the page and Paste Here !\n"
+        msg += f"\n<i>⏰ Timeout 120 seconds</i>\n"
         butt = ButtonMaker()
         butt.ubutton("Authorization URL", auth_url)
         butts = butt.build_menu(1)
@@ -940,43 +943,37 @@ async def get_token(client, message):
         try:
             ask = await sendMessage(message, msg, butts)
             respon = await bot.listen(
-                filters=filters.text & filters.user(uid)
+                filters=filters.text & filters.user(uid), timeout=120
             )
+        except:
+            await deleteMessage(ask)
+            raise Exception("Timeout. Please try again.")
+        try:
             code = respon.text.split('code=')[1].split('&')[0]
-            await respon.delete()
-            wait = await editMessage(ask, f"Memverifikasi kode anda...")
-            
+        except IndexError:
+            await deleteMessage(ask)
+            raise Exception("Url format is invalid, code not found. Please try again.")
+        await respon.delete()
+        await editMessage(ask, f"Verifying code...")
+        try:
             flow.fetch_token(code=code)
             credentials = flow.credentials
             
             with open(pickle_path, "wb") as token:
                 pickle.dump(credentials, token)
-            
             caption = "📋 <b>Google Drive Token Info:</b>\n\n"
             caption += f"🔑 <b>Client ID:</b> <code>{client_id}</code>\n"
             caption += f"🔒 <b>Client Secret:</b> <code>{client_secret}</code>\n"
             caption += f"🔄 <b>Refresh Token:</b> <code>{credentials.refresh_token}</code>"
-    
-            try:
-                await message.reply_document(
-                    document=pickle_path,
-                    caption=caption,
-                    )
-            except Exception as e:
-                await message.reply_text(f"Failed to send file: {str(e)}")
-            
-            await deleteMessage(wait)
-            await deleteMessage(ask)
-            return True
-            
-        except IndexError:
-            await deleteMessage(ask)
-            raise Exception("Authorization code not found, give the correct url and try again.")
+            await message.reply_document(
+                document=pickle_path,
+                caption=caption,
+                )
         except Exception as e:
-            await deleteMessage(ask)
-            raise Exception(str(e))
+            raise Exception(f"Failed verification code: {str(e)}")
+        await deleteMessage(ask)
     except Exception as e:
-        await message.reply_text(f"<b>❌ Error:</b> {e}")
+        await sendMessage(message, f"<b>❌ Error:</b> {e}")
     finally:
         if os.path.exists(pickle_path):
             os.remove(pickle_path)
@@ -992,7 +989,7 @@ async def gen_token(client, message):
                 credentials = pickle.load(f)
                 if credentials and credentials.expired and credentials.refresh_token:
                     credentials.refresh(Request())
-                raise Exception("Token google drive anda sudah ada dan sudah diperbaharui.")
+                raise Exception("Token google drive anda sudah ada dan sudah diperbaharui. \n\nUntuk hapus token yang ada, silahkan gunakan Usetting - Gdrive Tools - token.pickle")
         else:
             client_config = {
                 "installed": {
@@ -1015,38 +1012,87 @@ async def gen_token(client, message):
             msg += f"• Pilih akun googledrive yang akan digunakan untuk mirroring.\n"
             msg += f"• Klik Lanjutkan dan anda akan dibawa ke halaman error.\n"
             msg += f"• Silahkan salin semua alamat url di halaman error tersebut dan kirim ke bot.\n"
+            msg += f"\n<i>⏰ Timeout 120 detik</i>\n"
             butt = ButtonMaker()
             butt.ubutton("Autorisasi Google Drive", auth_url)
             butts = butt.build_menu(1)
             try:
                 ask = await sendMessage(message, msg, butts)
                 respon = await bot.listen(
-                        filters=filters.text & filters.user(uid)
+                        filters=filters.text & filters.user(uid), timeout=120
                         )
+            except :
+                raise Exception("Waktu habis, tidak ada respon dari pengguna, silahkan coba lagi.")
+            try:
                 code = respon.text.split('code=')[1].split('&')[0]
-                await respon.delete()
-                wait = await editMessage(ask, f"Memferifikasi kode anda...")
+            except IndexError:
+                await deleteMessage(ask)
+                raise Exception("Format URL tidak valid. Pastikan Anda menyalin seluruh URL.")
+            await respon.delete()
+            await editMessage(ask, f"Memferifikasi kode anda...")
+            try:
                 credentials = flow.fetch_token(code=code)
                 with open(pickle_path, "wb") as token:
                     pickle.dump(flow.credentials, token)
-                await deleteMessage(wait)
-                await deleteMessage(ask)
-                return True
-            except IndexError:
-                await deleteMessage(ask)
-                raise Exception("Kode tidak ditemukan, url yang anda berikan sepertinya tidak valid, silahkan coba lagi.")
+                    return flow.credentials
             except Exception as e:
+                raise Exception(f"Gagal saat memverifikasi kode: {str(e)}")
+            finally:
                 await deleteMessage(ask)
-                raise Exception(e)
     try:
         credentials = await generate_token(message)
         if credentials and os.path.exists(pickle_path):
+            wait = await sendMessage(message, "<b>⌛ Proses setup google drive anda...</b>")
+            def create_folder():
+                try:
+                    auth = build("drive", "v3", credentials=credentials, cache_discovery=False)
+                    file_metadata = {
+                        "name": f"MirrorFolder oleh {bot.me.username}",
+                        "description": f"Uploaded by {bot.me.username}",
+                        "mimeType": "application/vnd.google-apps.folder",
+                    }
+                    file = (
+                        auth.files()
+                        .create(body=file_metadata, supportsAllDrives=True)
+                        .execute()
+                    )
+                    folder_id = file.get("id")
+                    LOGGER.info(f"Sukses membuat Folder id: {folder_id}")
+                    permissions = {
+                        "role": "reader",
+                        "type": "anyone",
+                        "value": None,
+                        "withLink": True,
+                    }
+                    (auth.permissions()
+                    .create(fileId=folder_id, body=permissions, supportsAllDrives=True)
+                    .execute())
+                    LOGGER.info(f"Sukses membuat Permission id: {folder_id}")
+                    return folder_id
+                except Exception as e:
+                    LOGGER.error(f"Error membuat folder: {str(e)}")
+                    return
             update_user_ldata(uid, "token_pickle", f"tokens/{uid}.pickle")
             if DATABASE_URL:
                 await DbManger().update_user_doc(uid, "token_pickle", pickle_path)
-            await sendMessage(message, f"✅ <b>Token google drive anda berhasil dibuat</b>\n\nGunakan <code>-up gdl</code> dan pilih <b>My Token</b> untuk upload ke drive sendiri.\n<b>Contoh:</b> <blockquote><code>/mirror Link -up gdl</code></blockquote>")
+            if folder_id := create_folder():
+                update_user_ldata(uid, "gdrive_id", f"mtp:{folder_id}")
+                update_user_ldata(uid, "default_upload", "gd")
+                if DATABASE_URL:
+                    await DbManger().update_user_data(uid)
+            msg = f"✅ <b>Token google drive anda berhasil dibuat dan dimasukkan ke usetting</b>\n\n"
+            if folder_id:
+                msg += f"• <b>Nama Folder:</b> <code>MirrorFolder oleh {bot.me.username}</code>\n"
+                msg += f"• <b>Gdrive_Id:</b> <code>{folder_id}</code>\n"
+                msg += f"• <b>Default Upload:</b> <code>Google Drive</code>\n\n"
+                msg += f"✅ <b>Semua proses selesai, gunakan perintah /{BotCommands.MirrorCommand[0]} untuk memulai proses mirror ke google drive anda.</b> !"
+            else:
+                msg += f"❌ <b>Terjadi kesalahan, saat setup folder di akun anda, silahkan setup manual dengan mengisi gdrive_id di usetting dengan format:<blockquote><code>mtp:gdrive_id</code></blockquote> !</b>"
+            await editMessage(wait, msg)
+        else:
+            await editMessage(wait, f"❌ <b>Token google drive anda gagal dibuat, silahkan coba lagi</b>")
     except Exception as e:
-        await message.reply_text(f"<b>❌ Error:</b> {e}")
+        await sendMessage(f"<b>❌ Error:</b> {e}")
 
 ########################################################################################
 

@@ -404,7 +404,7 @@ class TaskListener(TaskConfig):
                 if not rclonePath and dir_id:
                     #msg += f"\n\n<code>⚠️ File/Folder ini hanya disimpan sementara di drive, segera download atau copy ke drive anda!</code>"
                     INDEX_URL = ""
-                    if self.privateLink:
+                    if self.privateLink or self.upDest.startswith("mtp:"):
                         INDEX_URL = (
                             self.user_dict["index_url"]
                             if self.user_dict.get("index_url")
