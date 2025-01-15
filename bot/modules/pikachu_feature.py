@@ -1092,7 +1092,7 @@ async def gen_token(client, message):
         else:
             await editMessage(wait, f"❌ <b>Token google drive anda gagal dibuat, silahkan coba lagi</b>")
     except Exception as e:
-        await sendMessage(f"<b>❌ Error:</b> {e}")
+        await sendMessage(mmessage, f"<b>❌ Error:</b> {e}")
 
 ########################################################################################
 
