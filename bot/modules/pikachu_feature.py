@@ -1022,6 +1022,7 @@ async def gen_token(client, message):
                         filters=filters.text & filters.user(uid), timeout=120
                         )
             except :
+                await deleteMessage(ask)
                 raise Exception("Waktu habis, tidak ada respon dari pengguna, silahkan coba lagi.")
             try:
                 code = respon.text.split('code=')[1].split('&')[0]
