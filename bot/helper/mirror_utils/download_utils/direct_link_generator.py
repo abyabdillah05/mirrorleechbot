@@ -7,11 +7,11 @@ from requests import Session, post, get, RequestException
 from random import choice
 from hashlib import sha256
 from http.cookiejar import MozillaCookieJar
-from json import loads, dump
+from json import loads
 from os import path
 from re import findall, match, search
 from time import sleep
-from urllib.parse import parse_qs, urlparse, unquote
+from urllib.parse import parse_qs, urlparse
 from uuid import uuid4
 from bs4 import BeautifulSoup
 from cloudscraper import create_scraper
@@ -22,14 +22,10 @@ from urllib3.util.retry import Retry
 
 from bot import config_dict
 from bot.helper.ext_utils.bot_utils import async_to_sync, get_content_type
-from bot.helper.ext_utils.status_utils import speed_string_to_bytes, get_readable_time, get_readable_file_size
+from bot.helper.ext_utils.status_utils import speed_string_to_bytes, get_readable_time
 from bot.helper.ext_utils.links_utils import is_share_link
 from bot.helper.ext_utils.exceptions import DirectDownloadLinkException
 from bot.helper.ext_utils.help_messages import PASSWORD_ERROR_MESSAGE
-from bot.helper.telegram_helper.bot_commands import BotCommands
-
-
-_caches = {}
 
 user_agent  = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0"
 
@@ -151,6 +147,12 @@ def direct_link_generator(link: str):
             "do0od.com",
             "d000d.com",
             "doods.pro",
+            "dood.town",
+            "dood.ws",
+            "dood.li",
+            "dood.im",
+            "dood.cm",
+            "d00d.cc",
         ]
     ):
         return pake(link)
@@ -1229,7 +1231,7 @@ def linkBox(url:str):
     return details
 
 
-def gofile(url):
+def gofile(url):    
     try:
         if "::" in url:
             _password = url.split("::")[-1]
@@ -2260,6 +2262,9 @@ def sourceforge(url: str):
             raise DirectDownloadLinkException("ERROR: Link File tidak ditemukan!")
 
 def buzzheavier(url):
+    pattern = r'^https?://buzzheavier\.com/[a-zA-Z0-9]+$'
+    if not re.match(pattern, url):
+        return url
     def bhscraper(url, folder=False):
         session = Session()
         if "/download" not in url:

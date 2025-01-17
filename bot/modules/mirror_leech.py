@@ -488,6 +488,7 @@ class Mirror(TaskListener):
                         self.link = await sourceforgeExtract(self).main(self.link)
                         if self.link is None:
                             self.removeFromSameDir()
+                            await deleteMessage(ddl)
                             return
                         #ddl = await sendMessage(self.message, f"<b>Memeriksa link sourceforge. . .</b>")
                     else:
