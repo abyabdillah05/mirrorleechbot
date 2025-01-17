@@ -55,11 +55,12 @@ class YoutubeDLHelper:
         self._downloading = False
         self._ext = ""
         self.is_playlist = False
+        self.cookies = self._listener.cookies if self._listener.cookies else "cookies.txt"
         self.opts = {
             "progress_hooks": [self._onDownloadProgress],
             "logger": MyLogger(self, self._listener),
             "usenetrc": True,
-            "cookiefile": "cookies.txt",
+            "cookiefile": self.cookies,
             "allow_multiple_video_streams": True,
             "allow_multiple_audio_streams": True,
             "noprogress": True,

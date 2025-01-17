@@ -121,6 +121,8 @@ class TaskConfig:
         self.gf_api = self.user_dict.get("gofile_apitoken", False)
         self.gf_folder = self.user_dict.get("gofile_folder_id", False)
         self.bhId = self.user_dict.get("buzzheavier_id", False)
+        self.string = self.user_dict.get("string_session", False)
+        self.cookies = self.user_dict.get("user_cookies", False)
         self.video_editor = None
         self.ve = False
 

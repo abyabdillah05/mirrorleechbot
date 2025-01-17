@@ -73,6 +73,7 @@ queued_up = {}
 non_queued_dl = set()
 non_queued_up = set()
 multi_tags = set()
+active_sessions = {}
 
 class Version:
     ar = ""

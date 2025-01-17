@@ -349,10 +349,11 @@ class Mirror(TaskListener):
             ):
                 self.link = self.message.text.split("\n", 1)[0].strip()
         if is_telegram_link(self.link):
+            user_id = self.message.from_user.id
             try:
-                reply_to, self.session = await get_tg_link_message(self.link)
+                reply_to, self.session = await get_tg_link_message(self.link, user_id)
             except Exception as e:
-                await sendMessage(self.message, f"ERROR: {e}")
+                await sendMessage(self.message, f"<b>ERROR:</b> {e}")
                 self.removeFromSameDir()
                 return
 

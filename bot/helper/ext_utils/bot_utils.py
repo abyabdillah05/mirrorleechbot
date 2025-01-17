@@ -12,10 +12,11 @@ from functools import partial, wraps
 from concurrent.futures import ThreadPoolExecutor
 from aiohttp import ClientSession
 
-from bot import user_data, config_dict, bot_loop
+from bot import user_data, config_dict, bot_loop, active_sessions, TELEGRAM_API, TELEGRAM_HASH, LOGGER
 from bot.helper.ext_utils.help_messages import YT_HELP_DICT, MIRROR_HELP_DICT
 from bot.helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.ext_utils.telegraph_helper import telegraph
+from pyrogram import Client as tgClient, enums
 
 THREADPOOL = ThreadPoolExecutor(max_workers=1000)
 
@@ -179,3 +180,28 @@ def clean_video_name(file_path, compress=False):
     if compress:
         final_name = re.sub(r'[-._]?(360|480|540|720|1080)(p)?', '', final_name, flags=re.IGNORECASE)
     return final_name
+
+async def create_session(uid):
+    if uid in active_sessions:
+        user_ses = active_sessions[uid]
+        return user_ses
+    else:
+        user_dict = user_data.get(uid, {})
+        string = user_dict.get("string_session", None)
+        if string:
+            try:
+                user_ses = tgClient(
+                    f"user_{uid}", 
+                    TELEGRAM_API, 
+                    TELEGRAM_HASH, 
+                    session_string=string,
+                    parse_mode=enums.ParseMode.HTML, 
+                    max_concurrent_transmissions=10
+                    )
+                await user_ses.start()
+                active_sessions[uid] = user_ses
+                LOGGER.info(f"User_String untuk {uid} ditambahkan.")
+                return user_ses
+            except Exception as e:
+                LOGGER.error(f"Error starting user session: {str(e)}")
+                return None

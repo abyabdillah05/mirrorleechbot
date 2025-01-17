@@ -17,6 +17,7 @@ from bot import (
     DATABASE_URL,
     MAX_SPLIT_SIZE,
     GLOBAL_EXTENSION_FILTER,
+    active_sessions,
 )
 from bot.helper.telegram_helper.message_utils import (
     sendMessage,
@@ -192,6 +193,18 @@ async def get_user_settings(from_user):
         bhId = bhId[:-8] + "X" * 8
     else:
         bhId = "None"
+    
+    buttons.ibutton("String Session", f"userset {user_id} user_ss")
+    if user_dict.get("string_session", None):
+        string_session = "Exist"
+    else:
+        string_session = "None"
+    
+    buttons.ibutton("User Cookies", f"userset {user_id} user_ck")
+    if user_dict.get("user_cookies", None):
+        user_cookies = "Exist"
+    else:
+        user_cookies = "None"
 
     if user_dict:
         buttons.ibutton("Reset All", f"userset {user_id} reset")
@@ -226,6 +239,8 @@ async def get_user_settings(from_user):
 <b>GoFile API       :</b> <code>{gf_api}</code>
 <b>Gofile F_ID      :</b> <code>{gf_folder}</code>
 <b>Buzzheavier ID   :</b> <code>{bhId}</code>
+<b>String Session   :</b> <code>{string_session}</code>
+<b>User Cookies     :</b> <code>{user_cookies}</code>
 </pre>
 """
     if not ospath.exists(thumbpath):
@@ -272,6 +287,18 @@ async def add_rclone(_, message, pre_event):
     if DATABASE_URL:
         await DbManger().update_user_doc(user_id, "rclone_config", des_dir)
 
+async def add_cookies(_, message, pre_event):
+    user_id = message.from_user.id
+    handler_dict[user_id] = False
+    path = f"{getcwd()}/u_cookies/"
+    await makedirs(path, exist_ok=True)
+    des_dir = f"{path}{user_id}.txt"
+    await message.download(file_name=des_dir)
+    update_user_ldata(user_id, "user_cookies", f"u_cookies/{user_id}.txt")
+    await deleteMessage(message)
+    await update_user_settings(pre_event)
+    if DATABASE_URL:
+        await DbManger().update_user_doc(user_id, "user_cookies", des_dir)
 
 async def add_token_pickle(_, message, pre_event):
     user_id = message.from_user.id
@@ -364,6 +391,7 @@ async def edit_user_settings(client, query):
     thumb_path = f"Thumbnails/{user_id}.jpg"
     rclone_conf = f"rclone/{user_id}.conf"
     token_pickle = f"tokens/{user_id}.pickle"
+    user_cookies = f"u_cookies/{user_id}.txt"
     user_dict = user_data.get(user_id, {})
     if user_id != int(data[1]):
         await query.answer("Not Yours!", show_alert=True)
@@ -379,11 +407,13 @@ async def edit_user_settings(client, query):
         await update_user_settings(query)
         if DATABASE_URL:
             await DbManger().update_user_data(user_id)
-    elif data[2] in ["thumb", "rclone_config", "token_pickle"]:
+    elif data[2] in ["thumb", "rclone_config", "token_pickle", "user_cookies"]:
         if data[2] == "thumb":
             path = thumb_path
         elif data[2] == "rclone_config":
             path = rclone_conf
+        elif data[2] == "user_cookies":
+            path = user_cookies
         else:
             path = token_pickle
         if await aiopath.exists(path):
@@ -396,12 +426,13 @@ async def edit_user_settings(client, query):
         else:
             await query.answer("Old Settings", show_alert=True)
             await update_user_settings(query)
-    elif data[2] in ["yt_opt", "lprefix", "lsuffix", "index_url", "excluded_extensions", "pixeldrain_apikey", "gofile_apitoken", "gofile_folder_id", "buzzheavier_id"]:
+    elif data[2] in ["yt_opt", "lprefix", "lsuffix", "index_url", "excluded_extensions", "pixeldrain_apikey", "gofile_apitoken", "gofile_folder_id", "buzzheavier_id", "string_session"]:
         await query.answer()
         update_user_ldata(user_id, data[2], "")
         await update_user_settings(query)
         if DATABASE_URL:
             await DbManger().update_user_data(user_id)
+        active_sessions.pop(user_id, None)
     elif data[2] in ["split_size", "leech_dest", "rclone_path", "gdrive_id"]:
         await query.answer()
         if data[2] in user_data.get(user_id, {}):
@@ -724,6 +755,28 @@ Check all yt-dlp api options from this <a href='https://github.com/yt-dlp/yt-dlp
         await editMessage(message, rmsg, buttons.build_menu(1))
         pfunc = partial(set_option, pre_event=query, option="buzzheavier_id")
         await event_handler(client, query, pfunc)
+    elif data[2] == "user_ss":
+        await query.answer()
+        buttons = ButtonMaker()
+        if user_dict.get("string_session", None):
+            buttons.ibutton("Remove String Session", f"userset {user_id} string_session")
+        buttons.ibutton("Back", f"userset {user_id} back")
+        buttons.ibutton("Close", f"userset {user_id} close")
+        rmsg = "Send String Session. Timeout: 60 sec"
+        await editMessage(message, rmsg, buttons.build_menu(1))
+        pfunc = partial(set_option, pre_event=query, option="string_session")
+        await event_handler(client, query, pfunc)
+    elif data[2] == "user_ck":
+        await query.answer()
+        buttons = ButtonMaker()
+        if await aiopath.exists(user_cookies):
+            buttons.ibutton("Remove User Cookies", f"userset {user_id} user_cookies")
+        buttons.ibutton("Back", f"userset {user_id} back")
+        buttons.ibutton("Close", f"userset {user_id} close")
+        rmsg = "Send cookies.txt file. Timeout: 60 sec"
+        await editMessage(message, rmsg, buttons.build_menu(1))
+        pfunc = partial(add_cookies, pre_event=query)
+        await event_handler(client, query, pfunc, document=True)
     elif data[2] == "leech_prefix":
         await query.answer()
         buttons = ButtonMaker()
@@ -943,7 +996,7 @@ async def generate_caption_message(user_dict, user_id):
 bot.add_handler(
     MessageHandler(
         send_users_settings,
-        filters=command(BotCommands.UsersCommand) & CustomFilters.sudo,
+        filters=command(BotCommands.UsersCommand) & CustomFilters.owner,
     )
 )
 bot.add_handler(

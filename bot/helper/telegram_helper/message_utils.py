@@ -3,11 +3,12 @@ from pyrogram.errors import FloodWait
 from time import time
 from re import match as re_match
 
-from bot import config_dict, LOGGER, status_dict, task_dict_lock, Intervals, bot, user
-from bot.helper.ext_utils.bot_utils import setInterval, sync_to_async
+from bot import config_dict, LOGGER, status_dict, task_dict_lock, user_data, Intervals, bot, user as owner_ses
+from bot.helper.ext_utils.bot_utils import setInterval, sync_to_async, create_session
 from bot.helper.ext_utils.status_utils import get_readable_message
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.ext_utils.exceptions import TgLinkException
+from pyrogram import Client as tgClient
 
 
 async def sendMessage(message, text, buttons=None, block=True):
@@ -125,8 +126,8 @@ async def sendPhoto(message, photo, caption=None):
 
 async def sendRss(text):
     try:
-        if user:
-            return await user.send_message(
+        if owner_ses:
+            return await owner_ses.send_message(
                 chat_id=config_dict["RSS_CHAT_ID"],
                 text=text,
                 disable_web_page_preview=True,
@@ -183,7 +184,16 @@ async def edit_status():
                 LOGGER.error(str(e))
 
 
-async def get_tg_link_message(link):
+async def get_tg_link_message(link, uid=None):
+    user_dict = user_data.get(uid, {})
+    string = user_dict.get("string_session", None)
+    if uid and string:
+        try:
+            user = await create_session(uid)
+        except:
+            pass
+    else:
+        user = owner_ses
     message = None
     links = []
     if link.startswith("https://t.me/"):
@@ -241,7 +251,7 @@ async def get_tg_link_message(link):
             user_message = await user.get_messages(chat_id=chat, message_ids=msg_id)
         except Exception as e:
             raise TgLinkException(
-                f"You don't have access to this chat!. ERROR: {e}"
+                f"Bot tidak punya akses ke chat ini, silahkan tambahkan User_String anda ke bot untuk mirror/leech dari channel Private !\n\n<blockquote>{e}</blockquote>"
             ) from e
         if not user_message.empty:
             return (links, "user") if links else (user_message, "user")
