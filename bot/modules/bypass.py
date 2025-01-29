@@ -35,7 +35,7 @@ from re import match
 from requests import get as rget
 
 # Aiohttp Async Client
-session = ClientSession()
+#session = ClientSession()
 
 # HTTPx Async Client
 http = httpx.AsyncClient(
@@ -45,30 +45,33 @@ http = httpx.AsyncClient(
 )
 
 async def get(url: str, *args, **kwargs):
-    async with session.get(url, *args, **kwargs) as resp:
-        try:
-            data = await resp.json()
-        except Exception:
-            data = await resp.text()
-    return data
+    async with ClientSession() as session:
+        async with session.get(url, *args, **kwargs) as resp:
+            try:
+                data = await resp.json()
+            except Exception:
+                data = await resp.text()
+        return data
 
 
 async def head(url: str, *args, **kwargs):
-    async with session.head(url, *args, **kwargs) as resp:
-        try:
-            data = await resp.json()
-        except Exception:
-            data = await resp.text()
-    return data
+    async with ClientSession() as session:
+        async with session.head(url, *args, **kwargs) as resp:
+            try:
+                data = await resp.json()
+            except Exception:
+                data = await resp.text()
+        return data
 
 
 async def post(url: str, *args, **kwargs):
-    async with session.post(url, *args, **kwargs) as resp:
-        try:
-            data = await resp.json()
-        except Exception:
-            data = await resp.text()
-    return data
+    async with ClientSession() as session:
+        async with session.post(url, *args, **kwargs) as resp:
+            try:
+                data = await resp.json()
+            except Exception:
+                data = await resp.text()
+        return data
 
 class DDLException(Exception):
     """Tidak ada metode untuk extract link ini"""
@@ -111,7 +114,7 @@ def RecaptchaV3():
     client.headers.update({
         'content-type': 'application/x-www-form-urlencoded'
     })
-    matches = re.findall('([api2|enterprise]+)\/anchor\?(.*)', ANCHOR_URL)[0]
+    matches = re.findall(r'([api2|enterprise]+)\/anchor\?(.*)', ANCHOR_URL)[0]
     url_base += matches[0]+'/'
     params = matches[1]
     res = client.get(url_base+'anchor', params=params)

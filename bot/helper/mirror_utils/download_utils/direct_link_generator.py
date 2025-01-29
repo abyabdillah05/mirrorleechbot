@@ -1023,7 +1023,7 @@ def gdtot(url):
     except Exception as e:
         raise DirectDownloadLinkException(
             f"ERROR: {e.__class__.__name__} with {token_url}")
-    path = findall("\('(.*?)'\)", token_page.text)
+    path = findall(r"\('(.*?)'\)", token_page.text)
     if not path:
         raise DirectDownloadLinkException("ERROR: Tidak bisa membypass link!")
     path = path[0]
@@ -1042,7 +1042,7 @@ def sharer_scraper(url):
         res = cget("GET", url, headers=header)
     except Exception as e:
         raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}")
-    key = findall("'key',\s+'(.*?)'", res.text)
+    key = findall(r"'key',\s+'(.*?)'", res.text)
     if not key:
         raise DirectDownloadLinkException("ERROR: Key tidak ditemukan!")
     key = key[0]
@@ -1684,7 +1684,7 @@ def pcloud(url):
         except Exception as e:
             raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}")
     if link := findall(r".downloadlink.:..(https:.*)..", res.text):
-        return link[0].replace("\/", "/")
+        return link[0].replace(r"\/", "/")
     raise DirectDownloadLinkException("ERROR: Link File tidak ditemukan!")
 
 

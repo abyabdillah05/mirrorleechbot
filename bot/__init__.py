@@ -90,17 +90,44 @@ class Version:
 # Version Check
 try:
     Version.ar = check_output(["chrome --v"], shell=True).decode().split("\n")[0].split(" ")[2] 
-    Version.ff = check_output(["opera -version | grep 'ffmpeg version' | sed -e 's/ffmpeg version //' -e 's/[^0-9.].*//'"], shell=True).decode().replace("\n", "")
+except:
+    Version.ar = "Gak tau"
+try:
+    Version.ff = check_output(["opera -version | grep 'ffmpeg version' | sed -e 's/ffmpeg version //'"], shell=True).decode().split(" ", 1)[0].replace("\n", "")
+except:
+    Version.ff = "Gak tau"
+try:
     Version.ga = check_output(["pip show google-api-python-client | grep Version"], shell=True).decode().split(" ", 1)[1].replace("\n", "")
+except:
+    Version.ga = "Gak tau"
+try:
     Version.ms = check_output(["pip show megasdk | grep Version"], shell=True).decode().split(" ", 1)[1].replace("\n", "")
-    Version.p7 = check_output(["7z | grep Version"], shell=True).decode().split(" ")[2]
+except:
+    Version.ms = "Gak tau"
+try:
+    Version.p7 = check_output(["7z | grep 7-Zip"], shell=True).decode().split(" ")[0]
+except:
+    Version.p7 = "Gak tau"
+try:
     Version.pr = __version__
+except:
+    Version.pr = "Gak tau"
+try:
     Version.py = check_output(["python --version"], shell=True).decode().split()[-1]
+except:
+    Version.py = "Gak tau"
+try:
     Version.rc = check_output(["edge --version"], shell=True).decode().split("\n")[0].split(" ")[1]
+except:
+    Version.rc = "Gak tau"
+try:
     Version.qb = check_output(["firefox --version"], shell=True).decode().split(" ", 1)[1].replace("\n", "")
+except:
+    Version.qb = "Gak tau"
+try:
     Version.yt = check_output(["yt-dlp --version"], shell=True).decode().split("\n")[0]
-except Exception as e:
-    LOGGER.warning(f"Failed when get apps version! : {e}")
+except:
+    Version.yt = "Gak tau"
 
 try:
     if bool(environ.get("_____REMOVE_THIS_LINE_____")):
@@ -554,9 +581,6 @@ if not ospath.exists("accounts"):
 log_info("Set up auto Alive...")
 Popen(["python3", "alive.py"])
 
-def get_client():
-    return qbClient(host="localhost", port=8090, FORCE_SCHEME_FROM_HOST=True, REQUESTS_ARGS={"timeout": (30, 60)})
-
 aria2c_global = [
     "bt-max-open-files", 
     "download-result", 
@@ -573,19 +597,36 @@ aria2c_global = [
     "server-stat-of"
 ]
 
-qb_client = get_client()
-if not qbit_options:
-    qbit_options = dict(qb_client.app_preferences())
-    del qbit_options["listen_port"]
-    for k in list(qbit_options.keys()):
-        if k.startswith("rss"):
-            del qbit_options[k]
-else:
-    qb_opt = {**qbit_options}
-    for k, v in list(qb_opt.items()):
-        if v in ["", "*"]:
-            del qb_opt[k]
-    qb_client.app_set_preferences(qb_opt)
+log_info("Creating qbittorrent client...")
+
+#def get_client():
+#    return qbClient(host="localhost", port=8090, FORCE_SCHEME_FROM_HOST=True, REQUESTS_ARGS={"timeout": (30, 60)})
+
+def get_client():
+    return qbClient(
+        host="localhost",
+        port=8090,
+        VERIFY_WEBUI_CERTIFICATE=False,
+        REQUESTS_ARGS={"timeout": (30, 60)},
+        HTTPADAPTER_ARGS={
+            "pool_maxsize": 500,
+            "max_retries": 10,
+            "pool_block": True,
+        },
+    )
+
+def get_qb_options():
+    global qbit_options
+    if not qbit_options:
+        qbit_options = dict(get_client().app_preferences())
+        del qbit_options["listen_port"]
+        for k in list(qbit_options.keys()):
+            if k.startswith("rss"):
+                del qbit_options[k]
+    else:
+        qb_opt = {**qbit_options}
+        get_client().app_set_preferences(qb_opt)
+get_qb_options()
 
 log_info("Creating client from BOT_TOKEN...")
 bot = tgClient(
