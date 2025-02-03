@@ -127,7 +127,7 @@ class YoutubeDLHelper:
             try:
                 limit = async_to_sync(self.check_quota)
                 if limit:
-                    self._limit_checked = True
+                    raise Exception
             except:
                 pass
 
@@ -211,6 +211,8 @@ class YoutubeDLHelper:
             async_to_sync(self._listener.onDownloadComplete)
         except ValueError:
             self._onDownloadError("Tugas dibatalkan oleh User!")
+        except Exception:
+            return
 
     async def add_download(self, path, qual, playlist, options):
         if playlist:
