@@ -1,4 +1,3 @@
-
 from os import path as ospath, listdir
 from secrets import token_hex
 from logging import getLogger
@@ -56,6 +55,7 @@ class YoutubeDLHelper:
         self._downloading = False
         self._ext = ""
         self.is_playlist = False
+        self._limit_checked = False
         self.cookies = self._listener.cookies if self._listener.cookies else "cookies.txt"
         self.opts = {
             "progress_hooks": [self._onDownloadProgress],
@@ -123,6 +123,13 @@ class YoutubeDLHelper:
                 self._progress = (self._downloaded_bytes / self._size) * 100
             except:
                 pass
+        if not self._limit_checked and self._size != 0:
+            try:
+                limit = async_to_sync(self.check_quota)
+                if limit:
+                    raise ValueError("Cancelling...")
+            except:
+                pass
 
     async def _onDownloadStart(self, from_queue=False):
         async with task_dict_lock:
@@ -137,6 +144,16 @@ class YoutubeDLHelper:
     def _onDownloadError(self, error):
         self._is_cancelled = True
         async_to_sync(self._listener.onDownloadError, error)
+    
+    async def check_quota(self):
+        if (quota := await quota_check(self._listener, self._size)):
+            msg, butt = quota
+            await self._listener.onDownloadError(msg, butt)
+            self._limit_checked = True
+            return True
+        else:
+            self._limit_checked = True
+            return False
 
     def extractMetaData(self):
         if self._listener.link.startswith(("rtmp", "mms", "rstp", "rtmps")):
@@ -192,8 +209,8 @@ class YoutubeDLHelper:
             if self._is_cancelled:
                 raise ValueError
             async_to_sync(self._listener.onDownloadComplete)
-        except:
-            pass
+        except ValueError:
+            self._onDownloadError("Tugas dibatalkan oleh User!")
 
     async def add_download(self, path, qual, playlist, options):
         if playlist:
@@ -314,11 +331,6 @@ class YoutubeDLHelper:
         msg, button = await stop_duplicate_check(self._listener)
         if msg:
             await self._listener.onDownloadError(msg, button)
-            return
-        
-        if (quota := await quota_check(self._listener, self._size)):
-            msg, butt = quota
-            await self._listener.onDownloadError(msg, butt)
             return
 
         add_to_queue, event = await is_queued(self._listener.mid)
