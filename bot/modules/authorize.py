@@ -1,13 +1,14 @@
 from pyrogram.handlers import MessageHandler
 from pyrogram.filters import command
 
-from bot import user_data, DATABASE_URL, bot
+from bot import user_data, DATABASE_URL, bot, LOGGER
 from bot.helper.telegram_helper.message_utils import sendMessage
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.ext_utils.db_handler import DbManger
 from bot.helper.ext_utils.bot_utils import update_user_ldata
 from bot.helper.ext_utils.status_utils import get_readable_file_size
+from bot.helper.ext_utils.pikachu_utils import create_token
 
 
 async def authorize(_, message):
@@ -100,7 +101,12 @@ async def check_quota(_, message):
     else:
         quota = 0
     if self:
-        await sendMessage(message, f"📊 <b>Kuota Mirror/Leech anda saat ini:</b><code> {get_readable_file_size(quota)}</code>")
+        try:
+            butt = await create_token(user_id)
+        except Exception as e:
+            LOGGER.error(str(e))
+            pass
+        await sendMessage(message, f"📊 <b>Kuota Mirror/Leech anda saat ini:</b><code> {get_readable_file_size(quota)}</code>\n\n<i>silahkan tambah kuota anda dengan cara klik tombol di bawah ini :)</i>", butt)
     else:
         await sendMessage(message, f"📊 <b>Kuota Mirror/Leech user {user_id} saat ini:</b><code> {get_readable_file_size(quota)}</code>")
 
