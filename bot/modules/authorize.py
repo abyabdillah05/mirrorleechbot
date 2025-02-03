@@ -142,6 +142,6 @@ bot.add_handler(
         check_quota, 
         filters=command(
             BotCommands.CekQuotaCommand
-        ) & CustomFilters.sudo
+        ) & CustomFilters.authorized
     )
 )
