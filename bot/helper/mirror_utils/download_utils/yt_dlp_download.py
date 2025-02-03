@@ -149,6 +149,7 @@ class YoutubeDLHelper:
         if (quota := await quota_check(self._listener, self._size)):
             msg, butt = quota
             await self._listener.onDownloadError(msg, butt)
+            self._is_cancelled = True
             self._limit_checked = True
             return True
         else:
