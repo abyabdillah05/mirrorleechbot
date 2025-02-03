@@ -317,9 +317,9 @@ class YoutubeDLHelper:
             return
         
         if (quota := await quota_check(self._listener, self._size)):
-                msg, butt = quota
-                await self._listener.onDownloadError(msg, butt)
-                return
+            msg, butt = quota
+            await self._listener.onDownloadError(msg, butt)
+            return
 
         add_to_queue, event = await is_queued(self._listener.mid)
         if add_to_queue:
