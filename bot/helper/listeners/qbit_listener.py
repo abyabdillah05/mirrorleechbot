@@ -19,6 +19,7 @@ from bot.helper.ext_utils.bot_utils import new_task, sync_to_async
 from bot.helper.ext_utils.status_utils import get_readable_time, getTaskByGid
 from bot.helper.ext_utils.files_utils import clean_unwanted
 from bot.helper.ext_utils.task_manager import stop_duplicate_check, limit_checker
+from bot.helper.ext_utils.pikachu_utils import quota_check
 
 
 async def _remove_torrent(client, hash_, tag):
@@ -74,7 +75,9 @@ async def _size_checked(tor):
     size = tor.size
     if limit_exceeded := await limit_checker(size, task.listener, isTorrent=True):
         await _onDownloadError(limit_exceeded, tor)
-
+    elif (quota := await quota_check(task.listener, size)):
+        msg, butt = quota
+        await _onDownloadError(msg, tor, butt)
 
 @new_task
 async def _onDownloadComplete(tor):

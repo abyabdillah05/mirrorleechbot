@@ -15,6 +15,7 @@ from bot.helper.listeners.direct_listener import DirectListener
 from bot.helper.mirror_utils.status_utils.direct_status import DirectStatus
 from bot.helper.mirror_utils.status_utils.queue_status import QueueStatus
 from bot.helper.telegram_helper.message_utils import sendMessage, sendStatusMessage
+from bot.helper.ext_utils.pikachu_utils import quota_check
 
 
 async def add_direct_download(listener, path):
@@ -25,6 +26,10 @@ async def add_direct_download(listener, path):
     size = details["total_size"]
     if limit_exceeded := await limit_checker(size, listener, isDirect=True):
         await sendMessage(listener.message, limit_exceeded)
+        return
+    elif quota := await quota_check(listener, size):
+        msg, butt = quota
+        await sendMessage(listener.message, msg, butt)
         return
     
     if not listener.name:

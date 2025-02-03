@@ -895,9 +895,9 @@ Check all yt-dlp api options from this <a href='https://github.com/yt-dlp/yt-dlp
     elif data[2] == "reset":
         await query.answer()
         if ud := user_data.get(user_id, {}):
-            if ud and ("is_sudo" in ud or "is_auth" in ud):
+            if ud and ("is_sudo" in ud or "is_auth" in ud or "quota" in ud):
                 for k in list(ud.keys()):
-                    if k not in ["is_sudo", "is_auth"]:
+                    if k not in ["is_sudo", "is_auth", "quota"]:
                         del user_data[user_id][k]
             else:
                 user_data[user_id].clear()

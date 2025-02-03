@@ -7,6 +7,7 @@ from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.ext_utils.db_handler import DbManger
 from bot.helper.ext_utils.bot_utils import update_user_ldata
+from bot.helper.ext_utils.status_utils import get_readable_file_size
 
 
 async def authorize(_, message):
@@ -81,6 +82,29 @@ async def removeSudo(_, message):
         msg = "<b>Berikan ID atau balas pesan dari User yang ingin diturunkan dari Sudo User!</b>"
     await sendMessage(message, msg)
 
+async def check_quota(_, message):
+    self = False
+    msg = message.text.split()
+    if len(msg) > 1:
+        try:
+            user_id = int(msg[1].strip())
+        except ValueError:
+            await sendMessage(message, "❌ <b>Format ID tidak valid.</b>")
+            return
+    else:
+        self = True
+        user_id = message.from_user.id
+    
+    if user_id in user_data and user_data[user_id].get("quota", 0):
+        quota = user_data[user_id].get("quota", 0)
+    else:
+        quota = 0
+    if self:
+        await sendMessage(message, f"📊 <b>Kuota Mirror/Leech anda saat ini:</b><code> {get_readable_file_size(quota)}</code>")
+    else:
+        await sendMessage(message, f"📊 <b>Kuota Mirror/Leech user {user_id} saat ini:</b><code> {get_readable_file_size(quota)}</code>")
+
+
 bot.add_handler(
     MessageHandler(
         authorize, 
@@ -110,6 +134,14 @@ bot.add_handler(
         removeSudo, 
         filters=command(
             BotCommands.RmSudoCommand
+        ) & CustomFilters.sudo
+    )
+)
+bot.add_handler(
+    MessageHandler(
+        check_quota, 
+        filters=command(
+            BotCommands.CekQuotaCommand
         ) & CustomFilters.sudo
     )
 )

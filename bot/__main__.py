@@ -31,6 +31,7 @@ from .helper.telegram_helper.message_utils import sendMessage, editMessage, send
 from .helper.telegram_helper.filters import CustomFilters
 from .helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.listeners.aria2_listener import start_aria2_listener
+from bot.helper.ext_utils.pikachu_utils import token_verify
 from bot import (
     bot, 
     botStartTime, 
@@ -211,6 +212,15 @@ async def start(client, message):
         uname = f'@{message.from_user.username}'
     else:
         uname = f'<a href="tg://user?id={message.from_user.id}">{message.from_user.first_name}</a>'
+    
+    if len(message.text.split()) > 1:
+        data = message.text.split()[1]
+        if data.startswith("token_"):
+            token_auth = data.removeprefix("token_")
+            msg = await token_verify(message.from_user.id, token_auth)
+            await sendMessage(message, msg)
+            return
+        
     buttons = ButtonMaker()
     buttons.ubutton(
         "👤 Owner", "https://t.me/XRofikX")

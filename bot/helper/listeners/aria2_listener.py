@@ -17,6 +17,7 @@ from bot.helper.telegram_helper.message_utils import (
 )
 from bot.helper.ext_utils.status_utils import getTaskByGid
 from bot.helper.ext_utils.task_manager import stop_duplicate_check, limit_checker
+from bot.helper.ext_utils.pikachu_utils import quota_check
 
 
 @new_thread
@@ -57,6 +58,12 @@ async def _onDownloadStarted(api, gid):
         if limit_exceeded := await limit_checker(size, task.listener, isDirect=True):
             await task.listener.onDownloadError(limit_exceeded)
             await sync_to_async(api.remove, [download], force=True, files=True)
+            return
+        elif (quota := await quota_check(task.listener, size)):
+            msg, butt = quota
+            await task.listener.onDownloadError(msg, butt)
+            await sync_to_async(api.remove, [download], force=True, files=True)
+            return
 
 @new_thread
 async def _onDownloadComplete(api, gid):

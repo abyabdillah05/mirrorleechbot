@@ -9,6 +9,8 @@ from bot.helper.ext_utils.task_manager import is_queued, stop_duplicate_check
 from bot.helper.mirror_utils.status_utils.rclone_status import RcloneStatus
 from bot.helper.mirror_utils.status_utils.queue_status import QueueStatus
 from bot.helper.mirror_utils.rclone_utils.transfer import RcloneTransferHelper
+from bot.helper.ext_utils.task_manager import limit_checker
+from bot.helper.ext_utils.pikachu_utils import quota_check
 
 
 async def add_rclone_download(listener, path):
@@ -50,6 +52,14 @@ async def add_rclone_download(listener, path):
     msg, button = await stop_duplicate_check(listener)
     if msg:
         await sendMessage(listener.message, msg, button)
+        return
+    
+    if limit_exceeded := await limit_checker(size, listener, isRclone=True):
+        await sendMessage(listener.message, limit_exceeded)
+        return
+    elif (quota := await quota_check(listener, size)):
+        msg, butt = quota
+        await sendMessage(listener.message, msg, butt)
         return
 
     add_to_queue, event = await is_queued(listener.mid)

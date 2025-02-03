@@ -52,6 +52,7 @@ from bot.helper.mirror_utils.rclone_utils.transfer import RcloneTransferHelper
 from bot.helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.ext_utils.db_handler import DbManger
 from bot.helper.common import TaskConfig
+from bot.helper.ext_utils.pikachu_utils import update_quota
 
 from bot.helper.mirror_utils.ddl_uploader import DdlUploader
 from bot.helper.ext_utils.files_utils import get_mime_type
@@ -315,6 +316,10 @@ class TaskListener(TaskConfig):
     async def onUploadComplete(
         self, link, size, files, folders, mime_type, rclonePath="", dir_id="", server="",
     ):
+        try:
+            await update_quota(self.user_id, size)
+        except:
+            pass
         if (
             self.isSuperChat
             and config_dict["INCOMPLETE_TASK_NOTIFIER"]

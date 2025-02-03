@@ -53,6 +53,7 @@ class _BotCommands:
         self.Upload_gofileCommand = [f"gofile{CMD_SUFFIX}", f"gf{CMD_SUFFIX}"]
         self.Upload_buzzCommand = [f"buzzheavier{CMD_SUFFIX}", f"bh{CMD_SUFFIX}"]
         self.Upload_pixelCommand = [f"pixeldrain{CMD_SUFFIX}", f"pd{CMD_SUFFIX}"]
+        self.CekQuotaCommand = f"cek{CMD_SUFFIX}"
         self.GenTokenCommand = f"gentoken{CMD_SUFFIX}"
         self.GetTokenCommand = f"gettoken{CMD_SUFFIX}"
 

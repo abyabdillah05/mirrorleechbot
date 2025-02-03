@@ -8,6 +8,7 @@ from bot.helper.mirror_utils.status_utils.queue_status import QueueStatus
 from bot.helper.telegram_helper.message_utils import sendMessage, sendStatusMessage
 from bot.helper.ext_utils.bot_utils import sync_to_async
 from bot.helper.ext_utils.task_manager import is_queued, stop_duplicate_check, limit_checker
+from bot.helper.ext_utils.pikachu_utils import quota_check
 
 
 async def add_gd_download(listener, path):
@@ -15,10 +16,14 @@ async def add_gd_download(listener, path):
     name, mime_type, size, _, _ = await sync_to_async(
         drive.count, listener.link, listener.user_id
     )
-
-    if limit_exceeded := await limit_checker(size, listener, isGdrive=True):
-        await sendMessage(listener.message, limit_exceeded)
-        return
+    if size is not None:
+        if limit_exceeded := await limit_checker(size, listener, isGdrive=True):
+            await sendMessage(listener.message, limit_exceeded)
+            return
+        elif (quota := await quota_check(listener, size)):
+            msg, butt = quota
+            await sendMessage(listener.message, msg, butt)
+            return
     
     if mime_type is None:
         await sendMessage(listener.message, name)

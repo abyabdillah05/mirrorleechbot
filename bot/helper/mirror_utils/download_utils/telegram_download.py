@@ -15,6 +15,7 @@ from bot.helper.mirror_utils.status_utils.telegram_status import TelegramStatus
 from bot.helper.mirror_utils.status_utils.queue_status import QueueStatus
 from bot.helper.telegram_helper.message_utils import sendStatusMessage, sendMessage
 from bot.helper.ext_utils.task_manager import is_queued, stop_duplicate_check
+from bot.helper.ext_utils.pikachu_utils import quota_check
 
 global_lock = Lock()
 GLOBAL_GID = set()
@@ -136,6 +137,10 @@ class TelegramDownloadHelper:
                 msg, button = await stop_duplicate_check(self._listener)
                 if msg:
                     await sendMessage(self._listener.message, msg, button)
+                    return
+                if (quota := await quota_check(self._listener, size)):
+                    msg, butt = quota
+                    await sendMessage(self._listener.message, msg, butt)
                     return
 
                 add_to_queue, event = await is_queued(self._listener.mid)

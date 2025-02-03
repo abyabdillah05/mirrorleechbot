@@ -22,6 +22,7 @@ from bot.helper.ext_utils.links_utils import get_mega_link_type
 from bot.helper.mirror_utils.status_utils.mega_download_status import MegaDownloadStatus
 from bot.helper.mirror_utils.status_utils.queue_status import QueueStatus
 from bot.helper.ext_utils.task_manager import is_queued, stop_duplicate_check, limit_checker
+from bot.helper.ext_utils.pikachu_utils import quota_check
 
 
 class MegaAppListener(MegaListener):
@@ -174,6 +175,16 @@ async def add_mega_download(listener, path):
     size = api.getSize(node)
     if limit_exceeded := await limit_checker(size, listener, isMega=True):
         await sendMessage(listener.message, limit_exceeded)
+        await sync_to_async(executor.do, api.logout, ())
+        if folder_api is not None:
+            await sync_to_async(executor.do, folder_api.logout, ())
+        return
+    elif (quota := await quota_check(listener, size)):
+        msg, butt = quota
+        await sendMessage(listener.message, msg, butt)
+        await sync_to_async(executor.do, api.logout, ())
+        if folder_api is not None:
+            await sync_to_async(executor.do, folder_api.logout, ())
         return
 
     add_to_queue, event = await is_queued(listener.mid)
