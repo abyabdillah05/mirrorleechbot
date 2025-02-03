@@ -127,7 +127,7 @@ class YoutubeDLHelper:
             try:
                 limit = async_to_sync(self.check_quota)
                 if limit:
-                    raise ValueError("Cancelling...")
+                    self._limit_checked = True
             except:
                 pass
 
@@ -150,7 +150,6 @@ class YoutubeDLHelper:
             msg, butt = quota
             await self._listener.onDownloadError(msg, butt)
             self._is_cancelled = True
-            self._limit_checked = True
             return True
         else:
             self._limit_checked = True
