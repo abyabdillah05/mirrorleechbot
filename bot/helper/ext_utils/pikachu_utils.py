@@ -13,7 +13,7 @@ async def quota_check(listener, size):
     else:
         quota = 0
     if size > quota:
-        msg = f"<b>Kuota download anda sudah habis atau tidak cukup untuk tugas ini.</b>\n\n<b>Sisa kuota anda:</b> <code>{get_readable_file_size(quota)}</code>\n<b>Ukuran tugas ini:</b> <code>{get_readable_file_size(size)}</code>\n\n<i>silahkan tambah kuota anda dengan cara klik tombol di bawah ini :)</i>"
+        msg = f"<b>Kuota download anda tidak cukup untuk tugas ini.</b>\n\n<b>Sisa kuota anda:</b> <code>{get_readable_file_size(quota)}</code>\n<b>Ukuran tugas ini:</b> <code>{get_readable_file_size(size)}</code>\n\n<i>Silahkan tambah kuota anda dengan cara klik tombol di bawah ini :)</i>"
         butt = await create_token(id)
         return msg, butt
 
@@ -29,7 +29,7 @@ async def create_token(id):
         with Session() as session:
             inshort_url = session.get(link).text
         butt = ButtonMaker()
-        butt.ubutton("➕ Tambah Kuota", inshort_url)
+        butt.ubutton("➕ TAMBAH KUOTA", inshort_url)
         return butt.build_menu(1)
     except:
         return

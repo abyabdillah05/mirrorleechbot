@@ -96,6 +96,8 @@ OTHER_HELP = f"""
 • /remove = Menghapus file/folder dari google drive hasil mirror
 • /rename = Mengganti nama file/folder yang sudah di mirror
 • /usetting = Membuka pengaturan untuk pengguna
+• /bsetting = Membuka pengaturan BOT
+• /restart = Restart Bot
 • /search = Mencari link magnet/torrent dengan API dari bot
 • /status = Melihat semua tugas yang sedang berjalan
 • /stats = Melihat spesifikasi server bot
@@ -104,6 +106,13 @@ OTHER_HELP = f"""
 • /mediainfo = Untuk melihat info dari file atau media
 • /telegraph = Upload gambar/short video ke telegraph
 • /asupan = Video asupan dari bot.
+• /tiktok = Mencari video random di tiktok
+• /waifu = Kirim gambar anime random
+• /subdl = Cari dan download subtitle dari Subdl
+• /youtube = Cari dan mirror/leech file di youtube
+• /gentoken = Generate token untuk mirror ke Gdrive Pribadi
+• /gettoken = Generate token.picke dan refresh token untuk mirror ke Gdrive Pribadi
+• /cek = Untuk cek kuota mirror/leech anda
 • /donate = Fitur unggulan hehe :)
 """
 
