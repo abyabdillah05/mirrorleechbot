@@ -31,6 +31,15 @@ from bot.helper.ext_utils.status_utils import get_readable_file_size, get_readab
 from bot.helper.ext_utils.links_utils import is_url
 
 pika = []
+banned_link = [
+    "indihometv",
+    "youporn",
+    "pornhub",
+    "xnxx",
+    "tube8",
+    "xvideos",
+    "youjizz",
+    ]
 
 @new_task
 async def select_format(_, query, obj):
@@ -344,6 +353,11 @@ class YtDlp(TaskListener):
         reply_to = None
         opt = args["-opt"]
 
+        if any(bl in self.link for bl in banned_link):
+            await sendMessage(self.message, "Link ini tidak diizinkan !!!")
+            self.removeFromSameDir()
+            return
+        
         if not isinstance(isBulk, bool):
             dargs = isBulk.split(":")
             bulk_start = dargs[0] or None

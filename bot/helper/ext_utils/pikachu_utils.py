@@ -1,4 +1,4 @@
-from bot import bot, user_generate_token, user_data, DATABASE_URL, LOGGER
+from bot import bot, user_generate_token, user_data, DATABASE_URL, LOGGER, OWNER_ID
 from bot.helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.ext_utils.db_handler import DbManger
 from requests import Session
@@ -8,12 +8,16 @@ from bot.helper.ext_utils.bot_utils import update_user_ldata
 
 async def quota_check(listener, size):
     id = listener.user_id
+    if id in user_data and user_data[id].get("is_sudo") or id == OWNER_ID:
+        return
+    if id == OWNER_ID:
+        return
     if id in user_data and user_data[id].get("quota"):
         quota = user_data[id]["quota"]
     else:
         quota = 0
     if size > quota:
-        msg = f"<b>Kuota download anda tidak cukup untuk tugas ini.</b>\n\n<b>Sisa kuota anda:</b> <code>{get_readable_file_size(quota)}</code>\n<b>Ukuran tugas ini:</b> <code>{get_readable_file_size(size)}</code>\n\n<i>Silahkan tambah kuota anda dengan cara klik tombol di bawah ini :)</i>"
+        msg = f"<b>Kuota download anda tidak cukup untuk tugas ini.</b>\n\n<b>Sisa kuota anda:</b> <code>{get_readable_file_size(quota)}</code>\n<b>Ukuran tugas ini:</b> <code>{get_readable_file_size(size)}</code>\n\n<i>⚠️ Silahkan tambah kuota anda dengan cara klik tombol di bawah ini :)</i>"
         butt = await create_token(id)
         return msg, butt
 

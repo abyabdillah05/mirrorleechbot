@@ -1,8 +1,9 @@
 from pyrogram.handlers import MessageHandler
 from pyrogram.filters import command
+from asyncio import sleep as asleep
 
-from bot import user_data, DATABASE_URL, bot, LOGGER
-from bot.helper.telegram_helper.message_utils import sendMessage
+from bot import user_data, DATABASE_URL, bot, LOGGER, OWNER_ID
+from bot.helper.telegram_helper.message_utils import sendMessage, deleteMessage
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.ext_utils.db_handler import DbManger
@@ -85,6 +86,7 @@ async def removeSudo(_, message):
 
 async def check_quota(_, message):
     self = False
+    sudo = False
     msg = message.text.split()
     if len(msg) > 1:
         try:
@@ -96,11 +98,13 @@ async def check_quota(_, message):
         self = True
         user_id = message.from_user.id
     
+    if user_id in user_data and user_data[user_id].get("is_sudo"):
+        sudo = True
     if user_id in user_data and user_data[user_id].get("quota", 0):
         quota = user_data[user_id].get("quota", 0)
     else:
         quota = 0
-    if self:
+    if self and not (sudo or user_id == OWNER_ID):
         butt = None
         msg = f"📊 <b>Kuota Mirror/Leech anda saat ini:</b><code> {get_readable_file_size(quota)}</code>\n\n"
         
@@ -113,13 +117,26 @@ async def check_quota(_, message):
         else:
             msg += "<i>Kuota anda masih tersisa banyak, semoga harimu senin terus :)</i>"
         
-        await sendMessage(message, msg, butt)
+        mess = await sendMessage(message, msg, butt)
+    elif sudo:
+        if self:
+            mess = await sendMessage(message, f"<b>Anda adalah sudo user, Unlimited kuota :)</b>")
+        else:
+            mess = await sendMessage(message, f"<b>{user_id} adalah sudo user, Unlimited kuota :)</b>")
+    elif user_id == OWNER_ID:
+        if self:
+            mess = await sendMessage(message, f"<b>Anda adalah owner, Unlimited kuota :)</b>")
+        else:
+            mess = await sendMessage(message, f"<b>{user_id} adalah owner, Unlimited kuota :)</b>")
     else:
-        await sendMessage(
+        mess = await sendMessage(
             message, 
             f"📊 <b>Kuota Mirror/Leech user {user_id} saat ini:</b><code> {get_readable_file_size(quota)}</code>\n\n"
             "<i>Jangan lupa bahagia :)</i>"
         )
+    await asleep(120)
+    await deleteMessage(mess)
+
 bot.add_handler(
     MessageHandler(
         authorize, 

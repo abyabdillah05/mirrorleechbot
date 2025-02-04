@@ -648,12 +648,19 @@ class TaskConfig:
             return dl_path
 
     async def proceedCompress(self, dl_path, size, gid):
+        need_split = False
         pswd = self.compress if isinstance(self.compress, str) else ""
+        if self.isLeech and int(size) > self.splitSize:
+            need_split = True
         if self.seed and self.isLeech:
             self.newDir = f"{self.dir}10000"
             up_path = f"{self.newDir}/{self.name}.zip"
+            if need_split:
+                up_path = f"{self.newDir}/{self.name}.7z"
         else:
             up_path = f"{dl_path}.zip"
+            if need_split:
+                up_path = f"{dl_path}.7z"
         async with task_dict_lock:
             task_dict[self.mid] = ZipStatus(self, size, gid)
         if self.equalSplits:
@@ -670,7 +677,7 @@ class TaskConfig:
             f"-p{pswd}",
             up_path,
             dl_path,
-        ]
+            ]
         for ext in GLOBAL_EXTENSION_FILTER:
             ex_ext = f"-xr!*.{ext}"
             cmd.append(ex_ext)
