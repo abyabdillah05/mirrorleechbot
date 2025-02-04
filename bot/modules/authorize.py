@@ -134,8 +134,8 @@ async def check_quota(_, message):
             f"📊 <b>Kuota Mirror/Leech user {user_id} saat ini:</b><code> {get_readable_file_size(quota)}</code>\n\n"
             "<i>Jangan lupa bahagia :)</i>"
         )
-    await asleep(120)
-    await deleteMessage(mess)
+    #await asleep(120)
+    #await deleteMessage(mess)
 
 bot.add_handler(
     MessageHandler(
