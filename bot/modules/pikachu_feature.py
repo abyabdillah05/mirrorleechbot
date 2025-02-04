@@ -1189,3 +1189,11 @@ bot.add_handler(
         ) & CustomFilters.authorized
     )
 )
+bot.add_handler(
+    MessageHandler(
+        gallery_dl, 
+        filters=command(
+            BotCommands.GallerydlCommand
+        ) & CustomFilters.authorized
+    )
+)
