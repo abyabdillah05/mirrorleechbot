@@ -357,7 +357,7 @@ class YtDlp(TaskListener):
         reply_to = None
         opt = args["-opt"]
 
-        if any(ubl in self.message.from_user.id for ubl in banned_id):
+       if self.message.from_user.id in banned_id:
             await sendMessage(self.message, "USER BANNED, Anda tidak diizinkan menggunakan bot ini !!!")
             self.removeFromSameDir()
             return
