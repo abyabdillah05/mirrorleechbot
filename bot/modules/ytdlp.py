@@ -41,6 +41,10 @@ banned_link = [
     "youjizz",
     ]
 
+banned_id = [
+    6256585360
+    ]
+
 @new_task
 async def select_format(_, query, obj):
     data = query.data.split()
@@ -353,6 +357,10 @@ class YtDlp(TaskListener):
         reply_to = None
         opt = args["-opt"]
 
+        if self.message.from_user.id in banned_id:
+            await sendMessage(self.message, "USER BANNED, Anda tidak diizinkan menggunakan bot ini !!!")
+            self.removeFromSameDir()
+            return
         if any(bl in self.link for bl in banned_link):
             await sendMessage(self.message, "Link ini tidak diizinkan !!!")
             self.removeFromSameDir()

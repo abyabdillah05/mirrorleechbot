@@ -108,7 +108,7 @@ async def check_quota(_, message):
         butt = None
         msg = f"📊 <b>Kuota Mirror/Leech anda saat ini:</b><code> {get_readable_file_size(quota)}</code>\n\n"
         
-        if quota < 20 * 1024 * 1024 * 1024:
+        if quota < 20 * 1024 * 1024:
             msg += "<i>Silahkan tambah kuota anda dengan cara klik tombol di bawah ini :)</i>"
             try:
                 butt = await create_token(user_id)
@@ -134,8 +134,8 @@ async def check_quota(_, message):
             f"📊 <b>Kuota Mirror/Leech user {user_id} saat ini:</b><code> {get_readable_file_size(quota)}</code>\n\n"
             "<i>Jangan lupa bahagia :)</i>"
         )
-    await asleep(120)
-    await deleteMessage(mess)
+    #await asleep(120)
+    #await deleteMessage(mess)
 
 bot.add_handler(
     MessageHandler(
