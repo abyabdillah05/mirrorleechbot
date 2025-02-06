@@ -181,7 +181,9 @@ async def add_mega_download(listener, path):
         return
     elif (quota := await quota_check(listener, size)):
         msg, butt = quota
-        await sendMessage(listener.message, msg, butt)
+        mess = f"<b>Hai {listener.tag}</b>\n\n"
+        mess += msg
+        await sendMessage(listener.message, mess, butt)
         await sync_to_async(executor.do, api.logout, ())
         if folder_api is not None:
             await sync_to_async(executor.do, folder_api.logout, ())

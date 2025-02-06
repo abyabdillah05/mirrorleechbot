@@ -17,7 +17,7 @@ async def quota_check(listener, size):
     else:
         quota = 0
     if quota == 0:
-        msg = f"<b>Silahkan isi kuota dulu dengan menekan tombol dibawah, untuk mulai proses mirror/leech !</b>\n\n"
+        msg = f"<b>⚠️ Anda perlu tambah kuota dulu dengan menekan tombol dibawah untuk mulai proses mirror/leech !!</b>\n\n"
         butt = await create_token(id)
         return msg, butt
     elif size > quota:

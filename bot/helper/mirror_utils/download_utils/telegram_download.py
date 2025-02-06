@@ -140,7 +140,9 @@ class TelegramDownloadHelper:
                     return
                 if (quota := await quota_check(self._listener, size)):
                     msg, butt = quota
-                    await sendMessage(self._listener.message, msg, butt)
+                    mess = f"<b>Hai {self._listener.tag}</b>\n\n"
+                    mess += msg
+                    await sendMessage(self._listener.message, mess, butt)
                     return
 
                 add_to_queue, event = await is_queued(self._listener.mid)
