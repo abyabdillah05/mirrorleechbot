@@ -16,7 +16,11 @@ async def quota_check(listener, size):
         quota = user_data[id]["quota"]
     else:
         quota = 0
-    if size > quota:
+    if quota == 0:
+        msg = f"<b>Silahkan isi kuota dulu dengan menekan tombol dibawah, untuk mulai proses mirror/leech !</b>\n\n"
+        butt = await create_token(id)
+        return msg, butt
+    elif size > quota:
         msg = f"<b>Kuota download anda tidak cukup untuk tugas ini.</b>\n\n<b>Sisa kuota anda:</b> <code>{get_readable_file_size(quota)}</code>\n<b>Ukuran tugas ini:</b> <code>{get_readable_file_size(size)}</code>\n\n<i>⚠️ Silahkan tambah kuota anda dengan cara klik tombol di bawah ini :)</i>"
         butt = await create_token(id)
         return msg, butt
