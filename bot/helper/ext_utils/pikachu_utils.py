@@ -17,7 +17,7 @@ async def quota_check(listener, size):
     else:
         quota = 0
     if quota == 0:
-        msg = f"<b>⚠️ Anda perlu tambah kuota dulu dengan menekan tombol dibawah untuk mulai proses mirror/leech !!</b>\n\n"
+        msg = f"<b>⚠️ Untuk mensupport bot ini, silahkan isi kuota dulu (GRATIS) dengan menekan tombol dibawah untuk mulai proses mirror/leech !!</b>\n\n<i>Gunakan perintah /cek untuk melihat sisa kuota anda</i>"
         butt = await create_token(id)
         return msg, butt
     elif size > quota:
@@ -38,6 +38,7 @@ async def create_token(id):
             inshort_url = session.get(link).text
         butt = ButtonMaker()
         butt.ubutton("➕ TAMBAH KUOTA", inshort_url)
+        butt.ubutton("❓ TUTORIAL", "https://t.me/pikachukocak2/106")
         return butt.build_menu(1)
     except:
         return
@@ -56,9 +57,9 @@ async def token_verify(id, token):
                 await DbManger().update_user_data(id)
             return f"<b>✅ Sukses tambah kuota 40GB, terimakasih :)</b>\n\n<b>Sisa kuota anda:</b> <code>{get_readable_file_size(new_quota)}</code></b>"
         else:
-            return f"<b>❌Token salah, silahkan coba kembali.</b>"
+            return f"<b>❌Token salah, silahkan coba kembali.</b>\n\nPastikan anda mengklik tombol tambah kuota yang bot kirim untuk anda, bukan tombol punya orang."
     else:
-        return f"<b>❌Token salah, silahkan coba kembali.</b>"
+        return f"<b>❌Token salah, silahkan coba kembali.</b>\n\nCoba gunakan perintah /cek lalu klik tombol tambah kuota yang bot kirim."
 
 async def update_quota(id, size):
     try:
