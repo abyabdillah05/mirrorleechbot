@@ -51,11 +51,11 @@ async def token_verify(id, token):
     if id in user_generate_token:
         if user_generate_token[id] == token:
             user_generate_token.pop(id)
-            new_quota = quota + 40 * 1024 * 1024 * 1024
+            new_quota = quota + 25 * 1024 * 1024 * 1024
             update_user_ldata(id, "quota", new_quota)
             if DATABASE_URL:
                 await DbManger().update_user_data(id)
-            return f"<b>✅ Sukses tambah kuota 40GB, terimakasih :)</b>\n\n<b>Sisa kuota anda:</b> <code>{get_readable_file_size(new_quota)}</code></b>"
+            return f"<b>✅ Sukses tambah kuota 25GB, terimakasih :)</b>\n\n<b>Sisa kuota anda:</b> <code>{get_readable_file_size(new_quota)}</code></b>"
         else:
             return f"<b>❌Token salah, silahkan coba kembali.</b>\n\nPastikan anda mengklik tombol tambah kuota yang bot kirim untuk anda, bukan tombol punya orang."
     else:
