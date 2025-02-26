@@ -67,6 +67,6 @@ bot.add_handler(
         speedtest, 
         filters=command(
             BotCommands.SpeedCommand
-        ) & CustomFilters.authorized
+        ) & CustomFilters.sudo
     )
 )
