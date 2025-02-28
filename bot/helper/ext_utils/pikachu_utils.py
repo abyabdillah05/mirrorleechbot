@@ -7,7 +7,6 @@ from uuid import uuid4
 from bot.helper.ext_utils.bot_utils import update_user_ldata
 
 async def quota_check(listener, size):
-    return
     id = listener.user_id
     if id in user_data and user_data[id].get("is_sudo") or id == OWNER_ID:
         return
@@ -18,7 +17,7 @@ async def quota_check(listener, size):
     else:
         quota = 0
     if quota == 0:
-        msg = f"<b>⚠️ Untuk mensupport bot ini, silahkan isi kuota dulu (GRATIS) dengan menekan tombol dibawah untuk mulai proses mirror/leech !!</b>\n\n<i>Gunakan perintah /cek2 untuk melihat sisa kuota anda</i>"
+        msg = f"<b>⚠️ Untuk mensupport bot ini, silahkan isi kuota dulu (GRATIS) dengan menekan tombol dibawah untuk mulai proses mirror/leech !!</b>\n\n<i>Gunakan perintah /cek untuk melihat sisa kuota anda</i>"
         butt = await create_token(id)
         return msg, butt
     elif size > quota:
@@ -34,13 +33,17 @@ async def create_token(id):
         token_url = f"https://t.me/{bot.me.username}?start=token_{random_id}"
         inshort_api = "ccc8c7f71df7d79f80decd9e32084158e4c88eb6"
         link = f"https://inshorturl.com/api?api={inshort_api}&url={token_url}&format=text"
-
-        with Session() as session:
-            inshort_url = session.get(link).text
-        butt = ButtonMaker()
-        butt.ubutton("➕ TAMBAH KUOTA", inshort_url)
-        butt.ubutton("❓ TUTORIAL", "https://t.me/pikachukocak2/106")
-        return butt.build_menu(1)
+        try:
+            with Session() as session:
+                inshort_url = session.get(link, timeout=5).text
+            butt = ButtonMaker()
+            butt.ubutton("➕ TAMBAH KUOTA", inshort_url)
+            butt.ubutton("❓ TUTORIAL", "https://t.me/pikachukocak2/106")
+            return butt.build_menu(1)
+        except:
+            butt = ButtonMaker()
+            butt.ubutton("❌ GAGAL MENDAPATKAN LINK", "https://www.youtube.com/watch?v=xvFZjo5PgG0&pp=ygUXVklERU8gWU9VVFVCRSBSSUNLIFJPTEw%3D")
+            return butt.build_menu(1)
     except:
         return
 
@@ -60,7 +63,7 @@ async def token_verify(id, token):
         else:
             return f"<b>❌Token salah, silahkan coba kembali.</b>\n\nPastikan anda mengklik tombol tambah kuota yang bot kirim untuk anda, bukan tombol punya orang."
     else:
-        return f"<b>❌Token salah, silahkan coba kembali.</b>\n\nCoba gunakan perintah /cek2 lalu klik tombol tambah kuota yang bot kirim."
+        return f"<b>❌Token salah, silahkan coba kembali.</b>\n\nCoba gunakan perintah /cek lalu klik tombol tambah kuota yang bot kirim."
 
 async def update_quota(id, size):
     try:
