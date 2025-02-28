@@ -7,6 +7,7 @@ from uuid import uuid4
 from bot.helper.ext_utils.bot_utils import update_user_ldata
 
 async def quota_check(listener, size):
+    return
     id = listener.user_id
     if id in user_data and user_data[id].get("is_sudo") or id == OWNER_ID:
         return
