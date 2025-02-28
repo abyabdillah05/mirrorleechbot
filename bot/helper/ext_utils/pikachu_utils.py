@@ -35,7 +35,7 @@ async def create_token(id):
         link = f"https://inshorturl.com/api?api={inshort_api}&url={token_url}&format=text"
         try:
             with Session() as session:
-                inshort_url = session.get(link, timeout=5).text
+                inshort_url = session.get(link, timeout=8).text
             butt = ButtonMaker()
             butt.ubutton("➕ TAMBAH KUOTA", inshort_url)
             butt.ubutton("❓ TUTORIAL", "https://t.me/pikachukocak2/106")
