@@ -33,13 +33,16 @@ async def create_token(id):
         token_url = f"https://t.me/{bot.me.username}?start=token_{random_id}"
         inshort_api = "ccc8c7f71df7d79f80decd9e32084158e4c88eb6"
         link = f"https://inshorturl.com/api?api={inshort_api}&url={token_url}&format=text"
-
-        with Session() as session:
-            inshort_url = session.get(link).text
-        butt = ButtonMaker()
-        butt.ubutton("➕ TAMBAH KUOTA", inshort_url)
-        butt.ubutton("❓ TUTORIAL", "https://t.me/pikachukocak2/106")
-        return butt.build_menu(1)
+        try:
+            with Session() as session:
+                inshort_url = session.get(link, timeout=5).text
+            butt = ButtonMaker()
+            butt.ubutton("➕ TAMBAH KUOTA", inshort_url)
+            butt.ubutton("❓ TUTORIAL", "https://t.me/pikachukocak2/106")
+            return butt.build_menu(1)
+        except:
+            butt = ButtonMaker()
+            butt.ubutton("❌ GAGAL MENDAPATKAN LINK", "https://www.youtube.com/watch?v=xvFZjo5PgG0&pp=ygUXVklERU8gWU9VVFVCRSBSSUNLIFJPTEw%3D")
     except:
         return
 
