@@ -55,17 +55,19 @@ def direct_link_generator(link: str):
     ):
         raise DirectDownloadLinkException(
             "ERROR: <b>Gunakan Gallery-DL untuk instagram:</b> \n<code>/gdl Link</code>")
-    elif any(
-        x in domain
-        for x in [
-            "devuploads.com"
-        ]
-    ):
-        raise DirectDownloadLinkException(
-            "ERROR: <b>Link devuploads error, Silahkan baca <a href='https://telegra.ph/Devuploads-Mirror-09-28'><b>Disini</b></a> cara mirror devuploads !")
+    #elif any(
+    #    x in domain
+    #    for x in [
+    #        "devuploads.com"
+    #    ]
+    #):
+    #    raise DirectDownloadLinkException(
+    #        "ERROR: <b>Link devuploads error, Silahkan baca <a href='https://telegra.ph/Devuploads-Mirror-09-28'><b>Disini</b></a> cara mirror devuploads !")
     #elif "drive.usercontent.google.com" in domain:
     #    raise DirectDownloadLinkException(
     #        "ERROR: Link Gdrive yang anda berikan salah, gunakan link <code>drive.google.com</code>")
+    elif "devuploads.com" in domain:
+        return devuploads(link)
     elif "mediafire.com" in domain:
         return mediafire(link)
     elif "uptobox.com" in domain:
@@ -2314,3 +2316,45 @@ def buzzheavier(url):
                 return details
         else:
             raise DirectDownloadLinkException("ERROR: Failed to fetch direct link.")
+
+def devuploads(url):
+    """
+    Generate a direct download link for devuploads.com URLs.
+    @param url: URL from devuploads.com
+    @return: Direct download link
+    """
+    session = Session()
+    res = session.get(url)
+    html = HTML(res.text)
+    if not html.xpath('//input[@name]'):
+        raise DirectDownloadLinkException("ERROR: Unable to find link data")
+    data = {i.get('name'): i.get('value') for i in html.xpath('//input[@name]')}
+    res = session.post("https://gujjukhabar.in/", data=data)
+    html = HTML(res.text)
+    if not html.xpath('//input[@name]'):
+        raise DirectDownloadLinkException("ERROR: Unable to find link data")
+    data = {i.get('name'): i.get('value') for i in html.xpath('//input[@name]')}
+    resp = session.get("https://du2.devuploads.com/dlhash.php", headers={
+        "Origin": "https://gujjukhabar.in",
+        "Referer": "https://gujjukhabar.in/"
+    })
+    if not resp.text:
+        raise DirectDownloadLinkException("ERROR: Unable to find ipp value")
+    data['ipp'] = resp.text.strip()
+    if not data.get('rand'):
+        raise DirectDownloadLinkException("ERROR: Unable to find rand value")
+    randpost = session.post("https://devuploads.com/token/token.php", data={'rand': data['rand'], 'msg': ''}, headers={
+        "Origin": "https://gujjukhabar.in",
+        "Referer": "https://gujjukhabar.in/"
+    })
+    if not randpost:
+        raise DirectDownloadLinkException("ERROR: Unable to find xd value")
+    data['xd'] = randpost.text.strip()
+    proxy = "http://hsakalu2:hsakalu2@45.151.162.198:6600"
+    res = session.post(url, data=data, proxies={'http': proxy, 'https': proxy})
+    html = HTML(res.text)
+    if not html.xpath("//input[@name='orilink']/@value"):
+        raise DirectDownloadLinkException("ERROR: Unable to find Direct Link")
+    direct_link = html.xpath("//input[@name='orilink']/@value")
+    session.close()
+    return direct_link[0]

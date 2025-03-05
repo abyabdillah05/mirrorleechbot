@@ -337,8 +337,8 @@ async def direct(_, message):
                 res = await sync_to_async(ouo_bypass, link)
             elif 'uptobox.com' in link:
                 res = f"Uptobox udah ded :("
-            elif bool(match(r"https?:\/\/devuploads\.\S+", link)):
-                res = f"Devuploads belum bisa dimirror !"
+            #elif bool(match(r"https?:\/\/devuploads\.\S+", link)):
+            #    res = f"Devuploads belum bisa dimirror !"
             elif bool(match(r"https?:\/\/try2link\.\S+", link)):
                 res = await try2link(link)
             elif bool(match(r"https?:\/\/ronylink\.\S+", link)):

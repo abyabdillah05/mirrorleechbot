@@ -42,6 +42,14 @@ async def main_select(_, query, obj):
     elif data[1] == "extract":
         await obj.extract_subtitle()
     elif data[1] == "encoding":
+        await obj.encoding_main()
+    elif data[1] == "mtdta":
+        await obj.metadata_main()
+    elif data[1] == "merge":
+        await obj.merge_stream()
+    elif data[1] == "rm_stream":
+        await obj.belum_siap()
+    elif data[1] == "swap_stream":
         await obj.belum_siap()
     
     elif data[1] == "file_wm":
@@ -51,7 +59,7 @@ async def main_select(_, query, obj):
     elif data[1] == "size_wm":
         await obj.watermark_size_button()
 
-    elif data[1] in ["1920:1080", "1280:720", "854:480", "640:360"]:
+    elif data[1] in ["1080p", "720p", "540p", "480p", "360p", "144p"]:
         if 'compress' not in obj.video_editor:
             obj.video_editor['compress'] = {}
         obj.video_editor['compress']['resolution'] = data[1]
@@ -74,7 +82,22 @@ async def main_select(_, query, obj):
                 obj.video_editor['hardsub'] = {}
             obj.video_editor['hardsub']['size'] = data[1]
             await obj.hardsub_main_button()
-
+    
+    elif data[1] == "metadata":
+        await obj.metadata_input(data[2])
+    
+    elif data[1] == "v_encoder":
+        await obj.video_encoder_button()
+    elif data[1] == "a_encoder":
+        await obj.audio_encoder_button()
+    elif data[1] == "v_bitrate":
+        await obj.video_bitrate_button()
+    elif data[1] == "a_bitrate":
+        await obj.audio_bitrate_button()
+    elif data[1] == "preset_main":
+        await obj.preset_button()
+    elif data[1] == "crf_main":
+        await obj.crf_button()
     elif data[1] == "hs_file":
         await obj.hardsub_file_button()
     elif data[1] == "hs_font":
@@ -83,8 +106,14 @@ async def main_select(_, query, obj):
         await obj.hardsub_color_button()
     elif data[1] == "hs_size":
         await obj.hardsub_size_button()
+    elif data[1] == "hs_pos":
+        await obj.hardsub_position_button()
     elif data[1] == "hs_bold":
         await obj.hardsub_bold_button()
+    elif data[1] == "merge_video":
+        await obj.merge_video_video()
+    elif data[1] == "merge_audio":
+        await obj.merge_video_audio()
     
     elif data[1] == "ss_file":
         await obj.softsub_file_button()
@@ -110,10 +139,44 @@ async def main_select(_, query, obj):
             obj.video_editor['hardsub'] = {}
         obj.video_editor['hardsub']['font'] = int(data[2])
         await obj.hardsub_main_button()
+    
+    elif data[1] == "v_enc":
+        obj.video_editor['video_codec'] = data[2]
+        await obj.encoding_main()
+    
+    elif data[1] == "a_enc":
+        obj.video_editor['audio_codec'] = data[2]
+        await obj.encoding_main()
+    
+    elif data[1] == "v_br":
+        obj.video_editor['video_bitrate'] = data[2]
+        await obj.encoding_main()
+    
+    elif data[1] == "a_br":
+        obj.video_editor['audio_bitrate'] = data[2]
+        await obj.encoding_main()
+    
+    elif data[1] == "preset":
+        obj.video_editor['preset'] = data[2]
+        await obj.encoding_main()
+    
+    elif data[1] == "crf":
+        obj.video_editor['crf'] = data[2]
+        await obj.encoding_main()
 
     elif data[1] == "extract_true":
         obj.video_editor['extract'] = True
         await obj.start()
+    
+    elif data[1] == "video_start":
+        if 'merge_type' not in obj.video_editor:
+            obj.video_editor['merge_type'] = "video_video"
+            await obj.start()
+    
+    elif data[1] == "audio_start":
+        if 'merge_type' not in obj.video_editor:
+            obj.video_editor['merge_type'] = "video_audio"
+            await obj.start()
 
     elif data[1] == "back":
         await obj.back()
@@ -123,6 +186,9 @@ async def main_select(_, query, obj):
 
     elif data[1] == "back_hs":
         await obj.hardsub_main_button()
+    
+    elif data[1] == "encoder_back":
+        await obj.encoding_main()
 
     elif data[1] == "start":
         await obj.start()
@@ -175,15 +241,49 @@ class VideEditor:
             hardsub = hardsub.get("file", None)
         softsub = video_editor.get("softsub", None)
         rename = video_editor.get("rename", None)
+        try:
+            metadata = video_editor.get("metadata")
+        except:
+            metadata = None
         extension = video_editor.get("extension", "mkv")
         butt = ButtonMaker()
-        msg = "𝐕𝐢𝐝𝐞𝐨𝐄𝐝𝐢𝐭𝐨𝐫 𝐯𝟏.𝟐𝐁𝐞𝐭𝐚\n___________________________\n<b>Silahkan pilih menu video editor dibawah:</b>\n\n"
+        msg = "𝐕𝐢𝐝𝐞𝐨𝐄𝐝𝐢𝐭𝐨𝐫 𝐯𝟐.𝟎 𝐁𝐞𝐭𝐚\n___________________________\n<b>Silahkan pilih menu video editor dibawah:</b>\n\n"
+        butt.ibutton(f"▶️ Start Video Editor", f"ve start", position="header")
+        video_encoder = self.video_editor.get("video_codec", "libx264")
+        audio_encoder = self.video_editor.get("audio_codec", "aac")
+        video_bitrate = self.video_editor.get("video_bitrate", "default")
+        audio_bitrate = self.video_editor.get("audio_bitrate", "default")
+        crf = self.video_editor.get("crf", 23)
+        preset = self.video_editor.get("preset", "veryfast")
+        msg += f"<b>▪️ Encoding:</b>\n"
+        msg += f"<b>• Video Encoder:</b> <code>{video_encoder}</code>\n"
+        msg += f"<b>• Video Bitrate:</b> <code>{video_bitrate}</code>\n"
+        msg += f"<b>• Audio Encoder:</b> <code>{audio_encoder}</code>\n"
+        msg += f"<b>• Audio Bitrate:</b> <code>{audio_bitrate}</code>\n"
+        msg += f"<b>• CRF:</b> <code>{crf}</code>\n"
+        msg += f"<b>• Preset:</b> <code>{preset}</code>\n\n"
+        metadata_exists = False
+        metadata = self.video_editor.get("metadata", {})
+        metadata_fields = {
+            "title": "title",
+            "description": "description",
+            "artist": "artist",
+            "comment": "comment",
+            "genre": "genre",
+            "album": "album",
+            "date": "date",
+            "copyright": "copyright",
+        }
+        for key, value in metadata_fields.items():
+            if metadata.get(key):
+                metadata_exists = True
         if compress:
             reso = compress['resolution']
-            reso = reso.split(':')[1] + "p"
             msg += f"<b>▪️ Kompres ke resolusi:</b> <code>{reso}</code>\n"
         if rename:
             msg += f"<b>▪️ Rename ke:</b> <code>{rename}</code>\n"
+        if metadata_exists:
+            msg += f"<b>▪️ Metadata:</b> <code>Metadata ditambahkan</code>\n"
         if watermark:
             msg += f"<b>▪️ Watermark:</b> <code>Watermark ditambahkan</code>\n"
         if hardsub:
@@ -191,22 +291,25 @@ class VideEditor:
         if softsub:
             msg += f"<b>▪️ Softsub:</b> <code>Softsub ditambahkan</code>\n"
         msg += f"<b>▪️ Format video:</b> <code>{extension}</code>\n"
-        s = "🔒" if not compress else "✅"
-        butt.ibutton(f"{s} Kompres", f"ve compress")
+        s = "" if not compress else "✅"
+        butt.ibutton(f"{s} Kompres ⭐️", f"paid")
         s = "" if not rename else "✅"
         butt.ibutton(f"{s} Rename", f"ve rename")
-        s = "🔒" if not hardsub else "✅"
-        butt.ibutton(f"{s} Hardsub", f"ve hardsub")
+        s = "" if not hardsub else "✅"
+        butt.ibutton(f"{s} Hardsub ⭐️", f"paid")
         s = "" if not softsub else "✅"
         butt.ibutton(f"{s} Softsub", f"ve softsub")
-        s = "🔒" if not watermark else "✅"
-        butt.ibutton(f"{s} Watermark", f"ve watermark")
+        s = "" if not watermark else "✅"
+        butt.ibutton(f"{s} Watermark ⭐️", f"paid")
         butt.ibutton(f"Convert: {extension}", f"ve extension")
         butt.ibutton(f"Extract", f"ve extract")
-        butt.ibutton(f"Encoding (Soon)", f"ve encoding")
-
-        butt.ibutton(f"▶️ Mulai", f"ve start")
-        butt.ibutton(f"⛔️ Batal", f"ve cancel")
+        butt.ibutton(f"Encoding ⭐️", f"paid")
+        s = "" if not metadata_exists else "✅"
+        butt.ibutton(f"Metadata", f"ve mtdta")
+        butt.ibutton(f"Merge", f"ve merge")
+        butt.ibutton(f"Hapus Stream (soon)", f"ve rm_stream")
+        butt.ibutton(f"Swap Stream (soon)", f"ve swap_stream")
+        butt.ibutton(f"⛔️ Batal", f"ve cancel", position="footer")
         butts = butt.build_menu(2)
         return msg, butts
             
@@ -233,15 +336,18 @@ class VideEditor:
         compress = self.video_editor.get("compress", None)
         resolution = compress.get("resolution", "") if compress else ""
         butt = ButtonMaker()
-        s = "" if "1920:1080" not in resolution else "✅"
-        butt.ibutton(f"1080p {s}", f"ve paid")
-        s = "" if "1280:720" not in resolution else "✅"
-        butt.ibutton(f"720p {s}", f"ve paid")
-        s = "" if "854:480" not in resolution else "✅"
-        butt.ibutton(f"480p {s}", f"ve paid")
-        s = "" if "640:360" not in resolution else "✅"
-        butt.ibutton(f"360p {s}", f"ve paid")
-
+        s = "✅" if "1080p" in resolution else ""
+        butt.ibutton(f"1080p {s}", f"ve 1080p")
+        s = "✅" if "720p" in resolution else ""
+        butt.ibutton(f"720p {s}", f"ve 720p")
+        s = "✅" if "540p" in resolution else ""
+        butt.ibutton(f"540p {s}", f"ve 540p")
+        s = "✅" if "480p" in resolution else ""
+        butt.ibutton(f"480p {s}", f"ve 480p")
+        s = "✅" if "360p" in resolution else ""
+        butt.ibutton(f"360p {s}", f"ve 360p")
+        s = "✅" if "144p" in resolution else ""
+        butt.ibutton(f"144p {s}", f"ve 144p")
         butt.ibutton("↩️ Kembali", f"ve back")
         butt.ibutton("⛔️ Batal", f"ve cancel")
         buttons = butt.build_menu(2)
@@ -269,6 +375,81 @@ class VideEditor:
         else:
             del self.video_editor["rename"]
             await self.update_pesan()
+    
+    async def metadata_main_button(self):
+        msg = "<b>📌 Pilih metadata untuk video anda </b>\n\n"
+        metadata = self.video_editor.get("metadata", {})
+        title = metadata.get("title", "") if metadata else ""
+        description = metadata.get("description", "") if metadata else ""
+        artist = metadata.get("artist", "") if metadata else ""
+        comment = metadata.get("comment", "") if metadata else ""
+        genre = metadata.get("genre", "") if metadata else ""
+        album = metadata.get("album", "") if metadata else ""
+        date = metadata.get("date", "") if metadata else ""
+        copyright = metadata.get("copyright", "") if metadata else ""
+        msg += f"<b>▪️ Judul:</b> <code>{title}</code>\n"
+        msg += f"<b>▪️ Deskripsi:</b> <code>{description}</code>\n"
+        msg += f"<b>▪️ Artis:</b> <code>{artist}</code>\n"
+        msg += f"<b>▪️ Komentar:</b> <code>{comment}</code>\n"
+        msg += f"<b>▪️ Genre:</b> <code>{genre}</code>\n"
+        msg += f"<b>▪️ Album:</b> <code>{album}</code>\n"
+        msg += f"<b>▪️ Tanggal:</b> <code>{date}</code>\n"
+        msg += f"<b>▪️ Hak Cipta:</b> <code>{copyright}</code>\n"
+        msg += f"\n\n<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
+        butt = ButtonMaker()
+        s = "" if not title else "✅"
+        butt.ibutton(f"Judul {s}", f"ve metadata title")
+        s = "" if not description else "✅"
+        butt.ibutton(f"Deskripsi {s}", f"ve metadata description")
+        s = "" if not artist else "✅"
+        butt.ibutton(f"Artis {s}", f"ve metadata artist")
+        s = "" if not comment else "✅"
+        butt.ibutton(f"Komentar {s}", f"ve metadata comment")
+        s = "" if not genre else "✅"
+        butt.ibutton(f"Genre {s}", f"ve metadata genre")
+        s = "" if not album else "✅"
+        butt.ibutton(f"Album {s}", f"ve metadata album")
+        s = "" if not date else "✅"
+        butt.ibutton(f"Tanggal {s}", f"ve metadata date")
+        s = "" if not copyright else "✅"
+        butt.ibutton(f"Hak Cipta {s}", f"ve metadata copyright")
+        butt.ibutton("↩️ Kembali", f"ve back")
+        butts = butt.build_menu(2)
+        return msg, butts
+
+    async def metadata_main(self):
+        msg, butts = await self.metadata_main_button()
+        await editMessage(self._reply_to, msg, butts)
+
+    async def metadata_input(self, option=""):
+        if "metadata" not in self.video_editor:
+            self.video_editor["metadata"] = {}
+        msg = f"<b>📌 Silahkan masukan {option} metadata ! </b>\n\nKlik /batal untuk membatalkan"
+        msg += f"\n\n<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
+        metadata = self.video_editor.get("metadata", {})
+        if option not in metadata:
+            try:
+                ask = await sendMessage(self._listener.message, msg)
+                respon = await bot.listen(
+                    filters=filters.text & filters.user(self._listener.user_id), timeout=30
+                    )
+                if respon.text != "/batal" and respon.text != f"/batal@{bot.me.username}":
+                    data = respon.text
+                    upd = {f"{option}": data}
+                    self.video_editor["metadata"].update(upd)
+                await respon.delete()
+                await deleteMessage(ask)
+                await self.metadata_main()
+            except:
+                await self.umetadata_main()
+        else:
+            del self.video_editor["metadata"][option]
+            await self.metadata_main()
+
+    async def update_pesan(self):
+        msg, buttons = await self.home_button()
+        msg += f"\n\n<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
+        await editMessage(self._reply_to, msg, buttons)
     
     async def extension_button(self):
         extension = self.video_editor.get("extension", None)
@@ -303,8 +484,8 @@ class VideEditor:
             butt.ibutton(f"Tambah Watermark {s}", f"ve paid", position="header")
         butt.ibutton(f"Ukuran", f"ve size_wm")
         butt.ibutton(f"Posisi", f"ve position_wm")
-        butt.ibutton("↩️ Kembali", f"ve back")
-        butt.ibutton("⛔️ Batal", f"ve cancel")
+        butt.ibutton("↩️ Kembali", f"ve back", position="footer")
+        butt.ibutton("⛔️ Batal", f"ve cancel", position="footer")
         buttons = butt.build_menu(2)
         await editMessage(self._reply_to, msg, buttons)
 
@@ -402,6 +583,7 @@ class VideEditor:
         font_size = hardsub.get("size", "sedang")
         font_color = hardsub.get("color", "putih")
         font_style = hardsub.get("font", 5)
+        hardsub_position = hardsub.get("position", "bawah")
         bold = hardsub.get("bold", False)
         if hardsub_file:
             msg += f"<b>▪️ File Subtitle:</b> <code>✅Sudah Ditambahkan</code>\n"
@@ -412,6 +594,7 @@ class VideEditor:
         if font_color == "hitam":
             msg += f"<b>(Orang gila mana pake subs hitam njir.)</b>\n"
         msg += f"<b>▪️ Jenis Font:</b> <code>{fonts_dict[int(font_style)]}</code>\n"
+        msg += f"<b>▪️ Posisi Hardsub:</b> <code>{hardsub_position}</code>\n"
         if bold:
             msg += f"<b>▪️ Bold:</b> <code>Hidup</code>\n"
         else:
@@ -428,9 +611,10 @@ class VideEditor:
         butt.ibutton(f"Jenis Font", f"ve hs_font")
         s = "" if not bold else "✅"
         butt.ibutton(f"Bold {s}", f"ve hs_bold")
+        butt.ibutton(f"Posisi Hardsub: {hardsub_position}", f"ve hs_pos")
 
-        butt.ibutton("↩️ Kembali", f"ve back")
-        butt.ibutton("⛔️ Batal", f"ve cancel")
+        butt.ibutton("↩️ Kembali", f"ve back", position="footer")
+        butt.ibutton("⛔️ Batal", f"ve cancel", position="footer")
         buttons = butt.build_menu(2)
         await editMessage(self._reply_to, msg, buttons)
 
@@ -591,6 +775,18 @@ class VideEditor:
         hardsub["bold"] = bold
         await self.hardsub_main_button()
     
+    async def hardsub_position_button(self):
+        hardsub = self.video_editor.get("hardsub", None)
+        if not hardsub:
+            hardsub = self.video_editor["hardsub"] = {}
+        position = hardsub.get("position", "bawah")
+        if position == "atas":
+            position = "bawah"
+        else:
+            position = "atas"
+        hardsub["position"] = position
+        await self.hardsub_main_button()
+    
     async def softsub_main_button(self):
         msg = "<b>📌 Silahkan masukkan subtitle anda (Support multi subtitle) </b>\n\n"
         softsub = self.video_editor.get("softsub", None)
@@ -652,14 +848,171 @@ class VideEditor:
             await self.softsub_main_button()
     
     async def extract_subtitle(self):
-        
-        msg = "<b>📌 Anda akan mengextract semua subtitle dari video ini (Jika Ada) !!</b>"
+        msg = "<b>📌 Anda akan mengextract semua stream dari video ini, seperti video,audio,subtitle,cover dll !!</b>"
         msg += f"\n\n<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
         butt = ButtonMaker()
-        butt.ibutton("👀 Mulai Extract", f"ve extract_true")
+        butt.ibutton("👀 Mulai Extract Stream", f"ve extract_true")
         butt.ibutton("↩️ Kembali", f"ve back", position="footer")
         butt.ibutton("⛔️ Batal", f"ve cancel", position="footer")
         buttons = butt.build_menu(2)
+        await editMessage(self._reply_to, msg, buttons)
+    
+    async def merge_stream(self):
+        msg = "<b>📌 Silahkan pilih type merge anda!</b>"
+        msg += f"\n\n<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
+        butt = ButtonMaker()
+        butt.ibutton("🎞️ Merge Video+Video", f"ve merge_video")
+        butt.ibutton("🎥 Merge Video+Audio", f"ve merge_audio")
+        butt.ibutton("↩️ Kembali", f"ve back", position="footer")
+        butt.ibutton("⛔️ Batal", f"ve cancel", position="footer")
+        buttons = butt.build_menu(1)
+        await editMessage(self._reply_to, msg, buttons)
+
+    async def merge_video_video(self):
+        msg = "<b>📌 Anda akan menggabungkan semua video yang ada didalam folder menjadi satu video !</b>"
+        msg += f"\n\n<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
+        butt = ButtonMaker()
+        butt.ibutton("▶️ Start Merge Video+Video", f"ve video_start")
+        butt.ibutton("↩️ Kembali", f"ve back_merge", position="footer")
+        butt.ibutton("⛔️ Batal", f"ve cancel", position="footer")
+        buttons = butt.build_menu(1)
+        await editMessage(self._reply_to, msg, buttons)
+    
+    async def merge_video_audio(self):
+        msg = "<b>📌 Anda akan menggabungkan video dengan semua audio yang ada didalam folder !</b>"
+        msg += f"\n\n<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
+        butt = ButtonMaker()
+        butt.ibutton("▶️ Start Merge Video+Audio", f"ve audio_start")
+        butt.ibutton("↩️ Kembali", f"ve back_merge", position="footer")
+        butt.ibutton("⛔️ Batal", f"ve cancel", position="footer")
+        buttons = butt.build_menu(1)
+        await editMessage(self._reply_to, msg, buttons)
+    
+    async def encoding_main(self):
+        msg = "<b>📌 Silahkan pilih menu encoding anda !</b>\n\n"
+        video_encoder = self.video_editor.get("video_codec", "libx264")
+        audio_encoder = self.video_editor.get("audio_codec", "aac")
+        video_bitrate = self.video_editor.get("video_bitrate", "default")
+        audio_bitrate = self.video_editor.get("audio_bitrate", "default")
+        crf = self.video_editor.get("crf", 23)
+        preset = self.video_editor.get("preset", "veryfast")
+        msg += f"<b>• Video Encoder:</b> <code>{video_encoder}</code>\n"
+        msg += f"<b>• Video Bitrate:</b> <code>{video_bitrate}</code>\n"
+        msg += f"<b>• Audio Encoder:</b> <code>{audio_encoder}</code>\n"
+        msg += f"<b>• Audio Bitrate:</b> <code>{audio_bitrate}</code>\n"
+        msg += f"<b>• CRF:</b> <code>{crf}</code>\n"
+        msg += f"<b>• Preset:</b> <code>{preset}</code>\n"
+        msg += f"<b>\n⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
+        butt = ButtonMaker()
+        butt.ibutton("Video Encoder", f"ve v_encoder")
+        butt.ibutton("Video Bitrate", f"ve v_bitrate")
+        butt.ibutton("Audio Encoder", f"ve a_encoder")
+        butt.ibutton("Audio Bitrate", f"ve a_bitrate")
+        butt.ibutton("Preset", f"ve preset_main")
+        butt.ibutton("CRF", f"ve crf_main")
+        butt.ibutton("↩️ Kembali", f"ve back", position="footer")
+        butt.ibutton("⛔️ Batal", f"ve cancel", position="footer")
+        buttons = butt.build_menu(2)
+        await editMessage(self._reply_to, msg, buttons)
+    
+    async def video_encoder_button(self):
+        msg = "<b>📌 Silahkan pilih video encoder anda !</b>\n\n"
+        msg += f"<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
+        butt = ButtonMaker()
+        butt.ibutton("Default", f"ve v_enc default", position="header")
+        butt.ibutton("H.264", f"ve v_enc libx264")
+        butt.ibutton("H.265", f"ve v_enc libx265")
+        butt.ibutton("VP8", f"ve v_enc libvpx")
+        butt.ibutton("VP9", f"ve v_enc libvpx-vp9")
+        butt.ibutton("AV1", f"ve v_enc libaom-av1")
+        butt.ibutton("Theora", f"ve v_enc libtheora")
+        butt.ibutton("MPEG4", f"ve v_enc mpeg4")
+        butt.ibutton("MPEG2", f"ve v_enc mpeg2video")
+        butt.ibutton("↩️ Kembali", f"ve encoder_back", position="footer")
+        buttons = butt.build_menu(2)
+        await editMessage(self._reply_to, msg, buttons)
+    
+    async def video_bitrate_button(self):
+        msg = "<b>📌 Silahkan pilih video bitrate anda !</b>\n\n"
+        msg += f"<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
+        butt = ButtonMaker()
+        butt.ibutton("Default", f"ve v_br default", position="header")
+        butt.ibutton("0.5 Mbps", f"ve v_br 500k")
+        butt.ibutton("1.2 Mbps", f"ve v_br 1200k")
+        butt.ibutton("2 Mbps", f"ve v_br 2000k")
+        butt.ibutton("3 Mbps", f"ve v_br 3000k")
+        butt.ibutton("4 Mbps", f"ve v_br 4000k")
+        butt.ibutton("5 Mbps", f"ve v_br 5000k")
+        butt.ibutton("6 Mbps", f"ve v_br 6000k")
+        butt.ibutton("7 Mbps", f"ve v_br 7000k")
+        butt.ibutton("8 Mbps", f"ve v_br 8000k")
+        butt.ibutton("9 Mbps", f"ve v_br 9000k")
+        butt.ibutton("10 Mbps", f"ve v_br 10000k")
+        butt.ibutton("↩️ Kembali", f"ve encoder_back", position="footer")
+        buttons = butt.build_menu(2)
+        await editMessage(self._reply_to, msg, buttons)
+    
+    async def audio_encoder_button(self):
+        msg = "<b>📌 Silahkan pilih audio encoder anda !</b>\n\n"
+        msg += f"<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
+        butt = ButtonMaker()
+        butt.ibutton("Default", f"ve a_enc default", position="header")
+        butt.ibutton("AAC", f"ve a_enc aac")
+        butt.ibutton("MP3", f"ve a_enc libmp3lame")
+        butt.ibutton("Opus", f"ve a_enc libopus")
+        butt.ibutton("Vorbis", f"ve a_enc libvorbis")
+        butt.ibutton("WAV", f"ve a_enc pcm_s16le")
+        butt.ibutton("MPEG", f"ve a_enc mpeg")
+        butt.ibutton("FLAC", f"ve a_enc flac")
+        butt.ibutton("ALAC", f"ve a_enc alac")
+        butt.ibutton("↩️ Kembali", f"ve encoder_back", position="footer")
+        buttons = butt.build_menu(2)
+        await editMessage(self._reply_to, msg, buttons)
+    
+    async def audio_bitrate_button(self):
+        msg = "<b>📌 Silahkan pilih audio bitrate anda !</b>\n\n"
+        msg += f"<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
+        butt = ButtonMaker()
+        butt.ibutton("Default", f"ve a_br default", position="header")
+        butt.ibutton("32 kbps", f"ve a_br 32k")
+        butt.ibutton("64 kbps", f"ve a_br 64k")
+        butt.ibutton("96 kbps", f"ve a_br 96k")
+        butt.ibutton("128 kbps", f"ve a_br 128k")
+        butt.ibutton("192 kbps", f"ve a_br 192k")
+        butt.ibutton("256 kbps", f"ve a_br 256k")
+        butt.ibutton("320 kbps", f"ve a_br 320k")
+        butt.ibutton("512 kbps", f"ve a_br 512k")
+        butt.ibutton("↩️ Kembali", f"ve encoder_back", position="footer")
+        buttons = butt.build_menu(2)
+        await editMessage(self._reply_to, msg, buttons)
+    
+    async def preset_button(self):
+        msg = "<b>📌 Silahkan pilih preset anda !</b>\n\n"
+        msg += "<b>⚠️ Note:</b> Semakin cepat proses kompresi, semakin besar ukuran file video\n\n"
+        msg += f"<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
+        butt = ButtonMaker()
+        butt.ibutton("Ultrafast", f"ve preset ultrafast")
+        butt.ibutton("Superfast", f"ve preset superfast")
+        butt.ibutton("Veryfast", f"ve preset veryfast")
+        butt.ibutton("Faster", f"ve preset faster")
+        butt.ibutton("Fast", f"ve preset fast")
+        butt.ibutton("Medium", f"ve preset medium")
+        butt.ibutton("Slow", f"ve preset slow")
+        butt.ibutton("Slower", f"ve preset slower")
+        butt.ibutton("Veryslow", f"ve preset veryslow")
+        butt.ibutton("↩️ Kembali", f"ve encoder_back", position="footer")
+        buttons = butt.build_menu(2)
+        await editMessage(self._reply_to, msg, buttons)
+    
+    async def crf_button(self):
+        msg = "<b>📌 Silahkan pilih crf anda !</b>\n\n"
+        msg += "<b>⚠️ Note:</b> Semakin kecil crf, semakin bagus kualitas video tapi proses kompresi semakin lama\n\n"
+        msg += f"<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
+        butt = ButtonMaker()
+        for i in range(18, 29):
+            butt.ibutton(str(i), f"ve crf {i}")
+        butt.ibutton("↩️ Kembali", f"ve encoder_back", position="footer")
+        buttons = butt.build_menu(5)
         await editMessage(self._reply_to, msg, buttons)
             
     async def start(self):

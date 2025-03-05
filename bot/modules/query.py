@@ -46,4 +46,14 @@ async def pikaquery(_, query):
             if message.reply_to_message.reply_to_message:
                 await deleteMessage(message.reply_to_message.reply_to_message)
 
+async def locked(_, query):
+    await query.answer(text="Fitur ini tidak bisa digunakan di bot ini!", show_alert=True)
+    await query.answer()
+
+async def paid(_, query):
+    await query.answer(text="Fitur ini hanya untuk pengguna premium atau private bot !", show_alert=True)
+    await query.answer()
+
+bot.add_handler(CallbackQueryHandler(paid, filters=regex(r'^paid')))
+bot.add_handler(CallbackQueryHandler(locked, filters=regex(r'^lock')))
 bot.add_handler(CallbackQueryHandler(pikaquery, filters=regex(r'^pika')))

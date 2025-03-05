@@ -181,7 +181,7 @@ class Mirror(TaskListener):
         reply_to = None
         file_ = None
 
-        if self.ve:
+        if self.ve and not self.video_editor:
             try:
                 self.video_editor = await VideEditor(self).main_pesan()
                 if self.video_editor is None:
@@ -320,6 +320,8 @@ class Mirror(TaskListener):
             self.run_multi(input_list, folder_name, Mirror, pixeldrain=True)
         elif self.temp_thumb:
             self.run_multi(input_list, folder_name, Mirror, temp_thumbs=True, temp_thumb=self.temp_thumb)
+        elif self.video_editor:
+            self.run_multi(input_list, folder_name, Mirror, video_editor=self.video_editor)
         else:
             self.run_multi(input_list, folder_name, Mirror)
 

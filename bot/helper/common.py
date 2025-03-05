@@ -51,6 +51,7 @@ from bot.helper.ext_utils.media_utils import (
     getSplitSizeBytes,
     createSampleVideo,
     PerformVideoEditor,
+    merge_streams
 )
 from bot.helper.mirror_utils.rclone_utils.list import RcloneList
 from bot.helper.mirror_utils.gdrive_utils.list import gdriveList
@@ -343,7 +344,7 @@ class TaskConfig:
             self.tag = self.message.from_user.mention
 
     @new_task
-    async def run_multi(self, input_list, folder_name, obj, temp_thumb="", gofile=False, buzzheavier=False, pixeldrain=False, temp_thumbs=False):
+    async def run_multi(self, input_list, folder_name, obj, temp_thumb="", gofile=False, buzzheavier=False, pixeldrain=False, temp_thumbs=False, video_editor=None):
         await sleep(7)
         if not self.multiTag and self.multi > 1:
             self.multiTag = token_urlsafe(3)
@@ -434,6 +435,18 @@ class TaskConfig:
                 self.options,
                 temp_thumb=temp_thumb,
                 temp_thumbs=True,
+            ).newEvent()
+        elif video_editor:
+            obj(
+                self.client,
+                nextmsg,
+                self.isQbit,
+                self.isLeech,
+                self.sameDir,
+                self.bulk,
+                self.multiTag,
+                self.options,
+                video_editor=video_editor
             ).newEvent()
         else:
             obj(
@@ -789,7 +802,17 @@ class TaskConfig:
 
         async with cpu_eater_lock:
             checked = False
-            if await aiopath.isfile(dl_path):
+            merge = self.video_editor.get("merge_type", None)
+            if merge:
+                LOGGER.info(f"Editing Video: {self.name}")
+                res = await merge_streams(
+                    self, dl_path
+                )
+                if not res:
+                    return dl_path
+                return res
+
+            elif await aiopath.isfile(dl_path):
                 mime_type = get_mime_type(dl_path)
                 if mime_type not in ("video/mp4", "video/x-matroska", "video/webm"):
                     return dl_path

@@ -1,7 +1,9 @@
 import random
 import string
+import glob
+import json
 
-from os import path as ospath, cpu_count
+from os import path as ospath, cpu_count, listdir
 from aiofiles.os import remove as aioremove, path as aiopath, makedirs
 from time import time
 from re import search as re_search
@@ -485,6 +487,14 @@ async def createSampleVideo(
         return True
 
 ############################# by pikachu #################
+resolution_dict = {
+    "144p": "256:-1",
+    "360p": "640:-1",
+    "480p": "854:-1",
+    "540p": "960:-1",
+    "720p": "1280:-1",
+    "1080p": "1920:-1",
+    }
 watermark_dict = {
     "top_left": "10:10",
     "top_center": "(W-w)/2:10",
@@ -501,7 +511,6 @@ watermark_reso_dict = {
     "ultra": "scale=iw*0.5:-1",
     "super": "scale=iw*0.6:-1",
     }
-
 font_sizes = {
     "kecil": 12,
     "sedang": 14,
@@ -510,7 +519,6 @@ font_sizes = {
     "extra": 24,
     "super": 26,
 }
-
 font_colors = {
     "putih": "&HFFFFFF&",
     "biru": "&HFF0000&",
@@ -522,7 +530,6 @@ font_colors = {
     "hitam": "&H000000&",
     "purple": "&H800080&",
 }
-
 fonts_dict = {
     1: "Standard Symbols PS",
     2: "Century Schoolbook L",
@@ -560,20 +567,24 @@ async def PerformVideoEditor(
     # Extract
     extract = listener.video_editor.get("extract", False)
     if extract:
-        output_dir = await extract_subtitles(video_file)
+        output_dir = await extract_all_streams(video_file)
         if not output_dir:
             return False
-        return output_dir
+        else:
+            if oneFile:
+                await aioremove(video_file)
+            return output_dir
     
     # Compress
     compress_settings = listener.video_editor.get("compress", {})
-    resolution = compress_settings.get("resolution")
+    resolutions = compress_settings.get("resolution")
+    resolution = resolution_dict.get(resolutions, None)
     ext = listener.video_editor.get("extension", "mkv")
     dir = ospath.dirname(video_file)
     base_name = clean_video_name(video_file)
     resolution_label = ""
     if resolution:
-        resolution_label = f"-{resolution.split(':')[1]}p"
+        resolution_label = f"-{resolutions}"
         base_name = clean_video_name(video_file, compress=True)
     output_file = f"{dir}/{base_name}{resolution_label}"
 
@@ -598,6 +609,7 @@ async def PerformVideoEditor(
     hardsub_size = hardsub.get("size", "sedang")
     hardsub_color = hardsub.get("color", "putih")
     hardsub_font = hardsub.get("font", 5)
+    hardsub_position = hardsub.get("position", "bawah")
     hardsub_bold = hardsub.get("bold", False)
     bold = 1 if hardsub_bold else 0
     if hardsub_file:
@@ -614,8 +626,6 @@ async def PerformVideoEditor(
             cmd.extend([f"-metadata:s:s:{index}", f"language={language}"])
     if softsub:
         output_file += f"_SS"
-    
-    output_file += f".{ext}"
     filter_str = []
     if watermark_file and watermark_position and watermark_size:
         watermark_filter = (
@@ -632,8 +642,12 @@ async def PerformVideoEditor(
 
     if hardsub_file and hardsub_size and hardsub_color and hardsub_font:
         hardsub_filter = (
-            f"subtitles={hardsub_file}:force_style='FontSize={font_sizes[hardsub_size]},PrimaryColour={font_colors[hardsub_color]},FontName={fonts_dict[int(hardsub_font)]},Bold={bold}'"
+            f"subtitles={hardsub_file}:force_style='FontSize={font_sizes[hardsub_size]},"
+            f"PrimaryColour={font_colors[hardsub_color]},FontName={fonts_dict[int(hardsub_font)]},"
+            f"Bold={bold}"
         )
+        if hardsub_position == "atas":
+            hardsub_filter += ",Alignment=6"
         filter_str.append(hardsub_filter)
 
     if filter_str:
@@ -647,23 +661,76 @@ async def PerformVideoEditor(
         elif ext == "mkv":
             cmd.extend(["-c:s", "srt"])
 
+    # Encoding
     video_codec = listener.video_editor.get("video_codec", "libx264")
-    audio_codec = listener.video_editor.get("audio_codec", "default")
-    audio_bitrate = listener.video_editor.get("audio_bitrate", "128k")
+    audio_codec = listener.video_editor.get("audio_codec", "aac")
+    video_bitrate = listener.video_editor.get("video_bitrate", "default")
+    audio_bitrate = listener.video_editor.get("audio_bitrate", "default")
     preset = listener.video_editor.get("preset", "veryfast")
     crf = listener.video_editor.get("crf", "23")
-    if not (resolution or watermark or hardsub):
+    if not (resolution 
+            or watermark
+            or hardsub 
+            or video_codec != "libx264" 
+            or video_bitrate != "default"
+            or audio_codec != "default"
+            or audio_bitrate != "default"
+            or preset != "veryfast"
+            or crf != "23"):
         cmd.extend(["-c:v", "copy", "-c:a", "copy"])
     else:
-        if resolution or watermark_file or hardsub_file:
+        if resolution or watermark_file or hardsub_file or (video_codec != "default" and video_bitrate != "default"):
             cmd.extend(["-c:v", f"{video_codec}", "-preset", f"{preset}", "-crf", f"{crf}"])
+            if video_bitrate != "default":
+                cmd.extend(["-b:v", f"{video_bitrate}"])
         else:
             cmd.extend(["-c:v", "copy"])
-        if audio_codec == "default":
+        if audio_codec == "default" and audio_bitrate == "default":
             cmd.extend(["-c:a", "copy"])
         else:
+            if audio_bitrate == "default":
+                audio_bitrate = "128k"
             cmd.extend(["-c:a", f"{audio_codec}", "-b:a", f"{audio_bitrate}"])
-        cmd.extend(["-threads", f"{cpu_count() // 2}"])
+
+    # Metadata
+    metadata = listener.video_editor.get("metadata", {})
+    output_file += f"_MD"
+    metadata_fields = {
+        "title": "title",
+        "description": "description",
+        "artist": "artist",
+        "comment": "comment",
+        "genre": "genre",
+        "album": "album",
+        "date": "date",
+        "copyright": "copyright",
+    }
+    probe_cmd = [
+        "ffprobe", "-v", "error",
+        "-show_entries", "stream=index,codec_type",
+        "-print_format", "json", video_file
+    ]
+    
+    process = await create_subprocess_exec(*probe_cmd, stdout=PIPE, stderr=PIPE)
+    stdout, stderr= await process.communicate()
+    try:
+        streams = json.loads(stdout).get("streams", [])
+    except json.JSONDecodeError:
+        streams = []
+
+    for key, value in metadata_fields.items():
+        if metadata.get(key):
+            cmd.extend(["-metadata", f"{value}={metadata[key]}"])
+    
+    for stream in streams:
+        index = stream["index"]
+        codec_type = stream["codec_type"]
+        if codec_type in ["video", "audio"]:
+            for key, value in metadata_fields.items():
+                if metadata.get(key):
+                    cmd.extend(["-metadata:s:{}".format(index), f"{value}={metadata[key]}"])
+    output_file += f".{ext}"
+    cmd.extend(["-threads", f"{cpu_count() // 2}"])
     cmd.append(output_file)
 
     LOGGER.info(f"FFmpeg filter: {','.join(filter_str)}")
@@ -706,61 +773,107 @@ async def PerformVideoEditor(
             return output_file
         return True
     
-async def extract_subtitles(video_file):
-    try:
-        dir = ospath.dirname(video_file)
-        output_dir = f"{dir}/subtitles"
-        await makedirs(output_dir, exist_ok=True)
-        command = ['opera', '-i', video_file]
-        process = await create_subprocess_exec(*command, stdout=PIPE, stderr=PIPE)
-        stdout, stderr = await process.communicate()
-        subtitle_streams = []
-        for line in stderr.decode().splitlines():
-            if 'Subtitle' in line:
-                parts = line.split()
-                stream_index = parts[1].replace('#', '').split('(')[0].rstrip(':')
-                try:
-                    language = parts[1].split('(')[1].split(')')[0]
-                except:
-                    language = "Tidak Diketahui"
-                subtitle_type = parts[3] if len(parts) > 3 else "Tidak Diketahui"
-                subtitle_streams.append({'stream_index': stream_index, 'language': language, 'subtitle_type': subtitle_type})
-        if len(subtitle_streams) == 0:
-            LOGGER.error(f"Subtitle not found on {ospath.basename(video_file)}")
-            return None
-        tasks = []
-        for data in subtitle_streams:
-            idx = data['stream_index']
-            language = data['language']
-            subtitle_type = data['subtitle_type']
-            if subtitle_type == "subrip":
-                ext = "srt"
-            elif subtitle_type == "ass":
-                ext = "ass"
-            else:
-                ext = "srt"
-            subtitle_file = f"{output_dir}/subtitles_{idx}_{language}.{ext}"
-            task = create_task(extract_single_subtitle(video_file, idx, subtitle_file, ext))
-            tasks.append(task)
-        await gather(*tasks)
-        await aioremove(video_file)
-        return output_dir
-    except Exception as e:
-        LOGGER.error(f"Gagal saat mencoba extract subtitle: {e}")
-        return None
+async def extract_all_streams(video_file):
+    dir = ospath.dirname(video_file)
+    output_dir = f"{dir}/extracted_streams"
+    await makedirs(output_dir, exist_ok=True)
+    
+    cmd_detect = ["ffprobe", "-v", "error", "-show_entries", "stream=index,codec_type", "-of", "csv=p=0", video_file]
+    process = await create_subprocess_exec(*cmd_detect, stdout=PIPE, stderr=PIPE)
+    stdout, _ = await process.communicate()
 
-async def extract_single_subtitle(video_file, stream_index, subtitle_file, ext):
+    streams = stdout.decode().strip().splitlines()
+    video_streams = [s.split(',')[0] for s in streams if s.split(',')[1] == 'video']
+    audio_streams = [s.split(',')[0] for s in streams if s.split(',')[1] == 'audio']
+    
+    cmd = ["opera", "-i", video_file]
+    for i, stream_index in enumerate(video_streams):
+        cmd.extend(["-map", f"0:v:{i}", "-c:v", "copy", f"{output_dir}/video_{i}.mp4"])
+    
+    for i, stream_index in enumerate(audio_streams):
+        cmd.extend(["-map", f"0:a:{i}", "-c:a", "copy", f"{output_dir}/audio_{i}.aac"])
+    
+    subtitle_streams = await detect_subtitle_streams(video_file)
+    for index, stream in enumerate(subtitle_streams):
+        cmd.extend(["-map", f"0:s:{index}", "-c:s", "copy", f"{output_dir}/subtitle_{index}.srt"])
+    
+    process = await create_subprocess_exec(*cmd, stdout=PIPE, stderr=PIPE)
+    await process.communicate()
+    return output_dir
+
+async def detect_subtitle_streams(video_file):
+    command = ["ffprobe", "-v", "error", "-show_entries", "stream=index,codec_type", "-of", "csv=p=0", video_file]
+    process = await create_subprocess_exec(*command, stdout=PIPE, stderr=PIPE)
+    stdout, _ = await process.communicate()
+    subtitle_streams = []
+    for line in stdout.decode().strip().splitlines():
+        if 'subtitle' in line:
+            stream_index = line.split(',')[0]
+            subtitle_streams.append(stream_index)
+    return subtitle_streams
+
+async def merge_streams(listener, dl_path):
+    merge_type = listener.video_editor.get("merge_type", None)
+    dir = dl_path if ospath.isdir(dl_path) else ospath.dirname(dl_path)
     try:
-        command = [
-            'opera',
-            '-i', video_file,
-            '-map', f'{stream_index}',
-            '-c:s', f'{ext}',
-            subtitle_file 
-        ]
-        process = await create_subprocess_exec(*command, stdout=PIPE, stderr=PIPE)
-        await process.communicate()
-        LOGGER.info(f"FFmpeg command: {' '.join(command)}")
+        all_files = listdir(dir)
+        LOGGER.info(f"Files in directory {dir}: {all_files}")
     except Exception as e:
-        LOGGER.error(f"Error extracting subtitle {stream_index}: {e}")
-        return None
+        LOGGER.error(f"Error listing directory: {e}")
+        return False
+    
+    base_name = clean_video_name(dl_path)
+    video_extensions = ['.mp4', '.mkv', '.avi', '.mov', '.webm', '.flv', '.wmv', '.m4v', '.mpg', '.mpeg']
+    audio_extensions = ['.mp3', '.wav', '.aac', '.flac', '.ogg', '.wma', '.m4a', '.opus']
+    
+    video_files = glob.glob(ospath.join(dir, "**", "*"), recursive=True)
+    video_files = [f for f in video_files if any(f.lower().endswith(ext.lower()) for ext in video_extensions)]
+    audio_files = glob.glob(ospath.join(dir, "**", "*"), recursive=True)
+    audio_files = [f for f in audio_files if any(f.lower().endswith(ext.lower()) for ext in audio_extensions)]
+    if video_files:
+        output_ext = ospath.splitext(video_files[0])[1]
+    else:
+        output_ext = ".mkv"
+    
+    output_file = ospath.join(dir, f"{base_name}_merged{output_ext}")
+    if merge_type == 'video_video':
+        if len(video_files) < 2:
+            LOGGER.error("Tidak cukup video untuk digabungkan")
+            return False
+        input_file = ospath.join(dir, 'merge_input.txt')
+        with open(input_file, 'w') as f:
+            for video in video_files:
+                f.write(f"file '{ospath.join(dir, video)}'\n")
+
+        cmd = [
+            "opera", "-f", "concat", "-safe", "0", "-i", input_file, "-c", "copy", output_file
+        ]
+    else:
+        if not video_files:
+            LOGGER.error("Tidak ada video dalam folder ini")
+            return False
+        if not audio_files:
+            LOGGER.error("Tidak cukup audio untuk digabungkan")
+            return False
+        cmd = ["opera", "-i", ospath.join(dir, video_files[0])]
+        for audio in audio_files:
+            cmd.extend(["-i", ospath.join(dir, audio)])
+        cmd.extend(["-map", "0:v:0"])
+        for i in range(1, len(audio_files) + 1):
+            cmd.extend(["-map", f"{i}:a:0"])
+        cmd.extend(["-c:v", "copy", "-c:a", "copy", output_file])
+    
+    LOGGER.info(f"Executing command: {' '.join(cmd)}")
+    proc = await create_subprocess_exec(*cmd, stdout=PIPE, stderr=PIPE)
+    _, stderr = await proc.communicate()
+    
+    if merge_type == 'video_video':
+        await aioremove(input_file)
+    if proc.returncode == 0:
+        for file in video_files + audio_files:
+            try:
+                await aioremove(file)
+            except Exception as e:
+                LOGGER.error(f"Failed to delete {file}: {e}")
+    
+    return output_file if proc.returncode == 0 else False
