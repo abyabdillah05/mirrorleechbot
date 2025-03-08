@@ -488,12 +488,12 @@ async def createSampleVideo(
 
 ############################# by pikachu #################
 resolution_dict = {
-    "144p": "256:-1",
-    "360p": "640:-1",
-    "480p": "854:-1",
-    "540p": "960:-1",
-    "720p": "1280:-1",
-    "1080p": "1920:-1",
+    "144p": "256:-2",
+    "360p": "640:-2",
+    "480p": "854:-2",
+    "540p": "960:-2",
+    "720p": "1280:-2",
+    "1080p": "1920:-2",
     }
 watermark_dict = {
     "top_left": "10:10",
@@ -618,14 +618,14 @@ async def PerformVideoEditor(
     # Softsub
     softsub = listener.video_editor.get("softsub", [])
     if softsub:
+        output_file += f"_SS"
         for sub in softsub:
             softsub_file = sub.get("file", None)
             cmd.extend(["-i", softsub_file])
         for index, sub in enumerate(softsub):
             language = sub.get("language", "Tidak diketahui")
             cmd.extend([f"-metadata:s:s:{index}", f"language={language}"])
-    if softsub:
-        output_file += f"_SS"
+        
     filter_str = []
     if watermark_file and watermark_position and watermark_size:
         watermark_filter = (
@@ -661,17 +661,56 @@ async def PerformVideoEditor(
         elif ext == "mkv":
             cmd.extend(["-c:s", "srt"])
 
+    # Metadata
+    metadata = listener.video_editor.get("metadata", {})
+    if metadata:
+        output_file += f"_MD"
+        metadata_fields = {
+            "title": "title",
+            "description": "description",
+            "artist": "artist",
+            "comment": "comment",
+            "genre": "genre",
+            "album": "album",
+            "date": "date",
+            "copyright": "copyright",
+        }
+        probe_cmd = [
+            "ffprobe", "-v", "error",
+            "-show_entries", "stream=index,codec_type",
+            "-print_format", "json", video_file
+        ]
+        
+        process = await create_subprocess_exec(*probe_cmd, stdout=PIPE, stderr=PIPE)
+        stdout, stderr= await process.communicate()
+        try:
+            streams = json.loads(stdout).get("streams", [])
+        except json.JSONDecodeError:
+            streams = []
+
+        for key, value in metadata_fields.items():
+            if metadata.get(key):
+                cmd.extend(["-metadata", f"{value}={metadata[key]}"])
+        
+        for stream in streams:
+            index = stream["index"]
+            codec_type = stream["codec_type"]
+            if codec_type in ["video", "audio"]:
+                for key, value in metadata_fields.items():
+                    if metadata.get(key):
+                        cmd.extend(["-metadata:s:{}".format(index), f"{value}={metadata[key]}"])
+    
     # Encoding
-    video_codec = listener.video_editor.get("video_codec", "libx264")
-    audio_codec = listener.video_editor.get("audio_codec", "aac")
+    video_codec = listener.video_editor.get("video_codec", "default")
+    audio_codec = listener.video_editor.get("audio_codec", "default")
     video_bitrate = listener.video_editor.get("video_bitrate", "default")
     audio_bitrate = listener.video_editor.get("audio_bitrate", "default")
     preset = listener.video_editor.get("preset", "veryfast")
     crf = listener.video_editor.get("crf", "23")
     if not (resolution 
-            or watermark
-            or hardsub 
-            or video_codec != "libx264" 
+            or watermark_file
+            or hardsub_file
+            or video_codec != "default" 
             or video_bitrate != "default"
             or audio_codec != "default"
             or audio_bitrate != "default"
@@ -679,8 +718,10 @@ async def PerformVideoEditor(
             or crf != "23"):
         cmd.extend(["-c:v", "copy", "-c:a", "copy"])
     else:
-        if resolution or watermark_file or hardsub_file or (video_codec != "default" and video_bitrate != "default"):
-            cmd.extend(["-c:v", f"{video_codec}", "-preset", f"{preset}", "-crf", f"{crf}"])
+        if resolution or watermark_file or hardsub_file or video_codec != "default" or video_bitrate != "default":
+            if video_codec == "default":
+                video_codec = "libx264"
+            cmd.extend(["-c:v", f"{video_codec}"])
             if video_bitrate != "default":
                 cmd.extend(["-b:v", f"{video_bitrate}"])
         else:
@@ -688,52 +729,18 @@ async def PerformVideoEditor(
         if audio_codec == "default" and audio_bitrate == "default":
             cmd.extend(["-c:a", "copy"])
         else:
-            if audio_bitrate == "default":
-                audio_bitrate = "128k"
-            cmd.extend(["-c:a", f"{audio_codec}", "-b:a", f"{audio_bitrate}"])
+            if audio_codec == "default":
+                audio_codec = "aac"
+            cmd.extend(["-c:a", f"{audio_codec}"])
+            if audio_bitrate != "default":
+                cmd.extend(["-b:a", f"{audio_bitrate}"])
+        cmd.extend(["-preset", f"{preset}", "-crf", f"{crf}", "-movflags", "+faststart", "-pix_fmt", "yuv420p"])
+    if (video_codec != "default" or audio_codec != "default") and not (rename or resolution or watermark_file or hardsub_file):
+        output_file += f"_ENC"
 
-    # Metadata
-    metadata = listener.video_editor.get("metadata", {})
-    output_file += f"_MD"
-    metadata_fields = {
-        "title": "title",
-        "description": "description",
-        "artist": "artist",
-        "comment": "comment",
-        "genre": "genre",
-        "album": "album",
-        "date": "date",
-        "copyright": "copyright",
-    }
-    probe_cmd = [
-        "ffprobe", "-v", "error",
-        "-show_entries", "stream=index,codec_type",
-        "-print_format", "json", video_file
-    ]
-    
-    process = await create_subprocess_exec(*probe_cmd, stdout=PIPE, stderr=PIPE)
-    stdout, stderr= await process.communicate()
-    try:
-        streams = json.loads(stdout).get("streams", [])
-    except json.JSONDecodeError:
-        streams = []
-
-    for key, value in metadata_fields.items():
-        if metadata.get(key):
-            cmd.extend(["-metadata", f"{value}={metadata[key]}"])
-    
-    for stream in streams:
-        index = stream["index"]
-        codec_type = stream["codec_type"]
-        if codec_type in ["video", "audio"]:
-            for key, value in metadata_fields.items():
-                if metadata.get(key):
-                    cmd.extend(["-metadata:s:{}".format(index), f"{value}={metadata[key]}"])
     output_file += f".{ext}"
     cmd.extend(["-threads", f"{cpu_count() // 2}"])
     cmd.append(output_file)
-
-    LOGGER.info(f"FFmpeg filter: {','.join(filter_str)}")
     LOGGER.info(f"FFmpeg command: {' '.join(cmd)}")
     async with subprocess_lock:
         if listener.suproc == "cancelled":

@@ -249,8 +249,8 @@ class VideEditor:
         butt = ButtonMaker()
         msg = "𝐕𝐢𝐝𝐞𝐨𝐄𝐝𝐢𝐭𝐨𝐫 𝐯𝟐.𝟎 𝐁𝐞𝐭𝐚\n___________________________\n<b>Silahkan pilih menu video editor dibawah:</b>\n\n"
         butt.ibutton(f"▶️ Start Video Editor", f"ve start", position="header")
-        video_encoder = self.video_editor.get("video_codec", "libx264")
-        audio_encoder = self.video_editor.get("audio_codec", "aac")
+        video_encoder = self.video_editor.get("video_codec", "default")
+        audio_encoder = self.video_editor.get("audio_codec", "default")
         video_bitrate = self.video_editor.get("video_bitrate", "default")
         audio_bitrate = self.video_editor.get("audio_bitrate", "default")
         crf = self.video_editor.get("crf", 23)
@@ -859,6 +859,8 @@ class VideEditor:
     
     async def merge_stream(self):
         msg = "<b>📌 Silahkan pilih type merge anda!</b>"
+        msg += "\n\n<b>⚠️ Note:</b> Gunakan fitur multi mirror dan samedir untuk menggunakan fitur ini, atau gunakan link folder yang berisi multi video atau audio.\n"
+        msg += f"<i>Klik <a href='https://t.me/pikachukocak2/113'><b>DISINI</b></a> untuk melihat cara penggunaan fitur ini dengan samedir.</i>"
         msg += f"\n\n<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
         butt = ButtonMaker()
         butt.ibutton("🎞️ Merge Video+Video", f"ve merge_video")
@@ -890,8 +892,8 @@ class VideEditor:
     
     async def encoding_main(self):
         msg = "<b>📌 Silahkan pilih menu encoding anda !</b>\n\n"
-        video_encoder = self.video_editor.get("video_codec", "libx264")
-        audio_encoder = self.video_editor.get("audio_codec", "aac")
+        video_encoder = self.video_editor.get("video_codec", "default")
+        audio_encoder = self.video_editor.get("audio_codec", "default")
         video_bitrate = self.video_editor.get("video_bitrate", "default")
         audio_bitrate = self.video_editor.get("audio_bitrate", "default")
         crf = self.video_editor.get("crf", 23)
