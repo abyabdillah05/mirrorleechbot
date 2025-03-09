@@ -157,8 +157,8 @@ class TaskListener(TaskConfig):
         
         if self.dump:
             _, ext = os.path.splitext(up_path)
-            if os.path.isdir(up_path) or ext.lower() not in ('.zip', '.tgz'):
-                await self.onUploadError("Silahkan berikan link atau file ROM yang berisi <code>payload.bin</code> untuk didump !")
+            if os.path.isdir(up_path) or ext.lower() not in ('.zip', '.tgz', '.7z', '.img'):
+                await self.onUploadError("Jenis file tidak didukung untuk proses Dumping !\n\nHanya support file dengan ekstensi <code>.zip, .tgz, .7z, .img</code>")
                 return
             up_path = await self.proceedDump(up_path, size, gid)
             if not up_path:
