@@ -104,10 +104,11 @@ class Mirror(TaskListener):
     @new_task
     async def newEvent(self):
         rply = self.message.reply_to_message
-        if rply and len(self.message.text.split()) == 1 and not self.disable_button:
-            self.button_mode = True
-        elif not rply and len(self.message.text.split()) == 2 and not self.disable_button:
-            self.button_mode = True
+        if self.message.text:
+            if rply and len(self.message.text.split()) == 1 and not self.disable_button:
+                self.button_mode = True
+            elif not rply and len(self.message.text.split()) == 2 and not self.disable_button:
+                self.button_mode = True
 
         if not self.auto_url:
             command_teks = self.message.text.split(maxsplit=1)

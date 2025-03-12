@@ -106,7 +106,7 @@ try:
 except:
     Version.ms = "Gak tau"
 try:
-    Version.p7 = check_output(["7z | grep 7-Zip"], shell=True).decode().split(" ")[0]
+    Version.p7 = check_output(["7z | grep 7-Zip"], shell=True).decode().split(" ")[2]
 except:
     Version.p7 = "Gak tau"
 try:

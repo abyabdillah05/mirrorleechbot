@@ -781,42 +781,67 @@ async def PerformVideoEditor(
         return True
     
 async def extract_all_streams(video_file):
+    LOGGER.info(f"Extracting all streams from {video_file}")
     dir = ospath.dirname(video_file)
     output_dir = f"{dir}/extracted_streams"
     await makedirs(output_dir, exist_ok=True)
     
-    cmd_detect = ["ffprobe", "-v", "error", "-show_entries", "stream=index,codec_type", "-of", "csv=p=0", video_file]
+    cmd_detect = ["ffprobe", "-v", "error", "-show_entries", "stream=index,codec_type,codec_name", "-of", "csv=p=0", video_file]
     process = await create_subprocess_exec(*cmd_detect, stdout=PIPE, stderr=PIPE)
     stdout, _ = await process.communicate()
 
     streams = stdout.decode().strip().splitlines()
-    video_streams = [s.split(',')[0] for s in streams if s.split(',')[1] == 'video']
-    audio_streams = [s.split(',')[0] for s in streams if s.split(',')[1] == 'audio']
+    video_streams = [s.split(',')[0] for s in streams if s.split(',')[2] == 'video']
+    audio_streams = [s.split(',')[0] for s in streams if s.split(',')[2] == 'audio']
     
     cmd = ["opera", "-i", video_file]
     for i, stream_index in enumerate(video_streams):
-        cmd.extend(["-map", f"0:v:{i}", "-c:v", "copy", f"{output_dir}/video_{i}.mp4"])
-    
+        stream_data = next(s for s in streams if s.split(',')[0] == stream_index)
+        codec_name = stream_data.split(',')[1]
+        if codec_name == "av1":
+            ext = ".av1"
+        elif codec_name == "vp9":
+            ext = ".webm"
+        elif codec_name == "hevc":
+            ext = ".mkv"
+        elif codec_name == "h264":
+            ext = ".mp4"
+        else:
+            ext = f".{codec_name}"
+        cmd.extend(["-map", f"0:v:{i}", "-c:v", "copy", f"{output_dir}/video_{i}{ext}"])
+
     for i, stream_index in enumerate(audio_streams):
-        cmd.extend(["-map", f"0:a:{i}", "-c:a", "copy", f"{output_dir}/audio_{i}.aac"])
+        stream_data = next(s for s in streams if s.split(',')[0] == stream_index)
+        codec_name = stream_data.split(',')[1]
+        if codec_name not in ["ac3", "dts", "mp3", "eac3"]:
+            cmd.extend(["-map", f"0:a:{i}", "-c:a", "copy", f"{output_dir}/audio_{i}.aac"])
+        else:
+            cmd.extend(["-map", f"0:a:{i}", "-c:a", "copy", f"{output_dir}/audio_{i}.{codec_name}"])
     
     subtitle_streams = await detect_subtitle_streams(video_file)
-    for index, stream in enumerate(subtitle_streams):
-        cmd.extend(["-map", f"0:s:{index}", "-c:s", "copy", f"{output_dir}/subtitle_{index}.srt"])
+    for index, (stream, subtitle_type) in enumerate(subtitle_streams):
+        if subtitle_type == "pgs":
+            cmd.extend(["-map", f"0:s:{index}", "-c:s", "copy", f"{output_dir}/subtitle_{index}.sup"])
+        else:
+            cmd.extend(["-map", f"0:s:{index}", "-c:s", "copy", f"{output_dir}/subtitle_{index}.srt"])
     
     process = await create_subprocess_exec(*cmd, stdout=PIPE, stderr=PIPE)
     await process.communicate()
     return output_dir
 
 async def detect_subtitle_streams(video_file):
-    command = ["ffprobe", "-v", "error", "-show_entries", "stream=index,codec_type", "-of", "csv=p=0", video_file]
+    command = ["ffprobe", "-v", "error", "-show_entries", "stream=index,codec_type,codec_name", "-of", "csv=p=0", video_file]
     process = await create_subprocess_exec(*command, stdout=PIPE, stderr=PIPE)
     stdout, _ = await process.communicate()
     subtitle_streams = []
     for line in stdout.decode().strip().splitlines():
         if 'subtitle' in line:
             stream_index = line.split(',')[0]
-            subtitle_streams.append(stream_index)
+            codec_name = line.split(',')[1]
+            if codec_name == "hdmv_pgs_subtitle":
+                subtitle_streams.append((stream_index, "pgs"))
+            else:
+                subtitle_streams.append((stream_index, "text"))
     return subtitle_streams
 
 async def merge_streams(listener, dl_path):

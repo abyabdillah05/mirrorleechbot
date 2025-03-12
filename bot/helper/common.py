@@ -676,8 +676,8 @@ class TaskConfig:
             split_size = (size // parts) + (size % parts)
         else:
             split_size = self.splitSize
-        if self.isLeech and int(size) > self.splitSize:
-            up_path = up_path.replace(".zip", ".7z")
+        #if self.isLeech and int(size) > self.splitSize:
+        #    up_path = up_path.replace(".zip", ".7z")
         cmd = [
             "7z",
             f"-v{split_size}b",
@@ -801,7 +801,7 @@ class TaskConfig:
             task_dict[self.mid] = VideoEditorStatus(self, size, gid)
 
         async with cpu_eater_lock:
-            checked = False
+            #checked = False
             merge = self.video_editor.get("merge_type", None)
             if merge:
                 LOGGER.info(f"Editing Video: {self.name}")
@@ -816,16 +816,16 @@ class TaskConfig:
                 mime_type = get_mime_type(dl_path)
                 if mime_type not in ("video/mp4", "video/x-matroska", "video/webm"):
                     return dl_path
-                if (await get_document_type(dl_path))[0]:
-                    if not checked:
-                        checked = True
-                        LOGGER.info(f"Editing Video: {self.name}")
-                    res = await PerformVideoEditor(
-                        self, dl_path, True
-                    )
-                    if not res:
-                        return dl_path
-                    return res
+                #if (await get_document_type(dl_path))[0]:
+                #    if not checked:
+                #        checked = True
+                LOGGER.info(f"Merge Video: {self.name}")
+                res = await PerformVideoEditor(
+                    self, dl_path, True
+                )
+                if not res:
+                    return dl_path
+                return res
                     
             else:
                 for dirpath, _, files in await sync_to_async(
@@ -836,17 +836,17 @@ class TaskConfig:
                         mime_type = get_mime_type(f_path)
                         if mime_type not in ("video/mp4", "video/x-matroska", "video/webm"):
                             continue
-                        if (await get_document_type(f_path))[0]:
-                            if not checked:
-                                checked = True
-                                LOGGER.info(f"Editing Video: {self.name}")
-                            res = await PerformVideoEditor(
-                                self, f_path
-                            )
-                            if not res:
-                                return res
-                            try:
-                                await aioremove(f_path)
-                            except Exception as e:
-                                LOGGER.error(f"Failed to delete file {f_path}: {e}")
+                        #if (await get_document_type(f_path))[0]:
+                        #    if not checked:
+                        #        checked = True
+                        LOGGER.info(f"Editing Video: {self.name}")
+                        res = await PerformVideoEditor(
+                            self, f_path
+                        )
+                        if not res:
+                            return res
+                        try:
+                            await aioremove(f_path)
+                        except Exception as e:
+                            LOGGER.error(f"Failed to delete file {f_path}: {e}")
                 return dl_path
