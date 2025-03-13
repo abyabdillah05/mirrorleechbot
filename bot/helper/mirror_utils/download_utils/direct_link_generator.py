@@ -468,9 +468,10 @@ def mediafire(url, session=None):
         session = create_scraper()
         coba = 0
         max_coba = 5
+        proxy = "http://hsakalu2:hsakalu2@45.151.162.198:6600"
         while coba < max_coba:
             try:
-                req = session.get(url)
+                req = session.get(url, proxies={"http": proxy, "https": proxy})
                 if req.status_code == 200:
                     return req.text
             except:
@@ -578,9 +579,10 @@ def mediafireFolder(url):
         session = create_scraper()
         coba = 0
         max_coba = 10
+        proxy = "http://hsakalu2:hsakalu2@45.151.162.198:6600"
         while coba < max_coba:
             try:
-                req = session.get(url)
+                req = session.get(url, proxies={"http": proxy, "https": proxy})
                 if req.status_code == 200:
                     return req.text
             except:
