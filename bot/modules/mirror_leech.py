@@ -52,7 +52,7 @@ from bot.modules.video_editor import VideEditor
 from urllib.parse import urlparse
 from bot.modules.sourceforge_extract import sourceforgeExtract
 
-urlregex = r"^(?!\/)(rtmps?:\/\/|mms:\/\/|rtsp:\/\/|https?:\/\/|ftp:\/\/)?([^\/:]+:[^\/@]+@)?(www\.)?(?=[^\/:\s]+\.[^\/:\s]+)([^\/:\s]+\.[^\/:\s]+)(:\d+)?(\/[^#\s]*[\s\S]*)?(\?[^#\s]*)?(#.*)?$"
+urlregex = r"^(https?:\/\/)(www\.)?([a-zA-Z0-9-]+\.[a-zA-Z]{2,})(\/[^#\s]*)?(\?[^#\s]*)?(#.*)?$"
 magnetregex = r"magnet:\?xt=urn:(btih|btmh):[a-zA-Z0-9]*\s*"
 class Mirror(TaskListener):
     def __init__(
