@@ -66,8 +66,6 @@ def direct_link_generator(link: str):
     #elif "drive.usercontent.google.com" in domain:
     #    raise DirectDownloadLinkException(
     #        "ERROR: Link Gdrive yang anda berikan salah, gunakan link <code>drive.google.com</code>")
-    elif "devuploads.com" in domain:
-        return devuploads(link)
     elif "mediafire.com" in domain:
         return mediafire(link)
     elif "uptobox.com" in domain:
@@ -305,6 +303,10 @@ def direct_link_generator(link: str):
         return qiwi(link)
     elif 'berkasdrive.com' in domain:
         return berkasdrive(link)
+    elif "devuploads" in domain:
+        return devuploads(link)
+    elif "lulacloud.com" in domain:
+        return lulacloud(link)
     #elif 'sourceforge.net' in domain:
     #    return sourceforge(link)
     elif 'database.s3cr3t.workers.dev' in domain:
@@ -2134,20 +2136,31 @@ def sharepoint(url):
 def berkasdrive(url):
     """berkasdrive.com link generator
     by https://github.com/aenulrofik"""
-    with Session() as session:
+    pattern = r'^https?://dl\.berkasdrive\.com/.*'
+    if not re.match(pattern, url):
+        return "ERROR: URL tidak valid, hanya link dari dl.berkasdrive.com yang didukung"
+    with create_scraper() as session:
         try:
             sesi = session.get(url).text
         except Exception as e:
-            session.close()
-            raise DirectDownloadLinkException(f"ERROR: {e}")
+            return(f"ERROR: {e}")
+        scrap = HTML(sesi)
+        link_biasa = scrap.xpath('//a[@id="ini_download_biasa"]/@href')
+        link_cf = scrap.xpath('//a[@id="ini_download_cf"]/@href')
 
-    html = HTML(sesi)
-    cari = html.xpath("//script[contains(text(), 'function dl()')]")[0].text
-    if cari:
-        link = cari.split('const a = "')[1].split('";')[0]
-        return base64.b64decode(link).decode('utf-8')
-    else:
-        raise DirectDownloadLinkException(f"ERROR: File tidak ditemukan!")
+        if link_cf and link_biasa:
+            try:
+                res = requests.head(link_cf[0], allow_redirects=True, timeout=5)
+                if res.status_code == 200:
+                    return link_cf[0]
+                else:
+                    return link_biasa[0]
+            except:
+                return link_biasa[0]
+        elif link_biasa:
+            return link_biasa[0]
+        else:
+            raise DirectDownloadLinkException (f"ERROR: File tidak ditemukan")
 
 def files_fm(url):
     parsed_url = urlparse(url)
@@ -2316,13 +2329,16 @@ def buzzheavier(url):
                 return details
         else:
             raise DirectDownloadLinkException("ERROR: Failed to fetch direct link.")
-
+        
 def devuploads(url):
     """
     Generate a direct download link for devuploads.com URLs.
     @param url: URL from devuploads.com
     @return: Direct download link
     """
+    pattern = r'^https?://devuploads\.com/.*'
+    if not re.match(pattern, url):
+        return "ERROR: URL tidak valid, gunakan format link <code>https://devuploads.com/xxxxxxxx</code>"
     session = Session()
     res = session.get(url)
     html = HTML(res.text)
@@ -2358,3 +2374,18 @@ def devuploads(url):
     direct_link = html.xpath("//input[@name='orilink']/@value")
     session.close()
     return direct_link[0]
+
+def lulacloud(url):
+     """
+     Generate a direct download link for www.lulacloud.com URLs.
+     @param url: URL from www.lulacloud.com
+     @return: Direct download link
+     """
+     session = Session()
+     try:
+         res = session.post(url, headers={'Referer': url}, allow_redirects=False)
+         return res.headers['location']
+     except Exception as e:
+         raise DirectDownloadLinkException(f"ERROR: {str(e)}") from e
+     finally:
+         session.close()
