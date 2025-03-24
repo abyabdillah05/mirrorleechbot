@@ -10,8 +10,6 @@ async def quota_check(listener, size):
     id = listener.user_id
     if id in user_data and user_data[id].get("is_sudo") or id == OWNER_ID:
         return
-    if id == OWNER_ID:
-        return
     if id in user_data and user_data[id].get("quota"):
         quota = user_data[id]["quota"]
     else:
