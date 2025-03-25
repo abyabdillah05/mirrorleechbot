@@ -173,240 +173,151 @@ async def tiktokdl(client, message, url, audio=False, type="video"):
     else:
         uname = f'<code>{message.from_user.first_name}</code>'
     
-    mess = await sendMessage(message, f"<b>⌛️ {'Mengunduh audio' if audio or type=='audio' else 'Mengunduh video'} dari TikTok, silahkan tunggu sebentar...</b>")
+    if audio:
+        mess = await sendMessage(message, f"<b>⌛️Mendownload audio dari tiktok, silahkan tunggu sebentar...</b>")
+    else:
+        mess = await sendMessage(message, f"<b>⌛️Mendownload video dari tiktok, silahkan tunggu sebentar...</b>")
+    
+    async with niquests.AsyncSession() as client:
+        try:
+            r = await client.get(url, allow_redirects=False)
+            if r.status_code == 301:
+                new_url = r.headers['Location']
+                r = await client.get(new_url)
+                hasil = r.url
+            else:
+                hasil = r.url
+        except Exception as e:
+            await sendMessage(mess, f"Terjadi kesalahan saat mencoba mengakses url, silahkan coba kembali.\n\n<blockquote>{e}</blockquote>")
+            await deleteMessage(mess)
+            return None
+        
+        pattern = r"^(?:https?://(?:www\.)?tiktok\.com)/(?P<user>[\w\.-]+)/(?P<content_type>video|photo)+/(?P<id>\d+)"
+        match = re.match(pattern, str(hasil))
+        if match:  
+            content_type = match.group("content_type")
+            id = match.group('id')
+        else:
+            await editMessage(mess, f"Link yang anda berikan sepertinya salah atau belum support, silahkan coba dengan link yang lain!")
+            await deleteMessage(mess)
+            return None
     
     try:
-        async with httpx.AsyncClient() as http_client:
-            r = await http_client.get(url, follow_redirects=True)
-            hasil = str(r.url)
-            
-            pattern = r"^(?:https?://(?:www\.)?tiktok\.com)/(?P<user>[\a-zA-Z0-9-]+)(?P<content_type>video|photo)+/(?P<id>\d+)"
-            match = re.match(pattern, hasil)
-            
-            if not match:
-                await editMessage(mess, f"<b>❌ Error:</b> Link yang anda berikan sepertinya salah atau belum support, silahkan coba dengan link yang lain!")
-                return None
-                
-            content_type = match.group("content_type")
-            video_id = match.group('id')
-            
+        async with niquests.AsyncSession() as client:
+            data = ""
             try:
-                async with httpx.AsyncClient() as api_client:
-                    api_response = await api_client.get(
-                        url=f"https://api16-normal-useast5.us.tiktokv.com/aweme/v1/feed/?aweme_id={video_id}",
-                        headers={"User-Agent": user_agent}
-                    )
-                    api_response.raise_for_status()
-                    data = loads(api_response.text)
+                for _ in range(3):
+                    try:
+                        r = await client.get(
+                            url=f"https://api16-normal-useast5.us.tiktokv.com/aweme/v1/feed/?aweme_id={id}",
+                            headers={"User-Agent": user_agent},
+                            timeout=10
+                        )
+                        r.raise_for_status()
+                        data = r.text
+                        if data:
+                            break
+                    except Exception as e:
+                        LOGGER.error(f"TikTok API attempt failed: {e}")
+                        await asleep(1)
+                
+                if not data:
+                    raise Exception("Failed to get data from TikTok API after multiple attempts")
+                
+                data = loads(data)
+                
+                if "aweme_list" in data and len(data["aweme_list"]) > 0:
+                    music = data["aweme_list"][0]["music"]["play_url"]["url_list"][-1]
+                    m_capt = data["aweme_list"][0]["music"]["title"]
                     
-                    if "aweme_list" in data and len(data["aweme_list"]) > 0:
-                        music = data["aweme_list"][0]["music"]["play_url"]["url_list"][-1]
-                        m_capt = data["aweme_list"][0]["music"]["title"]
+                    if content_type == "video":
+                        link = data["aweme_list"][0]["video"]["play_addr"]["url_list"][-1]
                         filename = data["aweme_list"][0]["desc"]
                         capt = f"<code>{filename}</code> \n\n<b>Tugas Oleh:</b> {uname}"
                         
-                        if content_type == "video":
-                            if audio or type == "audio":
-                                await editMessage(mess, f"<b>⬇️ Mengunduh audio dari TikTok...</b>\n\n<i>{m_capt}</i>")
-                                
-                                temp_path = config_dict.get('TEMP_PATH', '/tmp')
-                                audio_file = f"{temp_path}/{message.id}_audio.mp3"
-                                
-                                await download_file(music, audio_file)
-                                
-                                await message.reply_audio(
-                                    audio=audio_file,
-                                    caption=f"<b>🎵 Audio TikTok</b>\n\n<b>Judul:</b> {m_capt}",
-                                    title=f"TikTok Audio - {m_capt}"
-                                )
-                                
-                                if await aiopath.exists(audio_file):
-                                    await aioremove(audio_file)
-                                
-                            else:
-                                link = data["aweme_list"][0]["video"]["play_addr"]["url_list"][-1]
-                                await customSendVideo(message, link, capt, None, None, None, None, None)
-                                
-                        elif content_type == "photo":
-                            if audio or type == "audio":
-                                await customSendAudio(message, music, m_capt, None, None, None, None, None)
-                            else:
-                                photo_urls = []
-                                for aweme in data["aweme_list"][0]["image_post_info"]["images"]:
-                                    for link in aweme["display_image"]["url_list"][1:]:
-                                        photo_urls.append(link)
-                                photo_groups = [photo_urls[i:i+10] for i in range(0, len(photo_urls), 10)]
-                                for photo_group in photo_groups:
-                                    await message.reply_media_group([InputMediaPhoto(photo_url) for photo_url in photo_group])
-                        
-                        await deleteMessage(mess)
-                        return True
-            
-            except Exception as e:
-                LOGGER.error(f"TikTok primary API error: {str(e)}")
-                
-            try:
-                async with httpx.AsyncClient() as tikwm_client:
-                    api_url = f"https://tikwm.com/api/?url={url}"
-                    response = await tikwm_client.get(api_url, headers={"User-Agent": user_agent})
-                    response.raise_for_status()
-                    
-                    data = response.json()
-                    if data.get("code") == 0 and data.get("data"):
-                        result = data["data"]
-                        title = result.get("title", "No description")
-                        author = result.get("author", {}).get("nickname", "Unknown")
-                        
-                        if audio or type == "audio":
-                            music_url = result.get("music")
-                            if not music_url:
-                                await editMessage(mess, "<b>❌ Error:</b> Audio tidak ditemukan")
-                                return None
-                                
-                            await editMessage(mess, f"<b>⬇️ Mengunduh audio dari TikTok...</b>\n\n<i>{title}</i>")
-                            
-                            temp_path = config_dict.get('TEMP_PATH', '/tmp')
-                            if 'TEMP_PATH' not in config_dict:
-                                config_dict['TEMP_PATH'] = '/tmp'
-                            os.makedirs(temp_path, exist_ok=True)
-                            
-                            audio_file = f"{temp_path}/{message.id}_audio.mp3"
-                            await download_file(music_url, audio_file)
-                            
-                            caption = f"<b>🎵 Audio TikTok</b>\n\n<b>Judul:</b> {title}\n<b>Pembuat:</b> {author}"
-                            
-                            await message.reply_audio(
-                                audio=audio_file,
-                                caption=caption,
-                                title=f"TikTok Audio - {author}"
-                            )
-                            
-                            if await aiopath.exists(audio_file):
-                                await aioremove(audio_file)
+                        if audio is True or type == "audio":
+                            await customSendAudio(message, music, m_capt, None, None, None, None, None)
                         else:
-                            video_url = result.get("play")
                             if type == "nowm":
-                                video_url = result.get("hdplay", "") or video_url
-                                
-                            if not video_url:
-                                await editMessage(mess, "<b>❌ Error:</b> Video tidak ditemukan")
-                                return None
-                                
-                            if type == "nowm":
-                                await editMessage(mess, f"<b>⬇️ Mengunduh video TikTok tanpa watermark...</b>\n\n<i>{title}</i>")
-                            else:
-                                await editMessage(mess, f"<b>⬇️ Mengunduh video TikTok...</b>\n\n<i>{title}</i>")
+                                nowm_link = link
+                                for play_addr in data["aweme_list"][0]["video"]["play_addr"]["url_list"]:
+                                    if "watermark=0" in play_addr:
+                                        nowm_link = play_addr
+                                        break
+                                link = nowm_link
                             
-                            caption = f"<code>{title}</code> \n\n<b>Tugas Oleh:</b> {uname}"
-                            await customSendVideo(message, video_url, caption, None, None, None, None, None)
-                            
-                        await deleteMessage(mess)
-                        return True
-                        
-            except Exception as e:
-                LOGGER.error(f"TikWM API error: {str(e)}")
+                            await customSendVideo(message, link, capt, None, None, None, None, None)
+                    
+                    elif content_type == "photo":
+                        if audio is True or type == "audio":
+                            await customSendAudio(message, music, m_capt, None, None, None, None, None)
+                        else:
+                            photo_urls = []
+                            for aweme in data["aweme_list"][0]["image_post_info"]["images"]:
+                                for link in aweme["display_image"]["url_list"][1:]:
+                                    photo_urls.append(link)
+                            photo_groups = [photo_urls[i:i+10] for i in range(0, len(photo_urls), 10)]
+                            for photo_group in photo_groups:
+                                await message.reply_media_group([InputMediaPhoto(photo_url) for photo_url in photo_group])
                 
-            try:
-                async with httpx.AsyncClient() as ssstik_client:
+            except Exception as e:
+                LOGGER.error(f"TikTok API Error: {str(e)}")
+                
+                try:
+                    LOGGER.info(f"Trying TikSave API fallback...")
                     headers = {
-                        'User-Agent': user_agent,
-                        'Origin': 'https://ssstik.io',
-                        'Referer': 'https://ssstik.io/'
+                        "User-Agent": user_agent,
+                        "Referer": "https://tiksave.ai/"
                     }
-                    
-                    response = await ssstik_client.get("https://ssstik.io/en", headers=headers)
-                    html_content = response.text
-                    tt_token_match = re.search(r'tt:(["\'](.*?)["\'])', html_content)
-                    tt_token = tt_token_match.group(2) if tt_token_match else ""
-                    
-                    if not tt_token:
-                        raise Exception("Could not extract token from ssstik.io")
                     
                     data = {
-                        'id': url,
-                        'tt': tt_token
+                        "id": url
                     }
                     
-                    response = await ssstik_client.post("https://ssstik.io/abc?url=dl", data=data, headers=headers)
-                    resp_html = response.text
+                    response = await client.post(
+                        "https://tiksave.ai/api/download", 
+                        headers=headers,
+                        data=data
+                    )
                     
-                    mp4_match = re.search(r'href="(https?://.*?\.mp4.*?)"', resp_html)
-                    mp3_match = re.search(r'href="(https?://.*?\.mp3.*?)"', resp_html)
-                    title_match = re.search(r'class="maintext">(.*?)<', resp_html)
-                    author_match = re.search(r'class="author.*?">(.*?)<', resp_html)
+                    if response.status_code != 200:
+                        raise Exception(f"TikSave API Error: Status {response.status_code}")
                     
-                    title = title_match.group(1) if title_match else "No description"
-                    author = author_match.group(1) if author_match else "Unknown author"
+                    result = response.json()
                     
-                    if audio or type == "audio":
-                        if not mp3_match:
-                            await editMessage(mess, "<b>❌ Error:</b> Audio tidak ditemukan")
-                            return None
-                            
-                        audio_url = mp3_match.group(1)
-                        await editMessage(mess, f"<b>⬇️ Mengunduh audio dari TikTok...</b>\n\n<i>{title}</i>")
-                        
-                        temp_path = config_dict.get('TEMP_PATH', '/tmp')
-                        if 'TEMP_PATH' not in config_dict:
-                            config_dict['TEMP_PATH'] = '/tmp'
-                        os.makedirs(temp_path, exist_ok=True)
-                        
-                        audio_file = f"{temp_path}/{message.id}_audio.mp3"
-                        await download_file(audio_url, audio_file)
-                        
-                        caption = f"<b>🎵 Audio TikTok</b>\n\n<b>Judul:</b> {title}\n<b>Pembuat:</b> {author}"
-                        
-                        await message.reply_audio(
-                            audio=audio_file,
-                            caption=caption,
-                            title=f"TikTok Audio - {author}"
-                        )
-                        
-                        if await aiopath.exists(audio_file):
-                            await aioremove(audio_file)
-                    else:
-                        if not mp4_match:
-                            await editMessage(mess, "<b>❌ Error:</b> Video tidak ditemukan")
-                            return None
-                            
-                        video_url = mp4_match.group(1)
-                        
-                        if type == "nowm":
-                            await editMessage(mess, f"<b>⬇️ Mengunduh video TikTok tanpa watermark...</b>\n\n<i>{title}</i>")
+                    if "type" in result and result["type"] in ["success", "ok"]:
+                        if audio is True or type == "audio":
+                            if "music" in result and result["music"]:
+                                music_url = result["music"]
+                                title = result.get("title", "TikTok Audio")
+                                await customSendAudio(message, music_url, title, None, None, None, None, None)
+                            else:
+                                raise Exception("Audio not found")
                         else:
-                            await editMessage(mess, f"<b>⬇️ Mengunduh video TikTok...</b>\n\n<i>{title}</i>")
-                        
-                        caption = f"<code>{title}</code> \n\n<b>Tugas Oleh:</b> {uname}"
-                        await customSendVideo(message, video_url, caption, None, None, None, None, None)
+                            video_url = None
+                            if type == "nowm" and "video_no_wm" in result and result["video_no_wm"]:
+                                video_url = result["video_no_wm"]
+                            elif "video" in result and result["video"]:
+                                video_url = result["video"]
+                            else:
+                                raise Exception("Video not found")
+                            
+                            title = result.get("title", "TikTok Video")
+                            capt = f"<code>{title}</code> \n\n<b>Tugas Oleh:</b> {uname}"
+                            await customSendVideo(message, video_url, capt, None, None, None, None, None)
+                    else:
+                        raise Exception("Failed to download from TikSave API")
                     
+                except Exception as fallback_error:
+                    LOGGER.error(f"TikSave API Error: {str(fallback_error)}")
+                    await sendMessage(mess, f"Hai {uname}, Terjadi kesalahan saat mencoba mengunduh. Silahkan coba lagi nanti.\n\n<blockquote>{str(e)}</blockquote>")
                     await deleteMessage(mess)
-                    return True
-                    
-            except Exception as e:
-                LOGGER.error(f"SSStiK API error: {str(e)}")
-            
-            # All methods failed
-            await editMessage(mess, "<b>❌ Error:</b> Gagal mengunduh video TikTok. Semua API tidak tersedia saat ini.")
-            return None
-            
+                    return None
+    
     except Exception as e:
-        await editMessage(mess, f"<b>❌ Error:</b> {str(e)}")
-        LOGGER.error(f"TikTok download error: {str(e)}")
-        return None
-
-async def download_file(url, path):
-    """Helper function to download files from URL"""
-    try:
-        async with httpx.AsyncClient() as client:
-            async with client.stream("GET", url) as response:
-                response.raise_for_status()
-                async with aiofiles.open(path, "wb") as f:
-                    async for chunk in response.aiter_bytes():
-                        await f.write(chunk)
-        return True
-    except Exception as e:
-        LOGGER.error(f"Error downloading file: {e}")
-        raise e
+        await sendMessage(mess, f"ERROR: Gagal mengunduh media: {str(e)}")
+    finally:
+        await deleteMessage(mess)
 
 #########################################
 #Tiktok Search
@@ -828,11 +739,38 @@ async def subdl_query(_, query):
 ####################################################################
 #YT_SEARCH
 ####################################################################
+
+def format_count(count_str):
+    try:
+        count = int(count_str)
+        if count >= 1000000:
+            return f"{count/1000000:.2f}M".replace(".00", "")
+        elif count >= 1000:
+            return f"{count/1000:.2f}K".replace(".00", "")
+        else:
+            return str(count)
+    except (ValueError, TypeError):
+        return "0"
+
+def parse_duration(duration_str):
+    
+    hours_match = re.search(r'(\d+)H', duration_str)
+    minutes_match = re.search(r'(\d+)M', duration_str)
+    seconds_match = re.search(r'(\d+)S', duration_str)
+    
+    hours = int(hours_match.group(1)) if hours_match else 0
+    minutes = int(minutes_match.group(1)) if minutes_match else 0
+    seconds = int(seconds_match.group(1)) if seconds_match else 0
+
+    if hours > 0:
+        return f"{hours}:{minutes:02d}:{seconds:02d}"
+    else:
+        return f"{minutes}:{seconds:02d}"
+
+
+
 youtube = {}
 async def yt_request(uid, keyword):
-    """
-    Approve Fungsi Yt Search
-    """
     try:
         msg = f"<b>🔎 Hasil Pencarian YouTube untuk:</b> <code>{keyword}</code>\n\n"
         api_key = "AIzaSyBmQVnzf5khHZE8GSbVzNmVefzPFGPW7aU"
@@ -843,57 +781,36 @@ async def yt_request(uid, keyword):
             data = response.json()
         
         if "items" not in data or not data["items"]:
-            return f"<b>❌ Tidak ditemukan hasil untuk:</b> <code>{keyword}</code>\n\nCoba dengan kata kunci lain."
+            return f"<b>❌ Tidak ditemukan hasil untuk:</b> <code>{keyword}</code>\n\nCoba dengan kata kunci lain.", None
         
         video_ids = [item["id"]["videoId"] for item in data["items"]]
         ids_str = ",".join(video_ids)
         
-        details_url = f"https://www.googleapis.com/youtube/v3/videos?part=contentDetails,statistics&id={ids_str}&key={api_key}"
+        video_url = f"https://www.googleapis.com/youtube/v3/videos?id={ids_str}&part=contentDetails,statistics&key={api_key}"
         async with httpx.AsyncClient() as client:
-            details_response = await client.get(details_url)
-            details_data = details_response.json()
+            response = await client.get(video_url)
+            video_data = response.json()
         
         video_details = {}
-        if "items" in details_data:
-            for item in details_data["items"]:
+        if "items" in video_data:
+            for item in video_data["items"]:
                 video_details[item["id"]] = {
                     "duration": item["contentDetails"]["duration"],
                     "views": item["statistics"].get("viewCount", "0"),
                     "likes": item["statistics"].get("likeCount", "0")
                 }
         
-        def parse_duration(duration_str):
-            match = re.match(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?', duration_str)
-            if not match:
-                return "00:00"
-            
-            hours, minutes, seconds = match.groups()
-            hours = int(hours) if hours else 0
-            minutes = int(minutes) if minutes else 0
-            seconds = int(seconds) if seconds else 0
-            
-            if hours > 0:
-                return f"{hours:02}:{minutes:02}:{seconds:02}"
-            else:
-                return f"{minutes:02}:{seconds:02}"
-        
-        def format_count(count_str):
-            count = int(count_str)
-            if count >= 1000000000:
-                return f"{count/1000000000:.1f}B"
-            elif count >= 1000000:
-                return f"{count/1000000:.1f}M"
-            elif count >= 1000:
-                return f"{count/1000:.1f}K"
-            else:
-                return str(count)
-        
         results = []
+        
+        max_caption_len = 800
+        current_len = len(msg)
+        
         for i, item in enumerate(data["items"], 1):
             video_id = item["id"]["videoId"]
             title = item["snippet"]["title"]
             channel = item["snippet"]["channelTitle"]
-            thumbnail = item["snippet"]["thumbnails"]["high"]["url"]
+            
+            entry = f"<b>{i}.</b> <a href='https://youtube.com/watch?v={video_id}'>{title}</a>\n"
             
             detail_text = ""
             if video_id in video_details:
@@ -903,10 +820,17 @@ async def yt_request(uid, keyword):
                 likes = format_count(detail["likes"])
                 detail_text = f"⏱️ {duration} | 👁️ {views} | 👍 {likes}"
             
-            msg += f"<b>{i}.</b> <a href='https://youtube.com/watch?v={video_id}'>{title}</a>\n"
-            msg += f"<i>📢 {channel}</i> {detail_text}\n\n"
+            entry += f"<i>📢 {channel}</i> {detail_text}\n\n"
             
-            results.append({'title': title, 'id': video_id, 'channel': channel, 'thumbnail': thumbnail})
+            if current_len + len(entry) <= max_caption_len:
+                msg += entry
+                current_len += len(entry)
+            else:
+                if i < len(data["items"]):
+                    msg += f"\n<i>...dan {len(data['items']) - i + 1} hasil lainnya</i>"
+                break
+            
+            results.append({'title': title, 'id': video_id, 'channel': channel})
         
         butt = ButtonMaker()
         for index, video in enumerate(results, 1):
@@ -921,7 +845,7 @@ async def yt_request(uid, keyword):
         return msg, butts
     except Exception as e:
         LOGGER.error(f"Error in YouTube search: {e}")
-        return f"<b>❌ Terjadi kesalahan saat mencari video:</b>\n\n<code>{str(e)}</code>"
+        return f"<b>❌ Terjadi kesalahan saat mencari video:</b>\n\n<code>{str(e)}</code>", None
 
 async def edit_durasi(duration):
     duration = duration[2:]
@@ -961,6 +885,7 @@ async def yt_search(client, message, keyword=None):
     else:
         keyword = None
     if keyword:
+        mess = None
         try:
             mess = await sendMessage(message, f"<b>Tunggu sebentar tuan...</b>")
             
@@ -980,22 +905,38 @@ async def yt_search(client, message, keyword=None):
             msg, butts = await yt_request(uid, keyword)
             
             try:
-                await deleteMessage(mess)
+                if mess:
+                    await deleteMessage(mess)
             except Exception as e:
                 LOGGER.error(f"Error deleting message: {e}")
                 
-            sent_message = await message.reply_photo(
-                "https://telegra.ph/file/9fbae069402df1710585f.jpg", 
-                caption=msg, 
-                reply_markup=butts
-            )
-            # Store the sent message object for future reference
-            youtube[uid]["sent_message"] = sent_message
+            try:
+                sent_message = await message.reply_photo(
+                    "https://telegra.ph/file/9fbae069402df1710585f.jpg", 
+                    caption=msg, 
+                    reply_markup=butts
+                )
+                youtube[uid]["sent_message"] = sent_message
+            except Exception as e:
+                if "caption is too long" in str(e).lower() or "media_caption_too_long" in str(e).lower():
+                    short_msg = f"<b>🔎 Hasil Pencarian YouTube untuk:</b> <code>{keyword}</code>\n\n<i>Hasil terlalu panjang, silahkan pilih nomor untuk melihat detail.</i>"
+                    sent_message = await message.reply_photo(
+                        "https://telegra.ph/file/9fbae069402df1710585f.jpg", 
+                        caption=short_msg, 
+                        reply_markup=butts
+                    )
+                    youtube[uid]["sent_message"] = sent_message
+                else:
+                    LOGGER.error(f"Error sending YouTube search results: {e}")
+                    if uid in youtube:
+                        del youtube[uid]
+                    await message.reply_text(f"<b>❌ Error:</b> {str(e)}")
                 
         except Exception as e:
             LOGGER.error(f"YouTube search error: {e}")
             try:
-                await editMessage(mess, f"{e}")
+                if mess:
+                    await editMessage(mess, f"<b>Error:</b> {str(e)}")
             except Exception:
                 await message.reply_text(f"<b>❌ Error:</b> {str(e)}")
             if uid in youtube:
