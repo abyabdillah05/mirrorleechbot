@@ -170,86 +170,85 @@ async def tiktokdl(client, message, url, audio=False, type="video"):
     mess = await sendMessage(message, "<b>⌛ Sedang mencoba mengunduh...</b>")
     
     try:
-        apis = [
-            {
-                "url": "https://api.tiklydown.eu.org/api/download",
-                "params": {"url": url},
-                "headers": None,
-                "response_handler": lambda data: {
-                    "success": True if data.get("video") else False,
-                    "desc": data.get("desc", "No description"),
-                    "author": {"nickname": data.get("author", {}).get("nickname", "Unknown")},
-                    "music_url": data.get("music", {}).get("play", None),
-                    "video_url": data.get("video", {}).get("with_watermark", None),
-                    "video_no_wm": data.get("video", {}).get("no_watermark", None),
-                }
-            },
+        api_endpoints = [
             {
                 "url": "https://tikwm.com/api/",
                 "params": {"url": url},
-                "headers": None,
-                "response_handler": lambda data: {
-                    "success": True if data.get("status") == "success" else False,
-                    "desc": data.get("data", {}).get("title", "No description"),
-                    "author": {"nickname": data.get("data", {}).get("author", {}).get("nickname", "Unknown")},
-                    "music_url": data.get("data", {}).get("music", None),
-                    "video_url": data.get("data", {}).get("play", None),
-                    "video_no_wm": data.get("data", {}).get("hdplay", None) or data.get("data", {}).get("wmplay", None),
+                "parse_func": lambda data: {
+                    "success": data.get("status") == "success",
+                    "title": data.get("data", {}).get("title", "No description"),
+                    "author": data.get("data", {}).get("author", {}).get("nickname", "Unknown author"),
+                    "music_url": data.get("data", {}).get("music", ""),
+                    "video_url": data.get("data", {}).get("play", ""),
+                    "video_no_wm": data.get("data", {}).get("hdplay", "") or data.get("data", {}).get("wmplay", "")
                 }
             },
             {
-                "url": "https://godownloader.com/api/tiktok-no-watermark-free",
-                "params": {"url": url, "key": "godownloader.com"},
-                "headers": None,
-                "response_handler": lambda data: {
-                    "success": True if data.get("video_data") else False,
-                    "desc": data.get("video_data", {}).get("title", "No description"),
-                    "author": {"nickname": data.get("video_data", {}).get("author", {}).get("nickname", "Unknown")},
-                    "music_url": data.get("video_data", {}).get("music", {}).get("play_url", None),
-                    "video_url": data.get("video_data", {}).get("play", None),
-                    "video_no_wm": data.get("video_data", {}).get("play_url", None),
+                "url": "https://tikmate.app/api/lookup",
+                "params": {"url": url},
+                "headers": {
+                    "User-Agent": user_agent
+                },
+                "parse_func": lambda data: {
+                    "success": bool(data.get("success") and data.get("token")),
+                    "title": data.get("title", "No description"),
+                    "author": data.get("author", "Unknown author"),
+                    "music_url": f"https://tikmate.app/download/{data.get('token')}/audio/mp3",
+                    "video_url": f"https://tikmate.app/download/{data.get('token')}/hd.mp4?v=1",
+                    "video_no_wm": f"https://tikmate.app/download/{data.get('token')}/nowm.mp4?v=1"
+                }
+            },
+            {
+                "url": "https://ttsave.app/api/parse",
+                "params": {"mode": "video", "key": url},
+                "parse_func": lambda data: {
+                    "success": bool(data.get("status") == "success"),
+                    "title": data.get("desc", "No description"),
+                    "author": data.get("author", "Unknown author"),
+                    "music_url": data.get("music", ""),
+                    "video_url": data.get("wmplay", "") or data.get("hdplay", ""),
+                    "video_no_wm": data.get("hdplay", "") or data.get("play", "")
                 }
             }
         ]
         
         data = None
-        errors = []
+        error_messages = []
         
-        async with httpx.AsyncClient(timeout=30) as http_client:
-            for api in apis:
+        async with httpx.AsyncClient(timeout=30) as client:
+            for api in api_endpoints:
                 try:
                     LOGGER.info(f"Trying TikTok API: {api['url']}")
-                    hasil = await http_client.get(
+                    headers = api.get("headers", {})
+                    response = await client.get(
                         url=api["url"],
                         params=api["params"],
-                        headers=api["headers"]
+                        headers=headers
                     )
-                    hasil.raise_for_status()
                     
-                    response_data = hasil.json()
-                    data = api["response_handler"](response_data)
-                    
-                    if data and data.get("success"):
-                        LOGGER.info(f"Successfully got TikTok data from: {api['url']}")
-                        break
-                    else:
-                        error_msg = f"Failed to process with {api['url']}: No valid data"
-                        LOGGER.warning(error_msg)
-                        errors.append(error_msg)
+                    if response.status_code == 200:
+                        result = response.json()
+                        data = api["parse_func"](result)
+                        
+                        if data["success"]:
+                            break
+                        else:
+                            error_messages.append(f"API {api['url']} returned unsuccessful response")
                 except Exception as e:
-                    error_msg = f"Error with {api['url']}: {str(e)}"
-                    LOGGER.error(error_msg)
-                    errors.append(error_msg)
-        
+                    error_message = f"Error with {api['url']}: {str(e)}"
+                    LOGGER.error(error_message)
+                    error_messages.append(error_message)
+                    
         if not data or not data.get("success"):
-            error_detail = "\n".join(errors)
+            error_detail = "\n".join(error_messages)
             await editMessage(mess, f"<b>❌ Error:</b> Gagal mendapatkan data dari TikTok\n\n<code>{error_detail}</code>")
             return None
         
-        title = data.get("desc", "No description")
-        author = data.get("author", {}).get("nickname", "Unknown author")
+        title = data.get("title", "No description")
+        author = data.get("author", "Unknown author")
         
         if audio:
+            # Download audio
             audio_url = data.get("music_url")
             if not audio_url:
                 await editMessage(mess, "<b>❌ Error:</b> Audio tidak ditemukan")
@@ -257,21 +256,33 @@ async def tiktokdl(client, message, url, audio=False, type="video"):
                 
             await editMessage(mess, f"<b>⬇️ Mengunduh audio dari TikTok...</b>\n\n<i>{title}</i>")
             
-            temp_path = config_dict.get('TEMP_PATH', '/tmp')
+            temp_path = "/tmp/tiktok_dl"
             os.makedirs(temp_path, exist_ok=True)
+            
             audio_file = f"{temp_path}/{message.id}_audio.mp3"
-            await download_file(audio_url, audio_file)
             
-            caption = f"<b>🎵 Audio TikTok</b>\n\n<b>Judul:</b> {title}\n<b>Pembuat:</b> {author}"
-            
-            await message.reply_audio(
-                audio=audio_file,
-                caption=caption,
-                title=f"TikTok Audio - {author}"
-            )
-            
-            await deleteMessage(mess)
-            await aioremove(audio_file)
+            try:
+                async with httpx.AsyncClient() as http_client:
+                    async with http_client.stream("GET", audio_url) as response:
+                        response.raise_for_status()
+                        async with aiofiles.open(audio_file, "wb") as f:
+                            async for chunk in response.aiter_bytes():
+                                await f.write(chunk)
+                
+                caption = f"<b>🎵 Audio TikTok</b>\n\n<b>Judul:</b> {title}\n<b>Pembuat:</b> {author}"
+                
+                await message.reply_audio(
+                    audio=audio_file,
+                    caption=caption,
+                    title=f"TikTok Audio - {author}"
+                )
+            except Exception as e:
+                await editMessage(mess, f"<b>❌ Error saat download audio:</b> {str(e)}")
+                return
+            finally:
+                await deleteMessage(mess)
+                if os.path.exists(audio_file):
+                    await aioremove(audio_file)
             
         elif type == "nowm":
             nowm_url = data.get("video_no_wm")
@@ -281,20 +292,32 @@ async def tiktokdl(client, message, url, audio=False, type="video"):
                 
             await editMessage(mess, f"<b>⬇️ Mengunduh video TikTok tanpa watermark...</b>\n\n<i>{title}</i>")
             
-            temp_path = config_dict.get('TEMP_PATH', '/tmp')
+            temp_path = "/tmp/tiktok_dl"
             os.makedirs(temp_path, exist_ok=True)
+            
             video_file = f"{temp_path}/{message.id}_nowm.mp4"
-            await download_file(nowm_url, video_file)
             
-            caption = f"<b>🎬 Video TikTok (Tanpa Watermark)</b>\n\n<b>Judul:</b> {title}\n<b>Pembuat:</b> {author}"
-            
-            await message.reply_video(
-                video=video_file,
-                caption=caption
-            )
-            
-            await deleteMessage(mess)
-            await aioremove(video_file)
+            try:
+                async with httpx.AsyncClient() as http_client:
+                    async with http_client.stream("GET", nowm_url) as response:
+                        response.raise_for_status()
+                        async with aiofiles.open(video_file, "wb") as f:
+                            async for chunk in response.aiter_bytes():
+                                await f.write(chunk)
+                
+                caption = f"<b>🎬 Video TikTok (Tanpa Watermark)</b>\n\n<b>Judul:</b> {title}\n<b>Pembuat:</b> {author}"
+                
+                await message.reply_video(
+                    video=video_file,
+                    caption=caption
+                )
+            except Exception as e:
+                await editMessage(mess, f"<b>❌ Error saat download video:</b> {str(e)}")
+                return
+            finally:
+                await deleteMessage(mess)
+                if os.path.exists(video_file):
+                    await aioremove(video_file)
             
         else:
             video_url = data.get("video_url")
@@ -304,20 +327,32 @@ async def tiktokdl(client, message, url, audio=False, type="video"):
                 
             await editMessage(mess, f"<b>⬇️ Mengunduh video TikTok...</b>\n\n<i>{title}</i>")
             
-            temp_path = config_dict.get('TEMP_PATH', '/tmp')
+            temp_path = "/tmp/tiktok_dl"
             os.makedirs(temp_path, exist_ok=True)
+            
             video_file = f"{temp_path}/{message.id}_video.mp4"
-            await download_file(video_url, video_file)
             
-            caption = f"<b>🎬 Video TikTok</b>\n\n<b>Judul:</b> {title}\n<b>Pembuat:</b> {author}"
-            
-            await message.reply_video(
-                video=video_file,
-                caption=caption
-            )
-            
-            await deleteMessage(mess)
-            await aioremove(video_file)
+            try:
+                async with httpx.AsyncClient() as http_client:
+                    async with http_client.stream("GET", video_url) as response:
+                        response.raise_for_status()
+                        async with aiofiles.open(video_file, "wb") as f:
+                            async for chunk in response.aiter_bytes():
+                                await f.write(chunk)
+                
+                caption = f"<b>🎬 Video TikTok</b>\n\n<b>Judul:</b> {title}\n<b>Pembuat:</b> {author}"
+                
+                await message.reply_video(
+                    video=video_file,
+                    caption=caption
+                )
+            except Exception as e:
+                await editMessage(mess, f"<b>❌ Error saat download video:</b> {str(e)}")
+                return
+            finally:
+                await deleteMessage(mess)
+                if os.path.exists(video_file):
+                    await aioremove(video_file)
             
     except Exception as e:
         await editMessage(mess, f"<b>❌ Error:</b> {str(e)}")
@@ -610,7 +645,7 @@ async def auto_tk(client, message):
     butt.ibutton("🎬 Unduh Video", f"tk media {user_id}")
     butt.ibutton("🔊 Unduh Audio", f"tk audio {user_id}")
     butt.ibutton("📽️ Video Tanpa Watermark", f"tk nowm {user_id}")
-    butt.ibutton("⛔️ Batal", f"tk cancel {user_id}")
+    butt.ibutton("⛔️ Batal", f"tk cancel {user_id}", "footer")
     butts = butt.build_menu(2)
     
     if preview_img:
