@@ -69,6 +69,7 @@ from .modules import (
     pikachu_feature,
     auto_mirror,
     mirror_leech,
+    tiktok,
 )
 
 def get_quotes():
