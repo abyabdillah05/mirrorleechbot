@@ -770,8 +770,7 @@ youtube = {}
 async def yt_request(uid, keyword, page=1):
     try:
         api_key = "AIzaSyBmQVnzf5khHZE8GSbVzNmVefzPFGPW7aU"
-        results_per_page = 10
-        max_results = 30
+        max_results = 30  
         
         search_url = f"https://www.googleapis.com/youtube/v3/search?part=snippet&q={keyword}&type=video&maxResults={max_results}&key={api_key}"
         
@@ -782,111 +781,144 @@ async def yt_request(uid, keyword, page=1):
         if "items" not in data or not data["items"]:
             return f"<b>❌ Tidak ditemukan hasil untuk:</b> <code>{keyword}</code>\n\nCoba dengan kata kunci lain.", None
         
-        video_ids = [item["id"]["videoId"] for item in data["items"]]
-        ids_str = ",".join(video_ids)
-        
-        video_url = f"https://www.googleapis.com/youtube/v3/videos?id={ids_str}&part=contentDetails,statistics&key={api_key}"
-        async with httpx.AsyncClient() as client:
-            response = await client.get(video_url)
-            video_data = response.json()
-        
-        video_details = {}
-        if "items" in video_data:
-            for item in video_data["items"]:
-                video_details[item["id"]] = {
-                    "duration": item["contentDetails"]["duration"],
-                    "views": item["statistics"].get("viewCount", "0"),
-                    "likes": item["statistics"].get("likeCount", "0")
-                }
-        
         total_results = len(data["items"])
-        total_pages = (total_results + results_per_page - 1) // results_per_page
         
         if page < 1:
             page = 1
-        elif page > total_pages:
-            page = total_pages
+        elif page > total_results:
+            page = total_results
             
-        start_idx = (page - 1) * results_per_page
-        end_idx = min(start_idx + results_per_page, total_results)
+        current_video = data["items"][page-1]
+        video_id = current_video["id"]["videoId"]
         
-        msg = f"<b>🔎 Hasil Pencarian YouTube untuk:</b> <code>{keyword}</code>\n\n"
+        video_url = f"https://www.googleapis.com/youtube/v3/videos?id={video_id}&part=snippet,contentDetails,statistics,fileDetails&key={api_key}"
         
-        page_items = data["items"][start_idx:end_idx]
+        async with httpx.AsyncClient() as client:
+            video_response = await client.get(video_url)
+            video_data = video_response.json()
         
-        for i, item in enumerate(page_items, start_idx + 1):
-            video_id = item["id"]["videoId"]
-            title = item["snippet"]["title"]
-            channel = item["snippet"]["channelTitle"]
+        if "items" not in video_data or not video_data["items"]:
+            title = current_video["snippet"]["title"]
+            channel = current_video["snippet"]["channelTitle"]
+            description = current_video["snippet"]["description"]
+            thumbnail = current_video["snippet"]["thumbnails"]["high"]["url"]
+            duration = "Unknown"
+            views = "Unknown"
+            likes = "Unknown"
+            filesize = "Unknown"
+        else:
+            video_detail = video_data["items"][0]
+            title = video_detail["snippet"]["title"]
+            channel = video_detail["snippet"]["channelTitle"]
+            description = video_detail["snippet"]["description"]
+            if "maxres" in video_detail["snippet"]["thumbnails"]:
+                thumbnail = video_detail["snippet"]["thumbnails"]["maxres"]["url"]
+            else:
+                thumbnail = video_detail["snippet"]["thumbnails"]["high"]["url"]
             
-            entry = f"<b>{i}.</b> <a href='https://youtube.com/watch?v={video_id}'>{title}</a>\n"
-            
-            detail_text = ""
-            if video_id in video_details:
-                detail = video_details[video_id]
-                duration = parse_duration(detail["duration"])
-                views = format_count(detail["views"])
-                likes = format_count(detail["likes"])
-                detail_text = f"⏱️ {duration} | 👁️ {views} | 👍 {likes}"
-            
-            entry += f"📢 {channel} {detail_text}\n\n"
-
-            if len(msg + entry) > 900:
-                msg += f"\n<i>...dan {total_results - i + 1} hasil lainnya</i>"
-                break
+            if "contentDetails" in video_detail:
+                duration = parse_duration(video_detail["contentDetails"]["duration"])
+            else:
+                duration = "Unknown"
                 
-            msg += entry
+            if "statistics" in video_detail:
+                views = format_count(video_detail["statistics"].get("viewCount", "0"))
+                likes = format_count(video_detail["statistics"].get("likeCount", "0"))
+                subscriber_count = "Unknown"  
+            else:
+                views = "Unknown"
+                likes = "Unknown"
+                subscriber_count = "Unknown"
+            
+            try:
+                duration_parts = duration.split(':')
+                if len(duration_parts) == 2:  # MM:SS
+                    minutes = int(duration_parts[0])
+                    seconds = int(duration_parts[1])
+                    total_minutes = minutes + seconds/60
+                elif len(duration_parts) == 3:  # HH:MM:SS
+                    hours = int(duration_parts[0])
+                    minutes = int(duration_parts[1])
+                    seconds = int(duration_parts[2])
+                    total_minutes = hours*60 + minutes + seconds/60
+                else:
+                    total_minutes = 0
+                    
+                filesize_mb = total_minutes * 40 
+                
+                if filesize_mb > 1024:
+                    filesize = f"{filesize_mb/1024:.2f} GB"
+                else:
+                    filesize = f"{filesize_mb:.2f} MB"
+            except:
+                filesize = "Unknown"
+        
+        msg = f"<b>🔰 {config_dict.get('BOT_NAME', 'Mirror Bot')}</b>\n\n"
+        msg += f"<b>🎬 Judul:</b>\n<code>{title}</code>\n\n"
+        msg += f"<b>⏱️ Video:</b> <code>{duration}</code>\n"
+        msg += f"<b>💾 Perkiraan:</b> <code>{filesize}</code> (720p)\n\n"
+        msg += f"<b>📢 Channel:</b> <code>{channel}</code>\n"
+        msg += f"<b>👁️ Views:</b> <code>{views}</code>\n"
+        msg += f"<b>👍 Likes:</b> <code>{likes}</code>\n\n"
+        
+        if description:
+            if len(description) > 100:
+                short_desc = description[:100] + "..."
+                msg += f"<b>📝 Deskripsi:</b>\n<code>{short_desc}</code>\n\n"
+            else:
+                msg += f"<b>📝 Deskripsi:</b>\n<code>{description}</code>\n\n"
+        
+        msg += f"<b>Halaman {page} dari {total_results}</b>"
         
         butt = ButtonMaker()
         
+        butt.ibutton("🔄 Mirror", f"youtube mirror {uid} {video_id}")
+        butt.ibutton("📥 Leech", f"youtube leech {uid} {video_id}")
+        butt.ibutton("🎵 Audio", f"youtube audio {uid} {video_id}")
+        
         if page > 1:
-            butt.ibutton("◀️ Prev", f"youtube page {uid} {page-1} {keyword}", position="header")
+            butt.ibutton("◀️ Prev", f"youtube page {uid} {page-1} {keyword}")
         else:
-            butt.ibutton("◀️", f"youtube none {uid}", position="header")
-            
-        butt.ibutton("🔗 Join", f"youtube join {uid}", position="header")
-            
-        if page < total_pages:
-            butt.ibutton("Next ▶️", f"youtube page {uid} {page+1} {keyword}", position="header")
+            butt.ibutton("◀️", f"youtube none {uid}")
+        
+        butt.ibutton("🔗 Join", f"youtube join {uid}")
+        
+        if page < total_results:
+            butt.ibutton("Next ▶️", f"youtube page {uid} {page+1} {keyword}")
         else:
-            butt.ibutton("▶️", f"youtube none {uid}", position="header")
+            butt.ibutton("▶️", f"youtube none {uid}")
         
-        butt.ibutton(f"Page {page} of {total_pages}", f"youtube none {uid}")
-        
-        butt.ibutton("Select This Page", f"youtube selectpage {uid} {page}")
-        
-        butt.ibutton("⛔️ Batalkan", f"youtube cancel {uid}", position="footer")
+        butt.ibutton("⛔️ Batalkan", f"youtube cancel {uid}")
         
         butts = butt.build_menu(3, 3, 1)
         
-        page_results = [{
-            'title': item["snippet"]["title"],
-            'id': item["id"]["videoId"],
-            'channel': item["snippet"]["channelTitle"]
-        } for item in page_items]
-        
-        all_results = [{
+        all_videos = [{
             'title': item["snippet"]["title"],
             'id': item["id"]["videoId"],
             'channel': item["snippet"]["channelTitle"],
-            'idx': i+1
-        } for i, item in enumerate(data["items"])]
+            'thumbnail': item["snippet"]["thumbnails"]["high"]["url"] if "high" in item["snippet"]["thumbnails"] else item["snippet"]["thumbnails"]["default"]["url"]
+        } for item in data["items"]]
         
         upd = {
             "msg": msg, 
             "butts": butts, 
-            "results": all_results,
-            "page_results": page_results,
+            "videos": all_videos,
+            "current_video": {
+                'title': title,
+                'id': video_id,
+                'channel': channel,
+                'thumbnail': thumbnail
+            },
             "page": page,
-            "total_pages": total_pages,
+            "total_pages": total_results,
             "keyword": keyword
         }
         youtube[uid].update(upd)
         
-        return msg, butts
+        return thumbnail, msg, butts
     except Exception as e:
-        LOGGER.error(f"Error in YouTube search: {e}")
-        return f"<b>❌ Terjadi kesalahan saat mencari video:</b>\n\n<code>{str(e)}</code>", None
+        LOGGER.error(f"Error in YouTube search: {str(e)}")
+        return None, f"<b>❌ Terjadi kesalahan saat mencari video:</b>\n\n<code>{str(e)}</code>", None
     
 
 async def edit_durasi(duration):
@@ -946,51 +978,53 @@ async def yt_search(client, message, keyword=None):
                     await editMessage(mess, "<b>Silahkan selesaikan atau batalkan proses sebelumnya !</b>", butts)
                 except Exception as e:
                     LOGGER.error(f"Edit message error: {e}")
-                    await message.reply_text("<b>Silahkan selesaikan atau batalkan proses sebelumnya !</b>", reply_markup=butts)
+                    reply = await message.reply_text("<b>Silahkan selesaikan atau batalkan proses sebelumnya !</b>", reply_markup=butts)
+                    if uid in youtube and "additional_messages" in youtube[uid]:
+                        youtube[uid]["additional_messages"].append(reply.id)
                 return None
                 
-            youtube[uid] = {"message": message, "keyword": keyword}
+            youtube[uid] = {
+                "message": message, 
+                "keyword": keyword,
+                "additional_messages": []
+            }
             
-            msg, butts = await yt_request(uid, keyword, page=1)
+            if mess:
+                youtube[uid]["additional_messages"].append(mess.id)
+            
+            thumbnail, msg, butts = await yt_request(uid, keyword, page=1)
             
             try:
                 if mess:
                     await deleteMessage(mess)
+                    if "additional_messages" in youtube[uid] and mess.id in youtube[uid]["additional_messages"]:
+                        youtube[uid]["additional_messages"].remove(mess.id)
             except Exception as e:
                 LOGGER.error(f"Error deleting message: {e}")
                 
             try:
-                # Delete the user's command message if possible
                 try:
                     await message.delete()
                 except Exception as e:
                     LOGGER.error(f"Error deleting command message: {e}")
                 
-                # Try to send with photo and full caption
-                try:
+                if thumbnail:
+                    sent_message = await message.reply_photo(
+                        thumbnail, 
+                        caption=msg, 
+                        reply_markup=butts
+                    )
+                else:
                     sent_message = await message.reply_photo(
                         "https://telegra.ph/file/9fbae069402df1710585f.jpg", 
                         caption=msg, 
                         reply_markup=butts
                     )
-                    youtube[uid]["sent_message"] = sent_message
-                except pyrogram.errors.exceptions.bad_request_400.MediaCaptionTooLong:
-                    # If caption is too long, send with a shorter caption
-                    short_msg = f"<b>🔎 Hasil Pencarian:</b> <code>{keyword}</code>\n\n<i>Hasil terlalu panjang, silahkan pilih nomor untuk melihat detail.</i>"
-                    sent_message = await message.reply_photo(
-                        "https://telegra.ph/file/9fbae069402df1710585f.jpg", 
-                        caption=short_msg, 
-                        reply_markup=butts
-                    )
-                    youtube[uid]["sent_message"] = sent_message
                     
-                    # Then send the full results as a text message
-                    await message.reply_text(
-                        msg,
-                        disable_web_page_preview=True
-                    )
+                youtube[uid]["sent_message"] = sent_message
+                
             except Exception as e:
-                LOGGER.error(f"Error sending YouTube search results: {e}")
+                LOGGER.error(f"Error sending YouTube video details: {e}")
                 if uid in youtube:
                     del youtube[uid]
                 await message.reply_text(f"<b>❌ Error:</b> {str(e)}")
@@ -1000,12 +1034,18 @@ async def yt_search(client, message, keyword=None):
             try:
                 if mess:
                     await editMessage(mess, f"<b>Error:</b> {str(e)}")
+                    await asyncio.sleep(5)
+                    await deleteMessage(mess)
             except Exception:
-                await message.reply_text(f"<b>❌ Error:</b> {str(e)}")
+                error_msg = await message.reply_text(f"<b>❌ Error:</b> {str(e)}")
+                await asyncio.sleep(5)
+                await error_msg.delete()
             if uid in youtube:
                 del youtube[uid]
     else:
-        await sendMessage(message, "<b>Silahkan masukkan perintah disertai keyword pencarian !</b>")
+        temp = await sendMessage(message, "<b>Silahkan masukkan perintah disertai keyword pencarian !</b>")
+        await asyncio.sleep(5)
+        await deleteMessage(temp)
 
 
 async def yt_query(_, query):
@@ -1021,91 +1061,158 @@ async def yt_query(_, query):
         return await query.answer(text="Tugas sudah tidak ada atau dibatalkan!", show_alert=True)
     
     if data[1] == "none":
-        await query.answer("No action available", show_alert=True)
+        await query.answer("Sudah mentok halaman nya.", show_alert=True)
         return
         
     elif data[1] == "cancel":
         if uid in youtube:
+            await message.edit_caption(caption="<b>✅ Tugas pencarian dibatalkan.</b>")
+        
+            messages_to_delete = []
+        
+            user_msg = youtube[uid].get("message")
+            if user_msg:
+                try:
+                    messages_to_delete.append(user_msg.id)
+                except:
+                    pass
+        
+            sent_message = youtube[uid].get("sent_message")
+            if sent_message and sent_message.id != message.id:
+                messages_to_delete.append(sent_message.id)
+        
+            additional_msgs = youtube[uid].get("additional_messages", [])
+            messages_to_delete.extend(additional_msgs)
+        
             del youtube[uid]
-        return await query.answer("✅ Tugas pencarian dibatalkan.", show_alert=True)
+        
+            await asyncio.sleep(2)
+        
+            for msg_id in messages_to_delete:
+                try:
+                    await bot.delete_messages(message.chat.id, msg_id)
+                except Exception as e:
+                    LOGGER.error(f"Error deleting message {msg_id}: {e}")
+        
+            try:
+                await message.delete()
+            except Exception as e:
+                LOGGER.error(f"Error deleting cancellation message: {e}")
+            
+            await query.answer("✅ Tugas pencarian dibatalkan.", show_alert=True)
+        else:
+            await query.answer("Tugas sudah tidak ada.", show_alert=True)
     
-    elif data[1] == "selectpage":
+    elif data[1] == "page":
         page = int(data[3])
-        page_results = youtube[uid].get("page_results", [])
+        keyword = ' '.join(data[4:])
         
-        if not page_results:
-            return await query.answer("No videos found on this page", show_alert=True)
+        thumbnail, msg, butts = await yt_request(uid, keyword, page=page)
         
+        try:
+            if thumbnail:
+                input_media = InputMediaPhoto(media=thumbnail, caption=msg)
+                await message.edit_media(media=input_media, reply_markup=butts)
+            else:
+                await message.edit_caption(caption=msg, reply_markup=butts)
+        except Exception as e:
+            LOGGER.error(f"Error updating page: {e}")
+            try:
+                # Fallback to default thumbnail
+                input_media = InputMediaPhoto(media="https://telegra.ph/file/9fbae069402df1710585f.jpg", caption=msg)
+                await message.edit_media(media=input_media, reply_markup=butts)
+            except Exception as e2:
+                LOGGER.error(f"Error with fallback thumbnail: {e2}")
+                await query.answer(text=f"Error updating video: {str(e)}", show_alert=True)
+    
+    elif data[1] == "join":
+        await query.answer("Redirecting to channel...")
         butt = ButtonMaker()
-        butt.ibutton("🔄 Mirror", f"youtube mirror_page {uid} {page}")
-        butt.ibutton("📥 Leech", f"youtube leech_page {uid} {page}")
-        butt.ibutton("🎵 Audio", f"youtube audio_page {uid} {page}")
-        butt.ibutton("🔙 Kembali", f"youtube back {uid}")
-        butt.ibutton("⛔️ Batalkan", f"youtube cancel {uid}", position="footer")
-        butts = butt.build_menu(2)
+        butt.ubutton("🔗 Join Dizzy Project", "https://t.me/DizzyStuffProject")
+        butts = butt.build_menu(1)
         
-        msg = f"<b>🎬 Pilih tindakan untuk halaman {page}:</b>\n\n"
-        msg += f"<b>⚠️ Tindakan ini akan mengunduh semua video di halaman ini</b>"
+        current_page = youtube[uid].get("page", 1)
+        keyword = youtube[uid].get("keyword", "")
         
-        await message.edit_caption(caption=msg, reply_markup=butts)
+        await message.edit_caption(
+            caption=f"<b>📣 Join our channel for updates and more features!</b>\n\n<i>Click the button below to join, then return to your search.</i>",
+            reply_markup=butts
+        )
+        
+        youtube[uid]["return_page"] = current_page
     
-    elif data[1] in ["mirror_page", "leech_page", "audio_page"]:
-        page = int(data[3])
-        page_results = youtube[uid].get("page_results", [])
+    elif data[1] == "mirror" or data[1] == "leech" or data[1] == "audio":
+        video_id = data[3]
+        is_leech = data[1] in ["leech", "audio"]
         
-        if not page_results:
-            return await query.answer("No videos found on this page", show_alert=True)
+        qualities = ["1080p", "720p", "480p", "360p"]
+        if data[1] == "audio":
+            qualities = ["MP3", "FLAC", "M4A", "WAV"]
         
-        action_type = data[1].split("_")[0]
+        current_video = youtube[uid].get("current_video", {})
+        title = current_video.get("title", "YouTube Video")
         
-        qualities = ["1080p", "720p", "480p", "360p", "Audio Only"]
-        
-        msg = f"<b>🎬 Pilih kualitas untuk {action_type} semua video di halaman {page}:</b>\n"
+        msg = f"<b>🎬 Pilih kualitas {'audio' if data[1] == 'audio' else 'video'}:</b>\n"
         msg += f"<b>⏱️ Waktu habis:</b> <code>1m59d</code>\n\n"
-        msg += f"<b>Total Video:</b> <code>{len(page_results)}</code>"
+        msg += f"<b>Judul:</b> <code>{title}</code>"
         
         butt = ButtonMaker()
         for quality in qualities:
-            butt.ibutton(quality, f"youtube {action_type}_page_quality {uid} {page} {quality}")
+            callback_data = f"youtube {data[1]}_quality {uid} {video_id} {quality}"
+            butt.ibutton(quality, callback_data)
         
-        butt.ibutton("🔙 Kembali", f"youtube selectpage {uid} {page}")
+        current_page = youtube[uid].get("page", 1)
+        keyword = youtube[uid].get("keyword", "")
+        butt.ibutton("🔙 Kembali", f"youtube page {uid} {current_page} {keyword}")
         butt.ibutton("⛔️ Batalkan", f"youtube cancel {uid}")
+        
         butts = butt.build_menu(2)
         
-        await message.edit_caption(caption=msg, reply_markup=butts)
+        try:
+            await message.edit_caption(caption=msg, reply_markup=butts)
+        except Exception as e:
+            LOGGER.error(f"Error showing quality options: {e}")
+            await query.answer(text=f"Error: {str(e)}", show_alert=True)
     
-    elif data[1] in ["mirror_page_quality", "leech_page_quality", "audio_page_quality"]:
-        page = int(data[3])
+    elif data[1].endswith("_quality"):
+        action_type = data[1].split("_")[0] 
+        video_id = data[3]
         quality = data[4]
-        page_results = youtube[uid].get("page_results", [])
         
-        if not page_results:
-            return await query.answer("No videos found on this page", show_alert=True)
-        
-        action_parts = data[1].split("_")
-        action_type = action_parts[0] 
-        is_leech = action_type == "leech" or action_type == "audio"
+        is_leech = action_type in ["leech", "audio"]
         
         if action_type == "audio":
-            ydl_opts = 'format=bestaudio'
-        elif quality == "Audio Only":
-            ydl_opts = 'format=bestaudio'
+            if quality.lower() == "mp3":
+                ydl_opts = 'format=bestaudio -x --audio-format mp3'
+            elif quality.lower() == "flac":
+                ydl_opts = 'format=bestaudio -x --audio-format flac'
+            elif quality.lower() == "m4a":
+                ydl_opts = 'format=bestaudio -x --audio-format m4a'
+            elif quality.lower() == "wav":
+                ydl_opts = 'format=bestaudio -x --audio-format wav'
+            else:
+                ydl_opts = 'format=bestaudio -x --audio-format mp3'
         else:
-            ydl_opts = f'format=bestvideo[height<={quality[:-1]}]+bestaudio/best[height<={quality[:-1]}]'
+            if quality == "1080p":
+                ydl_opts = 'format=bestvideo[height<=1080]+bestaudio/best[height<=1080]'
+            elif quality == "720p":
+                ydl_opts = 'format=bestvideo[height<=720]+bestaudio/best[height<=720]'
+            elif quality == "480p":
+                ydl_opts = 'format=bestvideo[height<=480]+bestaudio/best[height<=480]'
+            elif quality == "360p":
+                ydl_opts = 'format=bestvideo[height<=360]+bestaudio/best[height<=360]'
+            else:
+                ydl_opts = 'format=best'
         
         orig_msg = youtube[uid]["message"]
+        
         await deleteMessage(message)
         
         if uid in youtube:
             del youtube[uid]
         
-        await orig_msg.reply_text(f"<b>✅ Processing {len(page_results)} videos with quality {quality}</b>")
-        
-        for i, result in enumerate(page_results):
-            video_id = result["id"]
-            yt_url = f"https://www.youtube.com/watch?v={video_id}"
-            YtDlp(bot, orig_msg, yturl=yt_url, options=ydl_opts, isLeech=is_leech).newEvent()
-            await asleep(1)  
+        yt_url = f"https://www.youtube.com/watch?v={video_id}"
+        YtDlp(bot, orig_msg, yturl=yt_url, options=ydl_opts, isLeech=is_leech).newEvent()
     
     elif data[1] == "page":
         page = int(data[3])
