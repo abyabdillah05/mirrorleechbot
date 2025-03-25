@@ -175,27 +175,27 @@ async def tiktokdl(client, message, url, audio=False, type="video"):
                 "url": "https://tikwm.com/api/",
                 "params": {"url": url},
                 "parse_func": lambda data: {
-                    "success": data.get("status") == "success",
+                    "success": data.get("code") == 0 and data.get("data"),
                     "title": data.get("data", {}).get("title", "No description"),
                     "author": data.get("data", {}).get("author", {}).get("nickname", "Unknown author"),
                     "music_url": data.get("data", {}).get("music", ""),
                     "video_url": data.get("data", {}).get("play", ""),
-                    "video_no_wm": data.get("data", {}).get("hdplay", "") or data.get("data", {}).get("wmplay", "")
+                    "video_no_wm": data.get("data", {}).get("hdplay", "") or data.get("data", {}).get("play", "")
                 }
             },
             {
-                "url": "https://tikmate.app/api/lookup",
+                "url": "https://api.tikmate.app/api/lookup",
                 "params": {"url": url},
                 "headers": {
                     "User-Agent": user_agent
                 },
                 "parse_func": lambda data: {
                     "success": bool(data.get("success") and data.get("token")),
-                    "title": data.get("title", "No description"),
-                    "author": data.get("author", "Unknown author"),
-                    "music_url": f"https://tikmate.app/download/{data.get('token')}/audio/mp3",
-                    "video_url": f"https://tikmate.app/download/{data.get('token')}/hd.mp4?v=1",
-                    "video_no_wm": f"https://tikmate.app/download/{data.get('token')}/nowm.mp4?v=1"
+                    "title": data.get("videoInfo", {}).get("title", "No description"),
+                    "author": data.get("videoInfo", {}).get("author", "Unknown author"),
+                    "music_url": f"https://tikmate.app/api/download/audio/{data.get('token')}",
+                    "video_url": f"https://tikmate.app/api/download/{data.get('token')}",
+                    "video_no_wm": f"https://tikmate.app/api/download/{data.get('token')}"
                 }
             },
             {
@@ -247,7 +247,10 @@ async def tiktokdl(client, message, url, audio=False, type="video"):
         title = data.get("title", "No description")
         author = data.get("author", "Unknown author")
         
-        if audio:
+        temp_path = config_dict['TEMP_PATH']
+        os.makedirs(temp_path, exist_ok=True)
+        
+        if audio or type == "audio":
             # Download audio
             audio_url = data.get("music_url")
             if not audio_url:
@@ -256,18 +259,10 @@ async def tiktokdl(client, message, url, audio=False, type="video"):
                 
             await editMessage(mess, f"<b>⬇️ Mengunduh audio dari TikTok...</b>\n\n<i>{title}</i>")
             
-            temp_path = "/tmp/tiktok_dl"
-            os.makedirs(temp_path, exist_ok=True)
-            
             audio_file = f"{temp_path}/{message.id}_audio.mp3"
             
             try:
-                async with httpx.AsyncClient() as http_client:
-                    async with http_client.stream("GET", audio_url) as response:
-                        response.raise_for_status()
-                        async with aiofiles.open(audio_file, "wb") as f:
-                            async for chunk in response.aiter_bytes():
-                                await f.write(chunk)
+                await download_file(audio_url, audio_file)
                 
                 caption = f"<b>🎵 Audio TikTok</b>\n\n<b>Judul:</b> {title}\n<b>Pembuat:</b> {author}"
                 
@@ -292,18 +287,10 @@ async def tiktokdl(client, message, url, audio=False, type="video"):
                 
             await editMessage(mess, f"<b>⬇️ Mengunduh video TikTok tanpa watermark...</b>\n\n<i>{title}</i>")
             
-            temp_path = "/tmp/tiktok_dl"
-            os.makedirs(temp_path, exist_ok=True)
-            
             video_file = f"{temp_path}/{message.id}_nowm.mp4"
             
             try:
-                async with httpx.AsyncClient() as http_client:
-                    async with http_client.stream("GET", nowm_url) as response:
-                        response.raise_for_status()
-                        async with aiofiles.open(video_file, "wb") as f:
-                            async for chunk in response.aiter_bytes():
-                                await f.write(chunk)
+                await download_file(nowm_url, video_file)
                 
                 caption = f"<b>🎬 Video TikTok (Tanpa Watermark)</b>\n\n<b>Judul:</b> {title}\n<b>Pembuat:</b> {author}"
                 
@@ -327,18 +314,10 @@ async def tiktokdl(client, message, url, audio=False, type="video"):
                 
             await editMessage(mess, f"<b>⬇️ Mengunduh video TikTok...</b>\n\n<i>{title}</i>")
             
-            temp_path = "/tmp/tiktok_dl"
-            os.makedirs(temp_path, exist_ok=True)
-            
             video_file = f"{temp_path}/{message.id}_video.mp4"
             
             try:
-                async with httpx.AsyncClient() as http_client:
-                    async with http_client.stream("GET", video_url) as response:
-                        response.raise_for_status()
-                        async with aiofiles.open(video_file, "wb") as f:
-                            async for chunk in response.aiter_bytes():
-                                await f.write(chunk)
+                await download_file(video_url, video_file)
                 
                 caption = f"<b>🎬 Video TikTok</b>\n\n<b>Judul:</b> {title}\n<b>Pembuat:</b> {author}"
                 
@@ -360,12 +339,17 @@ async def tiktokdl(client, message, url, audio=False, type="video"):
 
 async def download_file(url, path):
     """Helper function to download files from URL"""
-    async with httpx.AsyncClient() as client:
-        async with client.stream("GET", url) as response:
-            response.raise_for_status()
-            async with aiofiles.open(path, "wb") as f:
-                async for chunk in response.aiter_bytes():
-                    await f.write(chunk)
+    try:
+        async with httpx.AsyncClient() as client:
+            async with client.stream("GET", url) as response:
+                response.raise_for_status()
+                async with aiofiles.open(path, "wb") as f:
+                    async for chunk in response.aiter_bytes():
+                        await f.write(chunk)
+        return True
+    except Exception as e:
+        LOGGER.error(f"Error downloading file: {e}")
+        raise e
 
 #########################################
 #Tiktok Search
