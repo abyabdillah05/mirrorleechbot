@@ -845,16 +845,16 @@ async def yt_request(uid, keyword, page=1):
         butt = ButtonMaker()
         
         if page > 1:
-            butt.ibutton("◀️ Prev", f"youtube page {uid} {page-1} {keyword}")
+            butt.ibutton("◀️ Prev", f"youtube page {uid} {page-1} {keyword}", position="header")
         else:
-            butt.ibutton("◀️", f"youtube none {uid}")
+            butt.ibutton("◀️", f"youtube none {uid}", position="header")
             
-        butt.ibutton("🔗 Join", f"youtube join {uid}")
+        butt.ibutton("🔗 Join", f"youtube join {uid}", position="header")
             
         if page < total_pages:
-            butt.ibutton("Next ▶️", f"youtube page {uid} {page+1} {keyword}")
+            butt.ibutton("Next ▶️", f"youtube page {uid} {page+1} {keyword}", position="header")
         else:
-            butt.ibutton("▶️", f"youtube none {uid}")
+            butt.ibutton("▶️", f"youtube none {uid}", position="header")
         
         page_buttons = []
         max_page_buttons = 5
@@ -864,21 +864,14 @@ async def yt_request(uid, keyword, page=1):
         
         for p in range(start_page, end_page + 1):
             label = f"• {p} •" if p == page else str(p)
-            page_buttons.append((label, f"youtube page {uid} {p} {keyword}"))
-        
-        for label, callback in page_buttons:
-            butt.ibutton(label, callback)
+            butt.ibutton(label, f"youtube page {uid} {p} {keyword}")
             
-        video_buttons = []
         for result in page_results:
-            video_buttons.append((str(result['idx']), f"youtube select {uid} {result['id']}"))
-            
-        for label, callback in video_buttons:
-            butt.ibutton(label, callback)
+            butt.ibutton(str(result['idx']), f"youtube select {uid} {result['id']}")
             
         butt.ibutton("⛔️ Batalkan", f"youtube cancel {uid}", position="footer")
         
-        butts = butt.build_menu(3, 5, 5, 1)
+        butts = butt.build_menu(5, 3, 1)
         
         all_results = [{
             'title': item["snippet"]["title"],
