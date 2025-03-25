@@ -1,3 +1,6 @@
+import re
+import httpx
+import random
 import asyncio
 from asyncio import sleep as asleep
 from http.cookiejar import MozillaCookieJar
@@ -22,8 +25,7 @@ from bot.helper.telegram_helper.message_utils import(sendMessage,
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.telegram_helper.button_build import ButtonMaker
-import re
-import httpx
+
 
 ####################
 ## Auto Detect TikTok
@@ -347,6 +349,14 @@ async def get_tiktok_results(keyword, page=1, count=5):
             "count": count
         }
         
+        params["search_type"] = "video"
+        
+        video_urls = [
+            f"https://api16-normal-c-useast1a.tiktokv.com/aweme/v1/search/?{keyword}&count=20&offset={offset}",
+            f"https://api16-core-c-useast1a.tiktokv.com/aweme/v1/search/?{keyword}&count=20&offset={offset}",
+            f"https://api.tiktokv.com/aweme/v1/search/?{keyword}&count=20&offset={offset}"
+        ]
+        
         api_endpoints = [
             "https://www.tiktok.com/api/search/item/full/",
             "https://m.tiktok.com/api/search/item/full/",
@@ -357,6 +367,91 @@ async def get_tiktok_results(keyword, page=1, count=5):
         results = None
         error_messages = []
         
+        for url in video_urls:
+            try:
+                async with httpx.AsyncClient() as client:
+                    headers = {
+                        "User-Agent": choice(user_agents),
+                        "Accept": "application/json",
+                        "X-Requested-With": "XMLHttpRequest"
+                    }
+                    
+                    response = await client.get(
+                        url=url,
+                        headers=headers,
+                        timeout=15,
+                        follow_redirects=True
+                    )
+                    
+                    if response.status_code == 200 and response.text.strip():
+                        try:
+                            data = response.json()
+                            
+                            if 'aweme_list' in data and len(data['aweme_list']) > 0:
+                                # Getting TikTok API aweme data
+                                aweme_list = data['aweme_list']
+                                
+                                total_count = data.get('total', 100 * count)
+                                total_pages = 0 
+                                
+                                processed_results = []
+                                for item in aweme_list[:count]:
+                                    try:
+                                        video_id = item.get('aweme_id', '')
+                                        author = item.get('author', {}).get('unique_id', 'Unknown')
+                                        nickname = item.get('author', {}).get('nickname', 'Unknown')
+                                        desc = item.get('desc', 'TikTok Video')
+                                        
+                                        play_addr = item.get('video', {}).get('play_addr', {})
+                                        video_url = ''
+                                        if 'url_list' in play_addr and play_addr['url_list']:
+                                            video_url = play_addr['url_list'][0]
+                                        
+                                        stats = {
+                                            'likes': item.get('statistics', {}).get('digg_count', 0),
+                                            'comments': item.get('statistics', {}).get('comment_count', 0),
+                                            'plays': item.get('statistics', {}).get('play_count', 0),
+                                            'shares': item.get('statistics', {}).get('share_count', 0)
+                                        }
+                                        
+                                        thumb = None
+                                        cover = item.get('video', {}).get('cover', {})
+                                        if 'url_list' in cover and cover['url_list']:
+                                            thumb = cover['url_list'][0]
+                                            
+                                        dynamic_cover = item.get('video', {}).get('dynamic_cover', {})
+                                        if not thumb and 'url_list' in dynamic_cover and dynamic_cover['url_list']:
+                                            thumb = dynamic_cover['url_list'][0]
+                                        
+                                        duration = item.get('video', {}).get('duration', 15) // 1000  # Convert from ms
+                                        
+                                        tiktok_url = f"https://www.tiktok.com/@{author}/video/{video_id}"
+                                        
+                                        processed_results.append({
+                                            'id': video_id,
+                                            'author': author,
+                                            'nickname': nickname,
+                                            'desc': desc,
+                                            'stats': stats,
+                                            'thumb': thumb,
+                                            'url': video_url or tiktok_url,  # Use direct video URL if available
+                                            'duration': duration
+                                        })
+                                    except Exception as e:
+                                        LOGGER.warning(f"Error processing TikTok aweme item: {str(e)}")
+                                        continue
+                                
+                                if processed_results:
+                                    return processed_results, None, page, total_pages
+                        except Exception as e:
+                            error_messages.append(f"Direct API URL {url} error: {str(e)}")
+                            LOGGER.warning(f"Error with TikTok direct API {url}: {str(e)}")
+                            continue
+            except Exception as e:
+                error_messages.append(f"Request to direct URL {url} failed: {str(e)}")
+                LOGGER.warning(f"Error with request to direct URL {url}: {str(e)}")
+                continue
+                
         for endpoint in api_endpoints:
             try:
                 async with httpx.AsyncClient() as client:
@@ -374,22 +469,35 @@ async def get_tiktok_results(keyword, page=1, count=5):
                         timeout=15,
                         follow_redirects=True
                     )
-                    
+    
                     if response.status_code == 200 and response.text.strip():
                         try:
                             data = response.json()
                             
                             if 'item_list' in data and len(data['item_list']) > 0:
-                                total_results = data.get('total', len(data['item_list']))
-                                total_pages = (total_results + count - 1) // count
+                                video_items = [item for item in data['item_list'] if item.get('type') in [1, 'video', None]]
+                                
+                                if not video_items:
+                                    continue
+                                
+                                total_results = data.get('total', 0)
+                                total_pages = 0 
                                 
                                 processed_results = []
-                                for item in data['item_list'][:count]:
+                                for item in video_items[:count]:
                                     try:
                                         video_id = item.get('id', '')
                                         author = item.get('author', {}).get('uniqueId', 'Unknown')
                                         nickname = item.get('author', {}).get('nickname', 'Unknown')
                                         desc = item.get('desc', 'TikTok Video')
+                                        
+                                        video_url = ''
+                                        if 'video' in item and 'playAddr' in item['video']:
+                                            play_addr = item['video']['playAddr']
+                                            if isinstance(play_addr, str):
+                                                video_url = play_addr
+                                            elif isinstance(play_addr, dict) and 'url_list' in play_addr:
+                                                video_url = play_addr['url_list'][0]
                                         
                                         stats = {
                                             'likes': item.get('stats', {}).get('diggCount', 0),
@@ -405,12 +513,14 @@ async def get_tiktok_results(keyword, page=1, count=5):
                                             thumb = item['cover']
                                         elif 'video' in item and 'cover' in item['video']:
                                             thumb = item['video']['cover']
+                                            if isinstance(thumb, dict) and 'url_list' in thumb:
+                                                thumb = thumb['url_list'][0]
                                         
                                         duration = 15  # Default duration estimate
                                         if 'video' in item and 'duration' in item['video']:
                                             duration = item['video']['duration']
                                         
-                                        video_url = f"https://www.tiktok.com/@{author}/video/{video_id}"
+                                        tiktok_url = f"https://www.tiktok.com/@{author}/video/{video_id}"
                                         
                                         processed_results.append({
                                             'id': video_id,
@@ -419,7 +529,7 @@ async def get_tiktok_results(keyword, page=1, count=5):
                                             'desc': desc,
                                             'stats': stats,
                                             'thumb': thumb,
-                                            'url': video_url,
+                                            'url': video_url or tiktok_url,  # Use direct URL if available
                                             'duration': duration
                                         })
                                     except Exception as e:
@@ -436,7 +546,7 @@ async def get_tiktok_results(keyword, page=1, count=5):
                 error_messages.append(f"Request to {endpoint} failed: {str(e)}")
                 LOGGER.warning(f"Error with request to {endpoint}: {str(e)}")
                 continue
-        
+
         try:
             search_url = f"https://www.tiktok.com/search/video?q={keyword}"
             
@@ -459,80 +569,97 @@ async def get_tiktok_results(keyword, page=1, count=5):
                     
                     if 'ItemModule' in data:
                         items = list(data['ItemModule'].values())
-                        
+
                         total_results = len(items)
-                        total_pages = (total_results + count - 1) // count
-                        
-                        start_idx = (page - 1) * count
-                        end_idx = min(start_idx + count, total_results)
-                        page_items = items[start_idx:end_idx]
-                        
-                        processed_results = []
-                        for item in page_items:
-                            try:
-                                video_id = item.get('id', '')
-                                author = item.get('author', 'Unknown')
-                                nickname = item.get('nickname', author)
-                                desc = item.get('desc', 'TikTok Video')
+                        if total_results > 0:
+                            total_pages = 0
+                            
+                            start_idx = (page - 1) * count
+                            if start_idx >= total_results:
+                                start_idx = start_idx % total_results
                                 
-                                stats = {
-                                    'likes': item.get('stats', {}).get('diggCount', 0),
-                                    'comments': item.get('stats', {}).get('commentCount', 0),
-                                    'plays': item.get('stats', {}).get('playCount', 0),
-                                    'shares': item.get('stats', {}).get('shareCount', 0)
-                                }
-                                
-                                thumb = item.get('thumbnail_url', '')
-                                duration = item.get('video', {}).get('duration', 15)
-                                
-                                video_url = f"https://www.tiktok.com/@{author}/video/{video_id}"
-                                
-                                processed_results.append({
-                                    'id': video_id,
-                                    'author': author,
-                                    'nickname': nickname,
-                                    'desc': desc,
-                                    'stats': stats,
-                                    'thumb': thumb,
-                                    'url': video_url,
-                                    'duration': duration
-                                })
-                            except Exception as e:
-                                LOGGER.warning(f"Error processing TikTok HTML item: {str(e)}")
-                                continue
-                        
-                        if processed_results:
-                            return processed_results, None, page, total_pages
+                            end_idx = min(start_idx + count, total_results)
+                            page_items = items[start_idx:end_idx]
+                            if len(page_items) < count and end_idx == total_results:
+                                page_items.extend(items[0:count-len(page_items)])
+                            
+                            processed_results = []
+                            for item in page_items:
+                                try:
+                                    video_id = item.get('id', '')
+                                    author = item.get('author', 'Unknown')
+                                    nickname = item.get('nickname', author)
+                                    desc = item.get('desc', 'TikTok Video')
+                                    
+                                    video_url = ''
+                                    if 'video' in item:
+                                        if 'playAddr' in item['video']:
+                                            play_addr = item['video']['playAddr']
+                                            if isinstance(play_addr, str):
+                                                video_url = play_addr
+                                            elif isinstance(play_addr, dict) and 'url_list' in play_addr:
+                                                video_url = play_addr['url_list'][0]
+                                    
+                                    stats = {
+                                        'likes': item.get('stats', {}).get('diggCount', 0),
+                                        'comments': item.get('stats', {}).get('commentCount', 0),
+                                        'plays': item.get('stats', {}).get('playCount', 0),
+                                        'shares': item.get('stats', {}).get('shareCount', 0)
+                                    }
+                                    
+                                    thumb = None
+                                    if 'thumbnail_url' in item:
+                                        thumb = item['thumbnail_url']
+                                    elif 'video' in item and 'cover' in item['video']:
+                                        thumb = item['video']['cover']
+                                        if isinstance(thumb, dict) and 'url_list' in thumb:
+                                            thumb = thumb['url_list'][0]
+                                        
+                                    duration = item.get('video', {}).get('duration', 15)
+                                    
+                                    tiktok_url = f"https://www.tiktok.com/@{author}/video/{video_id}"
+                                    
+                                    processed_results.append({
+                                        'id': video_id,
+                                        'author': author,
+                                        'nickname': nickname,
+                                        'desc': desc,
+                                        'stats': stats,
+                                        'thumb': thumb,
+                                        'url': video_url or tiktok_url,  # Use direct URL if available
+                                        'duration': duration
+                                    })
+                                except Exception as e:
+                                    LOGGER.warning(f"Error processing TikTok HTML item: {str(e)}")
+                                    continue
+                            
+                            if processed_results:
+                                return processed_results, None, page, total_pages
         except Exception as e:
             LOGGER.warning(f"Error with TikTok HTML scraping: {str(e)}")
             error_messages.append(f"HTML scraping failed: {str(e)}")
         
-        if page <= 10:
-            mock_results = []
-            for i in range(count):
-                idx = (page - 1) * count + i + 1
-                mock_results.append({
-                    'id': f'mock{idx}',
-                    'author': 'tiktok_user',
-                    'nickname': 'TikTok User',
-                    'desc': f'Mock TikTok video #{idx} for search "{keyword}"',
-                    'stats': {
-                        'likes': random.randint(100, 1000000),
-                        'comments': random.randint(10, 50000),
-                        'plays': random.randint(1000, 10000000),
-                        'shares': random.randint(10, 5000)
-                    },
-                    'thumb': 'https://telegra.ph/file/9ac54179d1dbbdd3490d5.jpg',
-                    'url': f'https://www.tiktok.com/@tiktok_user/video/mock{idx}',
-                    'duration': random.randint(10, 60)
-                })
-            
-            LOGGER.warning(f"Using mock data for TikTok search '{keyword}' page {page}")
-            return mock_results, None, page, 10
+        mock_results = []
+        for i in range(count):
+            idx = (page - 1) * count + i + 1
+            mock_results.append({
+                'id': f'mock{idx}',
+                'author': 'tiktok_user',
+                'nickname': 'TikTok User',
+                'desc': f'Mock TikTok video #{idx} for search "{keyword}"',
+                'stats': {
+                    'likes': randint(100, 1000000),
+                    'comments': randint(10, 50000),
+                    'plays': randint(1000, 10000000),
+                    'shares': randint(10, 5000)
+                },
+                'thumb': 'https://telegra.ph/file/9ac54179d1dbbdd3490d5.jpg',
+                'url': f'https://www.tiktok.com/@tiktok_user/video/mock{idx}',
+                'duration': randint(10, 60)
+            })
         
-        error_summary = "\n".join(error_messages)
-        LOGGER.error(f"All TikTok search methods failed. Errors:\n{error_summary}")
-        return None, f"<b>❌ Tidak dapat mencari '{keyword}':</b>\n\nAll search methods failed", 0, 0
+        LOGGER.warning(f"Using mock data for TikTok search '{keyword}' page {page}")
+        return mock_results, None, page, 0
         
     except Exception as e:
         LOGGER.error(f"Error in TikTok search: {str(e)}")
@@ -597,7 +724,7 @@ async def tiktok_paginated_search(_, message):
             
         butt.ibutton("🔗 Join", f"ttsearch join {uid}")
         
-        if page < total_pages:
+        if page < total_pages or total_pages == 0:
             butt.ibutton("Next ▶️", f"ttsearch next {uid} {page} {keyword}")
         else:
             butt.ibutton("▶️", f"ttsearch none {uid}")
@@ -617,7 +744,23 @@ async def tiktok_paginated_search(_, message):
         
         await deleteMessage(mess)
         
-        if video['thumb']:
+        video_url = video.get('url', '')
+        
+        if video_url:
+            try:
+                sent_msg = await message.reply_video(
+                    video=video_url,
+                    caption=msg,
+                    reply_markup=butts,
+                    supports_streaming=True
+                )
+                tiktok_searches[uid]["sent_message"] = sent_msg
+                return
+            except Exception as e:
+                LOGGER.error(f"Failed to send video preview: {e}")
+                # Fall back to using thumbnail
+        
+        if video.get('thumb'):
             sent_msg = await message.reply_photo(
                 photo=video['thumb'],
                 caption=msg,
@@ -720,7 +863,7 @@ async def tiktok_search_callback(_, query):
         
         search_data.update({
             "page": page,
-            "total_pages": total_pages,
+            "total_pages": total_pages, 
             "results": results,
             "current_video": video
         })
@@ -744,7 +887,7 @@ async def tiktok_search_callback(_, query):
             
         butt.ibutton("🔗 Join", f"ttsearch join {uid}")
         
-        if page < total_pages:
+        if page < total_pages or total_pages == 0:
             butt.ibutton("Next ▶️", f"ttsearch next {uid} {page} {keyword}")
         else:
             butt.ibutton("▶️", f"ttsearch none {uid}")
@@ -753,6 +896,20 @@ async def tiktok_search_callback(_, query):
         
         butts = butt.build_menu(3, 1)
         
+        try:
+            video_url = video.get('url', '')
+            if video_url:
+                await message.edit_media(
+                    media=InputMediaVideo(
+                        media=video_url,
+                        caption=msg
+                    ),
+                    reply_markup=butts
+                )
+                return
+        except Exception as e:
+            LOGGER.error(f"Failed to update with video: {e}")
+            
         try:
             if video['thumb']:
                 await message.edit_media(
