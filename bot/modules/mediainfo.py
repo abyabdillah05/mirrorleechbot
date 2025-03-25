@@ -50,7 +50,7 @@ async def gen_mediainfo(message, link=None, media=None, mmsg=None):
         await editMessage(temp_send, f"MediaInfo Stopped due to {str(e)}")
     finally:
         await aioremove(des_path)
-    link_id = (await telegraph.create_page(title='Pikabot MediaInfo', content=tc))["path"]
+    link_id = (await telegraph.create_page(title='𝚃𝚛𝚊𝚗𝚜𝚜𝚒𝚘𝚗 𝙲𝚘𝚛𝚎 𝙼𝚒𝚛𝚛𝚘𝚛 - 𝙱𝚘𝚝 MediaInfo', content=tc))["path"]
     link_end = f"https://telegra.ph/{link_id}"
     buttons = ButtonMaker()
     buttons.ubutton("👁️ Lihat MediaInfo", f"{link_end}", "footer")

@@ -203,23 +203,23 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1):
         msg = f"<b>Tidak ada tugas</b> <code>{status}</code>!\n\n"
     buttons = ButtonMaker()
     if not is_user:
-        buttons.ibutton("ℹ️", "status 0 ov", position="header")
+        buttons.ibutton("ℹ️ 𝙸𝚗𝚏𝚘", "status 0 ov", position="header")
     if len(tasks) > STATUS_LIMIT:
         msg += f"<b>Step :</b> <code>{page_step}</code>"
         msg += f"\n<b>Halaman :</b> <code>{page_no}/{pages}</code>"
         msg += f"\n<b>Total Tugas :</b> <code>{tasks_no}</code>\n\n"
-        buttons.ibutton("⏪ Prev", f"status {sid} pre")
-        buttons.ibutton("⏩ Next", f"status {sid} nex")
-        #if tasks_no > 30:
-        #    for i in [1, 2, 4, 6, 8, 10, 15, 20]:
-        #        buttons.ibutton(i, f"status {sid} ps {i}", position="footer")
-    #if status != "All" or tasks_no > 20:
-    #    for label, status_value in STATUS_VALUES:
-    #        if status_value != status:
-    #            buttons.ibutton(label, f"status {sid} st {status_value}")
-    buttons.ubutton("*⃣", "https://t.me/pikachukocak2", position="header")
-    buttons.ibutton("🔄", f"status {sid} ref", position="header")
-    buttons.ibutton("🔽 Tutup", f"status {sid} close", position="footer")
+        buttons.ibutton("◀️ 𝙿𝚛𝚎𝚟", f"status {sid} pre")
+        buttons.ibutton("𝙽𝚎𝚡𝚝 ▶️", f"status {sid} nex")
+        if tasks_no > 30:
+            for i in [1, 2, 4, 6, 8, 10, 15, 20]:
+                buttons.ibutton(i, f"status {sid} ps {i}", position="footer")
+    if status != "All" or tasks_no > 20:
+        for label, status_value in STATUS_VALUES:
+            if status_value != status:
+                buttons.ibutton(label, f"status {sid} st {status_value}")
+    buttons.ubutton("✨ 𝚓𝚘𝚒𝚗", "https://t.me/DizzyStuffProject", position="header")
+    buttons.ibutton("🔄 𝚁𝚎𝚏𝚛𝚎𝚜𝚑", f"status {sid} ref", position="header")
+    buttons.ibutton("🔽 𝚃𝚞𝚝𝚞𝚙", f"status {sid} close", position="footer")
     button = buttons.build_menu(3)
     msg += f"<b>──────────────────</b>"
     msg += f"\n<b>CPU :</b> <code>{cpu_percent()}%</code> | <b>RAM :</b> <code>{virtual_memory().percent}%</code>"

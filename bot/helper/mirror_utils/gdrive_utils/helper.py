@@ -192,7 +192,7 @@ class GoogleDriveHelper:
     def create_directory(self, directory_name, dest_id):
         file_metadata = {
             "name": directory_name,
-            "description": "Uploaded by Pikabot",
+            "description": "Uploaded by 𝚃𝚛𝚊𝚗𝚜𝚜𝚒𝚘𝚗 𝙲𝚘𝚛𝚎 𝙼𝚒𝚛𝚛𝚘𝚛 - 𝙱𝚘𝚝",
             "mimeType": self.G_DRIVE_DIR_MIME_TYPE,
         }
         if dest_id is not None:

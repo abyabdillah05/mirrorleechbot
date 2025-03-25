@@ -101,7 +101,7 @@ async def home_button(url):
         msg = "<b>File terdeteksi pada pesan anda atau pesan yang anda balas...</b>\n\nApakah anda mau Mirror/Leech ?"
     butt.ibutton("☁️ Mirror", f"auto mirror")
     butt.ibutton("☀️ Leech", f"auto leech")
-    butt.ibutton("⛔️ Batal", f"auto cancel")
+    butt.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", f"auto cancel")
     butts = butt.build_menu(2)
     return msg, butts
 
@@ -203,9 +203,9 @@ class AutoMirror:
         mess += f"\n<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
         butt = ButtonMaker()
         if self._type == "mirror":
-            butt.ibutton("▶️ START MIRROR ", f"auto start_mirror", position="header")
+            butt.ibutton("▶️ 𝚂𝚝𝚊𝚛𝚝 𝙼𝚒𝚛𝚛𝚘𝚛", f"auto start_mirror", position="header")
         if self._type == "leech":
-            butt.ibutton("▶️ START LEECH ", f"auto start_leech", position="header")
+            butt.ibutton("▶️ 𝚂𝚝𝚊𝚛𝚝 𝚕𝚎𝚎𝚌𝚑", f"auto start_leech", position="header")
 
         s = "" if "rename" not in auto_args else "✅"
         butt.ibutton(f"Rename {s}", f"auto rename")
@@ -243,9 +243,9 @@ class AutoMirror:
             s = "" if "sv" not in auto_args else "✅"
             butt.ibutton(f"Sample Vid {s}", f"auto sv")
 
-        butt.ibutton("↩️ Kembali", f"auto back")
-        butt.ibutton("⛔️ Batal", f"auto cancel")
-        butt.ibutton("🗿 Bantuan Singkat", f"auto help", position="footer")
+        butt.ibutton("🔙 𝙺𝚎𝚖𝚋𝚊𝚕𝚒", f"auto back")
+        butt.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", f"auto cancel")
+        butt.ibutton("❓ 𝙱𝚊𝚗𝚝𝚞𝚊𝚗 𝚂𝚒𝚗𝚐𝚔𝚊𝚝", f"auto help", position="footer")
         butts = butt.build_menu(2)
         return mess, butts
 
@@ -273,7 +273,7 @@ class AutoMirror:
         but.ibutton("GD", f"auto cu_gdrive")
         but.ibutton("RCL", f"auto cu_rclone_user")
         but.ibutton("GDL", f"auto cu_gdrive_user")
-        but.ibutton("⬅️ Kembali", f"auto cu_back")
+        but.ibutton("🔙 𝙺𝚎𝚖𝚋𝚊𝚕𝚒", f"auto cu_back")
         butts = but.build_menu(4)
         await editMessage(self._reply_to, msg, butts)
     
@@ -373,8 +373,8 @@ class AutoMirror:
         
 <b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"""
         butt = ButtonMaker()
-        butt.ibutton("↩️ Kembali", f"auto {self._type}")
-        butt.ibutton("⛔️ Batal", f"auto cancel")
+        butt.ibutton("🔙 𝙺𝚎𝚖𝚋𝚊𝚕𝚒", f"auto {self._type}")
+        butt.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", f"auto cancel")
         butts = butt.build_menu(2)
         await editMessage(self._reply_to, mess, butts)
     

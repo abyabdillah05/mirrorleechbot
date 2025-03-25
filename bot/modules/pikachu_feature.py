@@ -481,7 +481,7 @@ async def auto_tk(client, message):
     butt = ButtonMaker()
     butt.ibutton("🎞 Media", f"tk media {user_id}")
     butt.ibutton("🔈 Audio", f"tk audio {user_id}")
-    butt.ibutton("⛔️ Batal", f"tk cancel {user_id}")
+    butt.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", f"tk cancel {user_id}")
     butts = butt.build_menu(2)
     await sendMessage(message, msg, butts)
 
@@ -558,15 +558,15 @@ async def subdl_butt(uid):
                 msg += f"<b>{index:02d}. </b>{name} [{year}]"
                 msg += f"\n"
                 butt.ibutton(f"{index}", f"sub s {uid} {id}")
-            butt.ibutton("⛔️ Batal", f"sub x {uid}", position="footer")
+            butt.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", f"sub x {uid}", position="footer")
             butts = butt.build_menu(6)
             return msg, butts
         else:
-            butt.ibutton("⛔️ Batal", f"sub x {uid}", position="footer")
+            butt.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", f"sub x {uid}", position="footer")
             butts = butt.build_menu(1)
             return f"Gagal mendapatkan subtitle dari film \n<code>{keyword}</code>\n\n{r}", butts
     else:
-        butt.ibutton("⛔️ Batal", f"sub x {uid}", position="footer")
+        butt.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", f"sub x {uid}", position="footer")
         butts = butt.build_menu(1)
         return f"Gagal mendapatkan subtitle dari film \n<code>{keyword}</code>\n\n{r}", butts
 
@@ -598,8 +598,8 @@ async def subdl_result(uid, id):
             keyword = kueri
             keyword = (keyword[uid])
     butt = ButtonMaker()
-    butt.ibutton("⬅️ Kembali", f"sub b {uid}")
-    butt.ibutton("⛔️ Batal", f"sub x {uid}")
+    butt.ibutton("🔙 𝙱𝚊𝚌𝚔", f"sub b {uid}")
+    butt.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", f"sub x {uid}")
     butts = butt.build_menu(2)    
     if (r["status"]):
         name = (r["results"][0]["name"])
@@ -672,7 +672,7 @@ async def yt_request(uid, keyword):
         
         msg = f"<b>Hasil Pencarian dengan Keyword: <code>{keyword}</code></b>\n\n"
         butt = ButtonMaker()
-        butt.ibutton("⛔️ Batal", f"youtube cancel {uid}", position="footer")          
+        butt.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", f"youtube cancel {uid}", position="footer")          
         for index,video in enumerate(results, start=1):      
             judul = video['title']
             video_id = video['id']
@@ -691,7 +691,6 @@ async def edit_durasi(duration):
     duration = duration.replace("S", " detik")
     duration = duration.replace("H", " jam ")
     duration = duration.replace("D", " hari ")
-    duration = duration.replace("T", "")
     return duration
 
 async def yt_extra(video_id):
@@ -727,7 +726,7 @@ async def yt_search(client, message, keyword=None):
         mess = await sendMessage(message, f"<b>Tunggu sebentar tuan...</b>")
         if uid in youtube:
             butt = ButtonMaker()
-            butt.ibutton("⛔️ Batal", f"youtube cancel {uid}")
+            butt.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", f"youtube cancel {uid}")
             butts = butt.build_menu(1)
             await editMessage(mess, "<b>Silahkan selesaikan atau batalkan proses sebelumnya !</b>", butts)
             return None
@@ -761,10 +760,10 @@ async def yt_query(_, query):
             msg += f"<b>⏱ Durasi: </b><code>{await edit_durasi(details['duration'])}</code>\n"
             msg += f"<b>🌐 Link: </b><code>https://www.youtube.com/watch?v={data[3]}</code>"
             butt = ButtonMaker()
-            butt.ibutton("☁️ Mirror", f"youtube mirror {uid} {data[3]}")
-            butt.ibutton("☀️ Leech", f"youtube leech {uid} {data[3]}")
-            butt.ibutton("⬅️ Kembali", f"youtube back {uid}")
-            butt.ibutton("⛔️ Batal", f"youtube cancel {uid}")
+            butt.ibutton("☁️ 𝙼𝚒𝚛𝚛𝚘𝚛", f"youtube mirror {uid} {data[3]}")
+            butt.ibutton("☀️ 𝙻𝚎𝚎𝚌𝚑", f"youtube leech {uid} {data[3]}")
+            butt.ibutton("🔙 𝙱𝚊𝚌𝚔", f"youtube back {uid}")
+            butt.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", f"youtube cancel {uid}")
             butts = butt.build_menu(2)
             new_media = InputMediaPhoto(details['thumbnail_url'], caption=msg)
             no_thumbnail = InputMediaPhoto("https://telegra.ph/file/5e7fde2b232ae1b682625.jpg", caption=msg)
@@ -896,16 +895,19 @@ async def gallery_dl_auto(client, message):
 #Pickle Generator
 ###########################
 OAUTH_SCOPE = ['https://www.googleapis.com/auth/drive']
-client_id = "177372616802-uiilrh4sbafdibf4lvkn3sspg9vajkok.apps.googleusercontent.com"
-client_secret = "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"
+client_id = "905059780985-usekgpt4cp42u2idqjtk089us0cm4qkr.apps.googleusercontent.com"
+client_secret = "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"
 
 @new_task
 async def get_token(client, message):
     private = bool(message.chat.type == ChatType.PRIVATE)
     if not private:
         butt = ButtonMaker()
-        butt.ubutton("❇️ LETS GO", f"https://t.me/{bot.me.username}")
-        await sendMessage(message, "This command can only be used in private chat, click the button below and use /gettoken command on Private Chat.", butt.build_menu(1))
+        butt.ubutton("🔐 GUNAKAN DI CHAT PRIBADI", f"https://t.me/{bot.me.username}?start=gettoken")
+        await sendMessage(message, 
+            "<b>⚠️ Perintah ini hanya dapat digunakan di chat pribadi!</b>\n\n"
+            "Klik tombol di bawah untuk membuka chat pribadi dengan bot dan otomatis mendapatkan Token Google Drive Anda.", 
+            butt.build_menu(1))
         return
     uid = message.from_user.id
     path = f"tokens/{uid}/"
@@ -931,13 +933,26 @@ async def get_token(client, message):
         
         auth_url, _ = flow.authorization_url(access_type='offline', include_granted_scopes='true')
         
-        msg = f"<b>Follow the steps below to get your Google Drive Token.</b>\n\n• Open the Authorization URL and login to your Google Drive account.\n"
-        msg += f"• Allow the app to access your Google Drive.\n"
-        msg += f"• Click Continue and you will redirected to error page.\n"
-        msg += f"• Copy the url from the page and Paste Here !\n"
-        msg += f"\n<i>⏰ Timeout 120 seconds</i>\n"
+        # Enhanced detailed instructions message
+        msg = (
+            "<b>🔐 PANDUAN MENDAPATKAN TOKEN GOOGLE DRIVE</b>\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "<b>Ikuti langkah-langkah berikut dengan seksama:</b>\n\n"
+            "1️⃣ <b>Klik tombol \"Authorization URL\" di bawah</b>\n"
+            "   • Halaman Google akan terbuka di browser Anda\n"
+            "   • Pilih akun Google Drive yang ingin Anda gunakan\n\n"
+            "2️⃣ <b>Berikan akses ke aplikasi</b>\n"
+            "   • Jika muncul peringatan \"Google belum memverifikasi aplikasi ini\", klik \"Lanjutkan\"\n"
+            "   • Pilih \"Lanjutkan\" untuk mengizinkan akses\n\n"
+            "3️⃣ <b>Pada halaman error yang muncul:</b>\n"
+            "   • Salin seluruh URL dari address bar browser Anda\n"
+            "   • Kembali ke Telegram dan kirimkan URL tersebut ke bot ini\n\n"
+            "<i>⚠️ Anda memiliki waktu 120 detik untuk menyelesaikan proses ini</i>\n"
+            "<i>🔒 Token yang dihasilkan akan digunakan untuk akses Google Drive Anda</i>\n"
+        )
+        
         butt = ButtonMaker()
-        butt.ubutton("Authorization URL", auth_url)
+        butt.ubutton("🔗 Authorization URL", auth_url)
         butts = butt.build_menu(1)
         
         try:
@@ -947,30 +962,42 @@ async def get_token(client, message):
             )
         except:
             await deleteMessage(ask)
-            raise Exception("Timeout. Please try again.")
+            raise Exception("⏱️ Waktu habis! Silakan coba lagi dengan mengirim perintah /gettoken.")
         try:
             code = respon.text.split('code=')[1].split('&')[0]
         except IndexError:
             await deleteMessage(ask)
-            raise Exception("Url format is invalid, code not found. Please try again.")
+            raise Exception("❌ Format URL tidak valid. Pastikan Anda menyalin seluruh URL dari address bar browser. Silakan coba lagi.")
         await respon.delete()
-        await editMessage(ask, f"Verifying code...")
+        await editMessage(ask, f"<b>⏳ Memproses kode autentikasi...</b>\n\nSedang memverifikasi dan menghasilkan token. Mohon tunggu sebentar.")
         try:
             flow.fetch_token(code=code)
             credentials = flow.credentials
             
             with open(pickle_path, "wb") as token:
                 pickle.dump(credentials, token)
-            caption = "📋 <b>Google Drive Token Info:</b>\n\n"
-            caption += f"🔑 <b>Client ID:</b> <code>{client_id}</code>\n"
-            caption += f"🔒 <b>Client Secret:</b> <code>{client_secret}</code>\n"
-            caption += f"🔄 <b>Refresh Token:</b> <code>{credentials.refresh_token}</code>"
+            
+            # Enhanced token information message
+            caption = (
+                "📋 <b>TOKEN GOOGLE DRIVE BERHASIL DIBUAT</b>\n"
+                "━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+                "<b>Informasi Token:</b>\n"
+                f"🔑 <b>Client ID:</b> <code>{client_id}</code>\n"
+                f"🔒 <b>Client Secret:</b> <code>{client_secret}</code>\n"
+                f"🔄 <b>Refresh Token:</b> <code>{credentials.refresh_token}</code>\n\n"
+                "<i>⚠️ PENTING: Simpan informasi ini dengan aman!</i>\n"
+                "<i>Refresh Token dapat digunakan untuk akses jangka panjang ke akun Google Drive Anda.</i>\n\n"
+                "<b>Cara Menggunakan:</b>\n"
+                "• Gunakan perintah <code>/gentoken</code> untuk setup otomatis dengan token ini\n"
+                "• Atau setup manual dengan memasukkan token ke service accounts"
+            )
+            
             await message.reply_document(
                 document=pickle_path,
                 caption=caption,
-                )
+            )
         except Exception as e:
-            raise Exception(f"Failed verification code: {str(e)}")
+            raise Exception(f"❌ Gagal memverifikasi kode: {str(e)}\n\nSilakan coba lagi dengan perintah /gettoken.")
         await deleteMessage(ask)
     except Exception as e:
         await sendMessage(message, f"<b>❌ Error:</b> {e}")
@@ -979,6 +1006,16 @@ async def get_token(client, message):
             os.remove(pickle_path)
 
 async def gen_token(client, message):
+    private = bool(message.chat.type == ChatType.PRIVATE)
+    if not private:
+        butt = ButtonMaker()
+        butt.ubutton("🔐 GUNAKAN DI CHAT PRIBADI", f"https://t.me/{bot.me.username}?start=gentoken")
+        await sendMessage(message, 
+            "<b>⚠️ Perintah ini hanya dapat digunakan di chat pribadi!</b>\n\n"
+            "Klik tombol di bawah untuk membuka chat pribadi dengan bot dan otomatis menghasilkan token Google Drive Anda.", 
+            butt.build_menu(1))
+        return
+    
     uid = message.from_user.id
     path = f"tokens/"
     pickle_path = f"{path}{uid}.pickle"
@@ -989,7 +1026,7 @@ async def gen_token(client, message):
                 credentials = pickle.load(f)
                 if credentials and credentials.expired and credentials.refresh_token:
                     credentials.refresh(Request())
-                raise Exception("Token google drive anda sudah ada dan sudah diperbaharui. \n\nUntuk hapus token yang ada, silahkan gunakan Usetting - Gdrive Tools - token.pickle")
+                raise Exception("⚠️ Token Google Drive Anda sudah ada dan telah diperbarui.\n\nUntuk menghapus token yang ada, silakan gunakan menu:\nUsetting → Gdrive Tools → token.pickle")
         else:
             client_config = {
                 "installed": {
@@ -1008,42 +1045,57 @@ async def gen_token(client, message):
                 redirect_uri='http://localhost:1'
             )
             auth_url, _ = flow.authorization_url(access_type='offline', include_granted_scopes='true')
-            msg = f"<b>Ikuti langkah dibawah untuk generate token google drive:</b>\n\n• Klik link dibawah untuk autorisasi google drive\n"
-            msg += f"• Pilih akun googledrive yang akan digunakan untuk mirroring.\n"
-            msg += f"• Klik Lanjutkan dan anda akan dibawa ke halaman error.\n"
-            msg += f"• Silahkan salin semua alamat url di halaman error tersebut dan kirim ke bot.\n"
-            msg += f"\n<i>⏰ Timeout 120 detik</i>\n"
+            
+            # Enhanced detailed instructions message
+            msg = (
+                "<b>🔐 GENERATE TOKEN GOOGLE DRIVE</b>\n"
+                "━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+                "<b>Ikuti langkah-langkah berikut dengan seksama:</b>\n\n"
+                "1️⃣ <b>Klik tombol \"Autorisasi Google Drive\" di bawah</b>\n"
+                "   • Browser akan terbuka dengan halaman login Google\n"
+                "   • Pilih akun Google Drive yang ingin Anda gunakan untuk mirroring\n\n"
+                "2️⃣ <b>Berikan izin akses</b>\n"
+                "   • Jika muncul peringatan keamanan, klik \"Lanjutkan\"\n"
+                "   • Izinkan akses ke Google Drive Anda\n\n"
+                "3️⃣ <b>Salin URL dari halaman error</b>\n"
+                "   • Setelah memberi izin, Anda akan diarahkan ke halaman error\n"
+                "   • Salin SELURUH URL dari address bar browser\n"
+                "   • Kirimkan URL tersebut ke bot sebagai balasan\n\n"
+                "<i>⏱️ Proses ini akan timeout dalam 120 detik jika tidak ada respon</i>\n"
+                "<i>💡 Token yang dibuat akan langsung dikonfigurasi untuk akun Anda</i>"
+            )
+            
             butt = ButtonMaker()
-            butt.ubutton("Autorisasi Google Drive", auth_url)
+            butt.ubutton("🔗 Autorisasi Google Drive", auth_url)
             butts = butt.build_menu(1)
             try:
                 ask = await sendMessage(message, msg, butts)
                 respon = await bot.listen(
                         filters=filters.text & filters.user(uid), timeout=120
                         )
-            except :
+            except:
                 await deleteMessage(ask)
-                raise Exception("Waktu habis, tidak ada respon dari pengguna, silahkan coba lagi.")
+                raise Exception("⏱️ Waktu habis! Tidak ada respon dari Anda. Silakan coba lagi dengan perintah /gentoken.")
             try:
                 code = respon.text.split('code=')[1].split('&')[0]
             except IndexError:
                 await deleteMessage(ask)
-                raise Exception("Format URL tidak valid. Pastikan Anda menyalin seluruh URL.")
+                raise Exception("❌ Format URL tidak valid. Pastikan Anda menyalin SELURUH URL dari address bar browser.")
             await respon.delete()
-            await editMessage(ask, f"Memferifikasi kode anda...")
+            await editMessage(ask, f"<b>⏳ Memverifikasi kode autentikasi...</b>\n\nSedang memproses permintaan Anda. Mohon tunggu sebentar.")
             try:
                 credentials = flow.fetch_token(code=code)
                 with open(pickle_path, "wb") as token:
                     pickle.dump(flow.credentials, token)
                     return flow.credentials
             except Exception as e:
-                raise Exception(f"Gagal saat memverifikasi kode: {str(e)}")
+                raise Exception(f"❌ Gagal saat memverifikasi kode: {str(e)}")
             finally:
                 await deleteMessage(ask)
     try:
         credentials = await generate_token(message)
         if credentials and os.path.exists(pickle_path):
-            wait = await sendMessage(message, "<b>⌛ Proses setup google drive anda...</b>")
+            wait = await sendMessage(message, "<b>⌛ Memproses setup Google Drive...</b>\n\nSedang membuat folder dan mengkonfigurasi pengaturan. Mohon tunggu sebentar.")
             def create_folder():
                 try:
                     auth = build("drive", "v3", credentials=credentials, cache_discovery=False)
@@ -1081,17 +1133,40 @@ async def gen_token(client, message):
                 update_user_ldata(uid, "default_upload", "gd")
                 if DATABASE_URL:
                     await DbManger().update_user_data(uid)
-            msg = f"✅ <b>Token google drive anda berhasil dibuat dan dimasukkan ke usetting</b>\n\n"
+                    
+            # Enhanced success message
+            msg = (
+                "✅ <b>SETUP GOOGLE DRIVE BERHASIL</b>\n"
+                "━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            )
+            
             if folder_id:
-                msg += f"• <b>Nama Folder:</b> <code>MirrorFolder oleh {bot.me.username}</code>\n"
-                msg += f"• <b>Gdrive_Id:</b> <code>{folder_id}</code>\n"
-                msg += f"• <b>Default Upload:</b> <code>Google Drive</code>\n\n"
-                msg += f"✅ <b>Semua proses selesai, gunakan perintah /{BotCommands.MirrorCommand[0]} untuk memulai proses mirror ke google drive anda.</b> !"
+                msg += (
+                    "<b>Detail Konfigurasi:</b>\n"
+                    f"📁 <b>Nama Folder:</b> <code>MirrorFolder oleh {bot.me.username}</code>\n"
+                    f"🆔 <b>Folder ID:</b> <code>{folder_id}</code>\n"
+                    f"📤 <b>Default Upload:</b> <code>Google Drive</code>\n\n"
+                    "<b>Cara Penggunaan:</b>\n"
+                    f"• Gunakan perintah <code>/{BotCommands.MirrorCommand[0]}</code> untuk mengupload file ke Google Drive\n"
+                    f"• File akan disimpan di folder yang telah dibuat\n"
+                    f"• Semua file dapat diakses melalui link\n\n"
+                    "<i>🎉 Selamat! Semua pengaturan telah selesai dan siap digunakan!</i>"
+                )
             else:
-                msg += f"❌ <b>Terjadi kesalahan, saat setup folder di akun anda, silahkan setup manual dengan mengisi gdrive_id di usetting dengan format:<blockquote><code>mtp:gdrive_id</code></blockquote> !</b>"
+                msg += (
+                    "⚠️ <b>Setup Folder Gagal</b>\n\n"
+                    "Token berhasil dibuat, namun terjadi kesalahan saat membuat folder di Google Drive Anda.\n\n"
+                    "<b>Untuk setup manual:</b>\n"
+                    "1. Buat folder di Google Drive Anda\n"
+                    "2. Setting folder agar dapat dibagikan melalui link\n"
+                    "3. Salin ID folder (bagian terakhir dari URL folder)\n"
+                    f"4. Isi gdrive_id di usetting dengan format: <code>mtp:ID_FOLDER_ANDA</code>\n\n"
+                    "<i>Jika membutuhkan bantuan, hubungi admin.</i>"
+                )
+                
             await editMessage(wait, msg)
         else:
-            await editMessage(wait, f"❌ <b>Token google drive anda gagal dibuat, silahkan coba lagi</b>")
+            await editMessage(wait, "❌ <b>SETUP GOOGLE DRIVE GAGAL</b>\n\nToken Google Drive tidak berhasil dibuat. Silakan coba lagi atau hubungi admin untuk bantuan.")
     except Exception as e:
         await sendMessage(message, f"<b>❌ Error:</b> {e}")
 

@@ -131,7 +131,7 @@ class YtSelection:
             buttons.ibutton("Formats Audio", "ytq audio")
             buttons.ibutton("Videos Terbaik", "ytq bv*+ba/b")
             buttons.ibutton("Audios Terbaik", "ytq ba/b")
-            buttons.ibutton("Batalkan", "ytq cancel", "footer")
+            buttons.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", "ytq cancel", "footer")
             self._main_buttons = buttons.build_menu(3)
             msg = f"<b>Pilih kualitas video playlist :</b>\n<b>Waktu Habis :</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
         else:
@@ -184,7 +184,7 @@ class YtSelection:
             buttons.ibutton("Format Audio", "ytq audio")
             buttons.ibutton("Video Terbaik", "ytq bv*+ba/b")
             buttons.ibutton("Audio Terbaik", "ytq ba/b")
-            buttons.ibutton("Batalkan", "ytq cancel", "footer")
+            buttons.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", "ytq cancel", "footer")
             self._main_buttons = buttons.build_menu(2)
             msg = f"<b>Pilih kualitas video :</b>\n<b>Waktu habis :</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
         self._reply_to = await sendMessage(
@@ -208,8 +208,8 @@ class YtSelection:
         for tbr, d_data in tbr_dict.items():
             button_name = f"{tbr}K ({get_readable_file_size(d_data[0])})"
             buttons.ibutton(button_name, f"ytq sub {b_name} {tbr}")
-        buttons.ibutton("Kembali", "ytq back", "footer")
-        buttons.ibutton("Batalkan", "ytq cancel", "footer")
+        buttons.ibutton("◀️ 𝙺𝚎𝚖𝚋𝚊𝚕𝚒", "ytq back", "footer")
+        buttons.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", "ytq cancel", "footer")
         subbuttons = buttons.build_menu(2)
         msg = f"<b>Pilih video bitrate untuk</b> <code>{b_name}</code> <b>:</b>\n<b>Waktu habis :</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
         await editMessage(self._reply_to, msg, subbuttons)
@@ -221,8 +221,8 @@ class YtSelection:
         for q in audio_qualities:
             audio_format = f"ba/b-mp3-{q}"
             buttons.ibutton(f"{q}K-mp3", f"ytq {audio_format}")
-        buttons.ibutton("Kembali", "ytq back")
-        buttons.ibutton("Batalkan", "ytq cancel")
+        buttons.ibutton("◀️ 𝙺𝚎𝚖𝚋𝚊𝚕𝚒", "ytq back")
+        buttons.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", "ytq cancel")
         subbuttons = buttons.build_menu(3)
         msg = f"<b>Pilih audio{i} bitrate :</b>\n<b>Waktu habis :</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
         await editMessage(self._reply_to, msg, subbuttons)
@@ -233,8 +233,8 @@ class YtSelection:
         for frmt in ["aac", "alac", "flac", "m4a", "opus", "vorbis", "wav"]:
             audio_format = f"ba/b-{frmt}-"
             buttons.ibutton(frmt, f"ytq aq {audio_format}")
-        buttons.ibutton("Kembali", "ytq back", "footer")
-        buttons.ibutton("Batalkan", "ytq cancel", "footer")
+        buttons.ibutton("◀️ 𝙺𝚎𝚖𝚋𝚊𝚕𝚒", "ytq back", "footer")
+        buttons.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", "ytq cancel", "footer")
         subbuttons = buttons.build_menu(3)
         msg = f"<b>Pilih format audio{i} :</b>\n<b>Waktu habis :</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
         await editMessage(self._reply_to, msg, subbuttons)
@@ -245,8 +245,8 @@ class YtSelection:
         for qual in range(11):
             audio_format = f"{format}{qual}"
             buttons.ibutton(qual, f"ytq {audio_format}")
-        buttons.ibutton("Kembali", "ytq aq back")
-        buttons.ibutton("Batalkan", "ytq aq cancel")
+        buttons.ibutton("◀️ 𝙺𝚎𝚖𝚋𝚊𝚕𝚒", "ytq aq back")
+        buttons.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", "ytq aq cancel")
         subbuttons = buttons.build_menu(5)
         msg = f"<b>Pilih kualitas audio{i} :</b>\n<b>0 = Kualitas terbaik</b>\n<b>10 = Kualitas terburuk</b>\n<b>Waktu habis :</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
         await editMessage(self._reply_to, msg, subbuttons)
@@ -523,7 +523,7 @@ async def auto_yt(client, message):
     butt = ButtonMaker()
     butt.ibutton("☁️ Mirror", f"pikayt mirror {user_id}")
     butt.ibutton("☀️ Leech", f"pikayt leech {user_id}")
-    butt.ibutton("⛔️ Batal", f"pikayt cancel {user_id}")
+    butt.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", f"pikayt cancel {user_id}")
     butts = butt.build_menu(2)
     await sendMessage(message, msg, butts)
 

@@ -343,8 +343,8 @@ class TaskListener(TaskConfig):
             else:
                 fmsg = ""
                 buttons = ButtonMaker()
-                buttons.ubutton("♻️ Leech Dump Channel", "https://t.me/+bzqjzHqeO8xjM2E1")
-                #buttons.ubutton("❤️ Support For Pikabot", "https://telegra.ph/Pikabot-Donate-10-01", "footer")
+                buttons.ubutton("♻️ Leech Dump Channel", "https://t.me/TranssionCore6")
+                buttons.ubutton("❤️ 𝚂𝚞𝚙𝚙𝚘𝚛𝚝 𝙼𝚎", "https://telegra.ph/Donate-and-Support-Us-03-21", "footer")
                 button = buttons.build_menu(1)
                 for index, (link, name) in enumerate(files.items(), start=1):
                     fmsg += f"<b>{index:02d}.</b> <a href='{link}'>{name}</a>\n"
@@ -384,13 +384,13 @@ class TaskListener(TaskConfig):
                 buttons = ButtonMaker()
                 if link:
                     if self.isGofile:
-                        buttons.ubutton("☁️ Gofile Link", link, position="header")
+                        buttons.ubutton("☁️ 𝙶𝚘𝚏𝚒𝚕𝚎", link, position="header")
                     elif self.isBuzzheavier:
-                        buttons.ubutton("☁️ Buzzheavier Link", link, position="header")
+                        buttons.ubutton("☁️ 𝙱𝚞𝚣𝚣𝚑𝚊𝚟𝚒𝚎𝚛", link, position="header")
                     elif self.isPixeldrain:
-                        buttons.ubutton("☁️ Pixeldrain Link", link, position="header")
+                        buttons.ubutton("☁️ 𝙿𝚒𝚡𝚎𝚕𝚍𝚛𝚊𝚒𝚗", link, position="header")
                     else:
-                        buttons.ubutton("☁️ Cloud", link, position="header")
+                        buttons.ubutton("☁️ 𝙲𝚕𝚘𝚞𝚍", link, position="header")
                 if rclonePath:
                     msg += f"\n\n<b>📁 Path :</b> <code>{rclonePath}</code>"
                 if server:
@@ -426,7 +426,7 @@ class TaskListener(TaskConfig):
                         if mime_type.startswith(("image", "video", "audio")):
                             share_urls = f"{INDEX_URL}findpath?id={dir_id}&view=true"
                             buttons.ubutton("🎬 Stream", share_urls, position="header")
-                buttons.ubutton("❤️ Suppport For Pikabot", "https://telegra.ph/Pikabot-Donate-10-01", "footer")
+                buttons.ubutton("❤️ 𝚂𝚞𝚙𝚙𝚘𝚛𝚝 𝙼𝚎", "https://telegra.ph/Donate-and-Support-Us-03-21", "footer")
                 button = buttons.build_menu(3)
             else:
                 msg += f"\n\n<b>📁 Path :</b> <code>{rclonePath}</code>"

@@ -179,7 +179,7 @@ async def edit_status():
         for key, data in list(status_dict.items()):
             try:
                 del status_dict[key]
-                await editMessage(data["message"], f"Status message telah ditutup, silahkan buka kembali dengan perintah /{BotCommands.StatusCommand[0]}")
+                await editMessage(data["message"], f"Status message telah di, silahkan buka kembali dengan perintah /{BotCommands.StatusCommand[0]}")
             except Exception as e:
                 LOGGER.error(str(e))
 

@@ -65,7 +65,7 @@ def bt_selection_buttons(id_):
             "Pilih File", f"{BASE_URL}/app/files/{id_}?pin_code={pincode}"
         )
     buttons.ibutton("Selesai Memilih", f"btsel done {gid} {id_}")
-    buttons.ibutton("Batalkan", f"btsel cancel {gid}")
+    buttons.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", f"btsel cancel {gid}")
     return buttons.build_menu(2)
 
 
@@ -73,7 +73,7 @@ async def get_telegraph_list(telegraph_content):
     path = [
         (
             await telegraph.create_page(
-                title="Pencarian oleh Pikabot", content=content
+                title="Pencarian oleh 𝚃𝚛𝚊𝚗𝚜𝚜𝚒𝚘𝚗 𝙲𝚘𝚛𝚎 𝙼𝚒𝚛𝚛𝚘𝚛 - 𝙱𝚘𝚝", content=content
             )
         )["path"]
         for content in telegraph_content

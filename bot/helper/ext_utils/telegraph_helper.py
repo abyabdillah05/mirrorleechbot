@@ -84,14 +84,14 @@ class TelegraphHelper:
                     nxt_page += 1
             await self.edit_page(
                 path=path[prev_page],
-                title="Pencarian Pikabot",
+                title="Pencarian 𝚃𝚛𝚊𝚗𝚜𝚜𝚒𝚘𝚗 𝙲𝚘𝚛𝚎 𝙼𝚒𝚛𝚛𝚘𝚛 - 𝙱𝚘𝚝",
                 content=content,
             )
         return
 
 
 telegraph = TelegraphHelper(
-    "Pikabot", "https://t.me/pikachukocak"
+    "𝚃𝚛𝚊𝚗𝚜𝚜𝚒𝚘𝚗 𝙲𝚘𝚛𝚎 𝙼𝚒𝚛𝚛𝚘𝚛 - 𝙱𝚘𝚝", "https://t.me/TranssionCoreMirror_Bot"
 )
 
 bot_loop.run_until_complete(telegraph.create_account())

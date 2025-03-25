@@ -37,9 +37,11 @@ from bot import (
     LOGGER, 
     Interval, 
     DATABASE_URL, 
+    OWNER_ID,
     QbInterval, 
     INCOMPLETE_TASK_NOTIFIER, 
     scheduler, 
+    user_data,
     config_dict, 
     Version
 )
@@ -158,7 +160,7 @@ async def stats(_, message):
     neofetch = check_output(
         ["neofetch --shell_version off --stdout"], shell=True).decode()
     stats = f'''
-<b>𝐏𝐈𝐊𝐀𝐁𝐎𝐓 𝐒𝐓𝐀𝐓𝐒</b>
+<b>𝚃𝚛𝚊𝚗𝚜𝚜𝚒𝚘𝚗 𝙲𝚘𝚛𝚎 𝙼𝚒𝚛𝚛𝚘𝚛 𝙱𝚘𝚝 𝚂𝚝𝚊𝚝𝚜</b>
 <pre languange="python"><code>{neofetch}</code></pre>
 <b>┌┤🤖 Status Bot:</b>
 <b>├Username     :</b> <code>@{bot.me.username}</code>
@@ -206,55 +208,148 @@ async def stats(_, message):
 
 
 async def start(client, message):
-    if message.from_user.username:
-        uname = f'@{message.from_user.username}'
+    user = message.from_user
+    
+    if user.username:
+        uname = f'@{user.username}'
     else:
-        uname = f'<a href="tg://user?id={message.from_user.id}">{message.from_user.first_name}</a>'
+        uname = f'<a href="tg://user?id={user.id}">{user.first_name}</a>'
     
     if len(message.text.split()) > 1:
         data = message.text.split()[1]
         if data.startswith("token_"):
-            token_auth = data.removeprefix("token_")
-            msg = await token_verify(message.from_user.id, token_auth)
+            token = data.removeprefix("token_")
+            msg = await token_verify(user.id, token)
             await sendMessage(message, msg)
             return
+        elif data == "donate":
+            return await donate(client, message)
+        elif data == "gettoken":
+            return await pikachu_feature.get_token(client, message)
+        elif data == "gentoken":
+            return await pikachu_feature.gen_token(client, message)
 
     buttons = ButtonMaker()
-    buttons.ubutton(
-        "👤 Maintainer", "https://t.me/XRofikX")
-    buttons.ubutton("🌟 Update", "https://t.me/pikachukocak2")
-    reply_markup = buttons.build_menu(2)
-    if await CustomFilters.authorized(client, message):
-        start_string = f'''
-<b>Hai {uname}, Saya adalah bot mirror/leech.</b>
-
-Ketik <code>/{BotCommands.HelpCommand[0]}</code> untuk mendapatkan list perintah yang tersedia!
-'''
-        await sendMessage(message, start_string, reply_markup)
+    
+    buttons.ubutton("👨‍💻 Maintainer", "https://t.me/WzdDizzyFlasherr", "header")
+    buttons.ubutton("📢 Channel", "https://t.me/DizzyStuffProject")
+    buttons.ubutton("💬 Group", "https://t.me/YourGroupLink")  # Replace with your actual group link
+    
+    buttons.ubutton("💰 Donate", "https://telegra.ph/Donate-and-Support-Us-03-21", "footer")
+    
+    add_me_url = f"https://t.me/{bot.me.username}?startgroup=true"
+    buttons.ubutton("➕ Add Me To Your Group", add_me_url, "footer")
+    
+    reply_markup = buttons.build_menu(2, 1, 1)
+    
+    hour = datetime.now(timezone("Asia/Jakarta")).hour
+    if hour < 12:
+        greeting = "Selamat pagi"
+    elif hour < 15:
+        greeting = "Selamat siang"
+    elif hour < 18:
+        greeting = "Selamat sore"
     else:
-        await sendMessage(message, f"Hai {uname}, sayang sekali anda bukan <code>authorized user</code>, anda belum bisa menggunakan bot ini di PM.\n\nSilahkan gunakan bot ini hanya di grup, cek channel yang ada dibawah untuk link grupnya !", reply_markup)
+        greeting = "Selamat malam"
+    
+    user_id = user.id
+    chat_id = message.chat.id
+    is_owner = user_id == OWNER_ID
+    is_sudo = user_id in user_data and user_data[user_id].get("is_sudo")
+    is_auth_user = user_id in user_data and user_data[user_id].get("is_auth")
+    is_auth_chat = chat_id in user_data and user_data[chat_id].get("is_auth")
+    
+    if is_owner:
+        user_type = "Owner"
+    elif is_sudo:
+        user_type = "Sudo User"
+    elif is_auth_user:
+        user_type = "Authorized User"
+    elif is_auth_chat:
+        user_type = "Member dari Authorized Group"
+    else:
+        user_type = "Guest"
+    
+    if is_owner or is_sudo:
+        start_string = f'''
+<b>{greeting} {uname}!</b>
+
+<b>Status Anda:</b> <code>{user_type}</code>
+
+Selamat datang di Bot Mirror/Leech! Sebagai {user_type}, Anda memiliki akses penuh ke semua fitur bot.
+
+Ketik <code>/{BotCommands.HelpCommand[0]}</code> untuk melihat daftar perintah yang tersedia.
+Ketik <code>/{BotCommands.StatsCommand[0]}</code> untuk melihat statistik bot.
+
+<i>Bot ini dikembangkan oleh @WzdDizzyFlasherr</i>
+'''
+    elif is_auth_user:
+        start_string = f'''
+<b>{greeting} {uname}!</b>
+
+<b>Status Anda:</b> <code>{user_type}</code>
+
+Anda memiliki akses ke bot ini karena Anda adalah user yang diautorize secara individual.
+
+Ketik <code>/{BotCommands.HelpCommand[0]}</code> untuk melihat daftar perintah yang tersedia.
+Ketik <code>/{BotCommands.StatsCommand[0]}</code> untuk melihat statistik bot.
+
+<i>💡 Tips: Gunakan auto-detect untuk mengunduh file dengan cepat!</i>
+'''
+    elif is_auth_chat:
+        start_string = f'''
+<b>{greeting} {uname}!</b>
+
+<b>Status Anda:</b> <code>{user_type}</code>
+
+Anda dapat menggunakan bot ini karena Anda berada di grup yang diautorize.
+Anda juga dapat menggunakan bot ini dalam chat pribadi.
+
+Ketik <code>/{BotCommands.HelpCommand[0]}</code> untuk melihat daftar perintah yang tersedia.
+Ketik <code>/{BotCommands.StatsCommand[0]}</code> untuk melihat statistik bot.
+
+<i>💡 Tips: Anda dapat menggunakan perintah di dalam grup atau di PM!</i>
+'''
+    else:
+        start_string = f'''
+<b>{greeting} {uname}!</b>
+
+<b>Status Anda:</b> <code>{user_type}</code>
+
+Sayang sekali Anda belum menjadi <code>authorized user</code>, sehingga belum bisa menggunakan bot ini di pesan pribadi.
+
+Silakan gunakan bot ini di grup resmi kami. Cek tombol "Group" di bawah untuk bergabung dengan grup kami.
+
+<i>Ingin menggunakan bot ini secara pribadi? Pertimbangkan untuk donasi! Klik tombol "Donate" di bawah untuk informasi lebih lanjut.</i>
+'''
+    
+    await sendMessage(message, start_string, reply_markup)
 
 async def donate(_, message):
-        path = 'https://telegra.ph/file/e8394bf92c06092433a75.png'
-        buttons = ButtonMaker()
-        buttons.ubutton(
-        "👤 Owner", "https://t.me/XRofikX")
-        donate_message = f'''
-👋Hai, jika kalian merasa terbantu dengan bot ini, saya akan sangat berterimakasih jika kalian mau memberikan sedikit donasi untuk keperluan server dan google drive. 
+    path = 'https://ibb.co.com/whGV9tY2'
+    buttons = ButtonMaker()
+    
+    buttons.ubutton("👨‍💻 Maintainer", "https://t.me/WzdDizzyFlasherr", "header")
+    
+    buttons.ubutton("📢 Channel", "https://t.me/DizzyStuffProject")
+    buttons.ubutton("💬 Group", "https://t.me/YourGroupLink")
 
-Semua donasi saya akan gunakan 100% untuk kebutuhan bot, dan tidak akan mengambil keuntungan sedikitpun dari bot ini.
+    buttons.ubutton("💰 Donate Here", "https://telegra.ph/Donate-and-Support-Us-03-21", "footer")
+    
+    donate_message = '''
+<b>𝐈𝐠𝐧𝐨𝐫𝐞𝐝 𝐏𝐫𝐨𝐣𝐞𝐜𝐭 𝐗𝐜𝐥</b>
 
-<u>Kalian bisa memberikan donasi dari link dibawah ya:</u>
-• Gopay or Dana: 081237313284
-• Saweria: https://saweria.co/peekachu
-• Ko-Fi: https://ko-fi.com/pikabot
 
-Jika kalian sudah melakukan donasi, silahkan pm ke owner untuk buktinya ya, nanti kalian bisa tambahkan bot ini ke grup pribadi kalian atau bisa menggunakannya di PM.
+<b>★ Donasi / Traktir Kopi</b>
 
-<blockquote>♥️ Terimakasih yang sudah Donasi !!</blockquote>
+👋 Halo! Jika kalian merasa terbantu dengan layanan dari Ignored Project Xcl atau ingin mendukung pengembangan lebih lanjut, kami sangat berterima kasih jika kalian bersedia memberikan sedikit donasi.
+
+★ Semua donasi yang masuk akan digunakan 100% untuk kebutuhan bot — seperti biaya server, penyimpanan data, pengembangan fitur baru, dan pemeliharaan sistem. Kami tidak mengambil keuntungan pribadi dari donasi ini, sehingga kontribusi kalian benar-benar membantu keberlangsungan dan perkembangan proyek ini.
+
+<b>donasi klik tombol dibawah</b>
 '''
-        await message.reply_photo(photo=path, reply_to_message_id=message.id,
-                                                 caption=donate_message, reply_markup=buttons.build_menu(1), disable_notification=True)
+    await message.reply_photo(photo=path, reply_to_message_id=message.id,
+                             caption=donate_message, reply_markup=buttons.build_menu(2, 1), disable_notification=True)
 
 async def restart(_, message):
     restart_message = await sendMessage(
@@ -338,8 +433,8 @@ async def bot_help(client, message):
     buttons.ibutton('Leech', f'pika {user_id} guide leech')
     buttons.ibutton('Torrent', f'pika {user_id} guide torrent')
     buttons.ibutton('Ytdlp', f'pika {user_id} guide ytdlp')
-    buttons.ibutton('Lainnya', f'pika {user_id} guide other')
-    buttons.ibutton('⬇️ Tutup', f'pika {user_id} close', 'footer')
+    buttons.ibutton('𝙻𝚊𝚒𝚗𝚗𝚢𝚊', f'pika {user_id} guide other')
+    buttons.ibutton('🔽 𝚃𝚞𝚝𝚞𝚙', f'pika {user_id} close', 'footer')
     await sendMessage(message, f"Silahkan pilih jenis bantuan yang anda perlukan !", buttons.build_menu(2))
 
 

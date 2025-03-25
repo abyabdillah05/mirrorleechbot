@@ -309,7 +309,7 @@ class VideEditor:
         butt.ibutton(f"Merge", f"ve merge")
         butt.ibutton(f"Hapus Stream (soon)", f"ve rm_stream")
         butt.ibutton(f"Swap Stream (soon)", f"ve swap_stream")
-        butt.ibutton(f"⛔️ Batal", f"ve cancel", position="footer")
+        butt.ibutton(f"⛔️ 𝙱𝚊𝚝𝚊𝚕", f"ve cancel", position="footer")
         butts = butt.build_menu(2)
         return msg, butts
             
@@ -348,8 +348,8 @@ class VideEditor:
         butt.ibutton(f"360p {s}", f"ve 360p")
         s = "✅" if "144p" in resolution else ""
         butt.ibutton(f"144p {s}", f"ve 144p")
-        butt.ibutton("↩️ Kembali", f"ve back")
-        butt.ibutton("⛔️ Batal", f"ve cancel")
+        butt.ibutton("🔙 𝙺𝚎𝚖𝚋𝚊𝚕𝚒", f"ve back")
+        butt.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", f"ve cancel")
         buttons = butt.build_menu(2)
         await editMessage(self._reply_to, msg, buttons)
     
@@ -413,7 +413,7 @@ class VideEditor:
         butt.ibutton(f"Tanggal {s}", f"ve metadata date")
         s = "" if not copyright else "✅"
         butt.ibutton(f"Hak Cipta {s}", f"ve metadata copyright")
-        butt.ibutton("↩️ Kembali", f"ve back")
+        butt.ibutton("🔙 𝙺𝚎𝚖𝚋𝚊𝚕𝚒", f"ve back")
         butts = butt.build_menu(2)
         return msg, butts
 
@@ -484,8 +484,8 @@ class VideEditor:
             butt.ibutton(f"Tambah Watermark {s}", f"ve paid", position="header")
         butt.ibutton(f"Ukuran", f"ve size_wm")
         butt.ibutton(f"Posisi", f"ve position_wm")
-        butt.ibutton("↩️ Kembali", f"ve back", position="footer")
-        butt.ibutton("⛔️ Batal", f"ve cancel", position="footer")
+        butt.ibutton("🔙 𝙺𝚎𝚖𝚋𝚊𝚕𝚒", f"ve back", position="footer")
+        butt.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", f"ve cancel", position="footer")
         buttons = butt.build_menu(2)
         await editMessage(self._reply_to, msg, buttons)
 
@@ -510,8 +510,8 @@ class VideEditor:
         butt.ibutton(f"Bawah Tengah {s}", f"ve bottom_center")
         s = "" if not positions == "bottom_right" else "✅"
         butt.ibutton(f"Bawah Kanan {s}", f"ve bottom_right")
-        butt.ibutton("↩️ Kembali", f"ve back_wm")
-        butt.ibutton("⛔️ Batal", f"ve cancel")
+        butt.ibutton("🔙 𝙺𝚎𝚖𝚋𝚊𝚕𝚒", f"ve back_wm")
+        butt.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", f"ve cancel")
         buttons = butt.build_menu(3)
         await editMessage(self._reply_to, msg, buttons)
     
@@ -537,8 +537,8 @@ class VideEditor:
         s = "" if not size == "super" else "✅"
         butt.ibutton(f"Super {s}", f"ve super wm")
 
-        butt.ibutton("↩️ Kembali", f"ve back_wm", position="footer")
-        butt.ibutton("⛔️ Batal", f"ve cancel", position="footer")
+        butt.ibutton("🔙 𝙺𝚎𝚖𝚋𝚊𝚕𝚒", f"ve back_wm", position="footer")
+        butt.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", f"ve cancel", position="footer")
         buttons = butt.build_menu(3)
         await editMessage(self._reply_to, msg, buttons)
         
@@ -613,8 +613,8 @@ class VideEditor:
         butt.ibutton(f"Bold {s}", f"ve hs_bold")
         butt.ibutton(f"Posisi Hardsub: {hardsub_position}", f"ve hs_pos")
 
-        butt.ibutton("↩️ Kembali", f"ve back", position="footer")
-        butt.ibutton("⛔️ Batal", f"ve cancel", position="footer")
+        butt.ibutton("🔙 𝙺𝚎𝚖𝚋𝚊𝚕𝚒", f"ve back", position="footer")
+        butt.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", f"ve cancel", position="footer")
         buttons = butt.build_menu(2)
         await editMessage(self._reply_to, msg, buttons)
 
@@ -652,8 +652,8 @@ class VideEditor:
     async def belum_siap(self):
         msg = "<b>Fitur ini belum bisa digunakan hehe 👻 </b>\n\n"
         butt = ButtonMaker()
-        butt.ibutton("↩️ Kembali", f"ve back")
-        butt.ibutton("⛔️ Batal", f"ve cancel")
+        butt.ibutton("🔙 𝙺𝚎𝚖𝚋𝚊𝚕𝚒", f"ve back")
+        butt.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", f"ve cancel")
         buttons = butt.build_menu(2)
         await editMessage(self._reply_to, msg, buttons)
     
@@ -680,8 +680,8 @@ class VideEditor:
         s = "" if not size == "super" else "✅"
         butt.ibutton(f"Super {s}", f"ve super hs")
 
-        butt.ibutton("↩️ Kembali", f"ve back_hs", position="footer")
-        butt.ibutton("⛔️ Batal", f"ve cancel", position="footer")
+        butt.ibutton("🔙 𝙺𝚎𝚖𝚋𝚊𝚕𝚒", f"ve back_hs", position="footer")
+        butt.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", f"ve cancel", position="footer")
         buttons = butt.build_menu(3)
         await editMessage(self._reply_to, msg, buttons)
     
@@ -713,8 +713,8 @@ class VideEditor:
         s = "" if not color == "hitam" else "✅"
         butt.ibutton(f"Hitam {s}", f"ve hs_cs hitam")
 
-        butt.ibutton("↩️ Kembali", f"ve back_hs", position="footer")
-        butt.ibutton("⛔️ Batal", f"ve cancel", position="footer")
+        butt.ibutton("🔙 𝙺𝚎𝚖𝚋𝚊𝚕𝚒", f"ve back_hs", position="footer")
+        butt.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", f"ve cancel", position="footer")
         buttons = butt.build_menu(3)
         await editMessage(self._reply_to, msg, buttons)
     
@@ -758,8 +758,8 @@ class VideEditor:
         for i in range(1, 28):
             s = "✅" if font == i else ""
             butt.ibutton(f"{i} {s}", f"ve hs_fs {i}")
-        butt.ibutton("↩️ Kembali", f"ve back_hs", position="footer")
-        butt.ibutton("⛔️ Batal", f"ve cancel", position="footer")
+        butt.ibutton("🔙 𝙺𝚎𝚖𝚋𝚊𝚕𝚒", f"ve back_hs", position="footer")
+        butt.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", f"ve cancel", position="footer")
         buttons = butt.build_menu(5)
         await editMessage(self._reply_to, msg, buttons)
     
@@ -804,8 +804,8 @@ class VideEditor:
             butt.ibutton(f"Masukkan Subtitle", f"ve ss_file", position="header")
         for i in range(0, len(softsub)):
             butt.ibutton(f"Hapus Subtitle {i+1}", f"ve ss_del {i}")
-        butt.ibutton("↩️ Kembali", f"ve back", position="footer")
-        butt.ibutton("⛔️ Batal", f"ve cancel", position="footer")
+        butt.ibutton("🔙 𝙺𝚎𝚖𝚋𝚊𝚕𝚒", f"ve back", position="footer")
+        butt.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", f"ve cancel", position="footer")
         buttons = butt.build_menu(2)
         await editMessage(self._reply_to, msg, buttons)
     
@@ -852,8 +852,8 @@ class VideEditor:
         msg += f"\n\n<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
         butt = ButtonMaker()
         butt.ibutton("👀 Mulai Extract Stream", f"ve extract_true")
-        butt.ibutton("↩️ Kembali", f"ve back", position="footer")
-        butt.ibutton("⛔️ Batal", f"ve cancel", position="footer")
+        butt.ibutton("🔙 𝙺𝚎𝚖𝚋𝚊𝚕𝚒", f"ve back", position="footer")
+        butt.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", f"ve cancel", position="footer")
         buttons = butt.build_menu(2)
         await editMessage(self._reply_to, msg, buttons)
     
@@ -865,8 +865,8 @@ class VideEditor:
         butt = ButtonMaker()
         butt.ibutton("🎞️ Merge Video+Video", f"ve merge_video")
         butt.ibutton("🎥 Merge Video+Audio", f"ve merge_audio")
-        butt.ibutton("↩️ Kembali", f"ve back", position="footer")
-        butt.ibutton("⛔️ Batal", f"ve cancel", position="footer")
+        butt.ibutton("🔙 𝙺𝚎𝚖𝚋𝚊𝚕𝚒", f"ve back", position="footer")
+        butt.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", f"ve cancel", position="footer")
         buttons = butt.build_menu(1)
         await editMessage(self._reply_to, msg, buttons)
 
@@ -875,8 +875,8 @@ class VideEditor:
         msg += f"\n\n<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
         butt = ButtonMaker()
         butt.ibutton("▶️ Start Merge Video+Video", f"ve video_start")
-        butt.ibutton("↩️ Kembali", f"ve back_merge", position="footer")
-        butt.ibutton("⛔️ Batal", f"ve cancel", position="footer")
+        butt.ibutton("🔙 𝙺𝚎𝚖𝚋𝚊𝚕𝚒", f"ve back_merge", position="footer")
+        butt.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", f"ve cancel", position="footer")
         buttons = butt.build_menu(1)
         await editMessage(self._reply_to, msg, buttons)
     
@@ -885,8 +885,8 @@ class VideEditor:
         msg += f"\n\n<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
         butt = ButtonMaker()
         butt.ibutton("▶️ Start Merge Video+Audio", f"ve audio_start")
-        butt.ibutton("↩️ Kembali", f"ve back_merge", position="footer")
-        butt.ibutton("⛔️ Batal", f"ve cancel", position="footer")
+        butt.ibutton("🔙 𝙺𝚎𝚖𝚋𝚊𝚕𝚒", f"ve back_merge", position="footer")
+        butt.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", f"ve cancel", position="footer")
         buttons = butt.build_menu(1)
         await editMessage(self._reply_to, msg, buttons)
     
@@ -912,8 +912,8 @@ class VideEditor:
         butt.ibutton("Audio Bitrate", f"ve a_bitrate")
         butt.ibutton("Preset", f"ve preset_main")
         butt.ibutton("CRF", f"ve crf_main")
-        butt.ibutton("↩️ Kembali", f"ve back", position="footer")
-        butt.ibutton("⛔️ Batal", f"ve cancel", position="footer")
+        butt.ibutton("🔙 𝙺𝚎𝚖𝚋𝚊𝚕𝚒", f"ve back", position="footer")
+        butt.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", f"ve cancel", position="footer")
         buttons = butt.build_menu(2)
         await editMessage(self._reply_to, msg, buttons)
     
@@ -930,7 +930,7 @@ class VideEditor:
         butt.ibutton("Theora", f"ve v_enc libtheora")
         butt.ibutton("MPEG4", f"ve v_enc mpeg4")
         butt.ibutton("MPEG2", f"ve v_enc mpeg2video")
-        butt.ibutton("↩️ Kembali", f"ve encoder_back", position="footer")
+        butt.ibutton("🔙 𝙺𝚎𝚖𝚋𝚊𝚕𝚒", f"ve encoder_back", position="footer")
         buttons = butt.build_menu(2)
         await editMessage(self._reply_to, msg, buttons)
     
@@ -950,7 +950,7 @@ class VideEditor:
         butt.ibutton("8 Mbps", f"ve v_br 8000k")
         butt.ibutton("9 Mbps", f"ve v_br 9000k")
         butt.ibutton("10 Mbps", f"ve v_br 10000k")
-        butt.ibutton("↩️ Kembali", f"ve encoder_back", position="footer")
+        butt.ibutton("🔙 𝙺𝚎𝚖𝚋𝚊𝚕𝚒", f"ve encoder_back", position="footer")
         buttons = butt.build_menu(2)
         await editMessage(self._reply_to, msg, buttons)
     
@@ -967,7 +967,7 @@ class VideEditor:
         butt.ibutton("MPEG", f"ve a_enc mpeg")
         butt.ibutton("FLAC", f"ve a_enc flac")
         butt.ibutton("ALAC", f"ve a_enc alac")
-        butt.ibutton("↩️ Kembali", f"ve encoder_back", position="footer")
+        butt.ibutton("🔙 𝙺𝚎𝚖𝚋𝚊𝚕𝚒", f"ve encoder_back", position="footer")
         buttons = butt.build_menu(2)
         await editMessage(self._reply_to, msg, buttons)
     
@@ -984,7 +984,7 @@ class VideEditor:
         butt.ibutton("256 kbps", f"ve a_br 256k")
         butt.ibutton("320 kbps", f"ve a_br 320k")
         butt.ibutton("512 kbps", f"ve a_br 512k")
-        butt.ibutton("↩️ Kembali", f"ve encoder_back", position="footer")
+        butt.ibutton("🔙 𝙺𝚎𝚖𝚋𝚊𝚕𝚒", f"ve encoder_back", position="footer")
         buttons = butt.build_menu(2)
         await editMessage(self._reply_to, msg, buttons)
     
@@ -1002,7 +1002,7 @@ class VideEditor:
         butt.ibutton("Slow", f"ve preset slow")
         butt.ibutton("Slower", f"ve preset slower")
         butt.ibutton("Veryslow", f"ve preset veryslow")
-        butt.ibutton("↩️ Kembali", f"ve encoder_back", position="footer")
+        butt.ibutton("🔙 𝙺𝚎𝚖𝚋𝚊𝚕𝚒", f"ve encoder_back", position="footer")
         buttons = butt.build_menu(2)
         await editMessage(self._reply_to, msg, buttons)
     
@@ -1013,7 +1013,7 @@ class VideEditor:
         butt = ButtonMaker()
         for i in range(18, 29):
             butt.ibutton(str(i), f"ve crf {i}")
-        butt.ibutton("↩️ Kembali", f"ve encoder_back", position="footer")
+        butt.ibutton("🔙 𝙺𝚎𝚖𝚋𝚊𝚕𝚒", f"ve encoder_back", position="footer")
         buttons = butt.build_menu(5)
         await editMessage(self._reply_to, msg, buttons)
             
