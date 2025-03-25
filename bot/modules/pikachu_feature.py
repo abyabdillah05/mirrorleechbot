@@ -653,7 +653,7 @@ async def auto_tk(client, message):
     butt.ibutton("🎞 Media", f"tk media {user_id}")
     butt.ibutton("🎞 No WM", f"tk nowm {user_id}")
     butt.ibutton("🔈 Audio", f"tk audio {user_id}")
-    butt.ibutton("⛔️ Batal", f"tk cancel {user_id}")
+    butt.ibutton("⛔️ Batal", f"tk cancel {user_id}", "footer")
     butts = butt.build_menu(2)
     await sendMessage(message, msg, butts)
 
@@ -671,7 +671,7 @@ async def tk_query(_, query):
             if urls:
                 tkurl = urls[0]
     if user_id != uid:
-        return await query.answer(text="Bukan Tugas Anda !", show_alert=True)
+        return await query.answer(text="Bukan Tugas Anda!", show_alert=True)
     
     elif data[1] == "media":
         await deleteMessage(message)
