@@ -1,11 +1,15 @@
 import random
+
 import requests
 import re
 import httpx
 import niquests
 import os
 import subprocess
+import time
 import pickle
+import asyncio
+import aiofiles
 
 from asyncio import sleep as asleep, create_subprocess_exec
 from http.cookiejar import MozillaCookieJar
@@ -13,11 +17,14 @@ from random import randint
 from json import loads
 from bot import bot, DATABASE_URL, LOGGER
 from aiofiles.os import remove as aioremove, path as aiopath, mkdir, makedirs
-from os import path as ospath, getcwd
+from os import listdir, path as ospath, getcwd
 from pyrogram.filters import command, regex
 from pyrogram.handlers import MessageHandler
 from pyrogram.types import InputMediaPhoto, InputMediaVideo
 from pyrogram.handlers import MessageHandler, CallbackQueryHandler
+from shutil import rmtree
+from bot import config_dict
+from bot.helper.ext_utils.links_utils import is_url
 from bot.helper.telegram_helper.button_build import ButtonMaker
 from pyrogram import filters
 from bot.helper.ext_utils.bot_utils import new_task
@@ -159,83 +166,111 @@ async def upload_media(_, message):
 ############################################
 #Tiktok Downloader
 ############################################
-async def tiktokdl(client, message, url, audio=False):
-    url = url
-    if message.from_user.username:
-        uname = f'@{message.from_user.username}'
-    else:
-        uname = f'<code>{message.from_user.first_name}</code>'
-    if audio:
-        mess = await sendMessage(message, f"<b>⌛️Mendownload audio dari tiktok, silahkan tunggu sebentar...</b>")
-    else:
-        mess = await sendMessage(message, f"<b>⌛️Mendownload video dari tiktok, silahkan tunggu sebentar...</b>")
-    async with niquests.AsyncSession() as client:
-        try:
-            r = await client.get(url, allow_redirects=False)
-            if r.status_code == 301:
-                new_url = r.headers['Location']
-                r = await client.get(new_url)
-                hasil = r.url
-            else:
-                hasil = r.url
-        except Exception as e:
-            await sendMessage(mess, f"Terjadi kesalahan saat mencoba mengakses url, silahkan coba kembali.\n\n<blockquote>{e}</blockquote>")
-            await deleteMessage(mess)
+async def tiktokdl(client, message, url, audio=False, type="video"):
+    mess = await sendMessage(message, "<b>⌛ Sedang mencoba mengunduh...</b>")
+    
+    try:
+        # Process URL to get direct link
+        async with httpx.AsyncClient() as http_client:
+            hasil = await http_client.get(
+                url="https://tiktok-dl-api.vercel.app/api",
+                params={"url": url},
+                timeout=30
+            )
+            hasil.raise_for_status()
+            data = hasil.json()
+            
+        if not data.get("success"):
+            await editMessage(mess, f"<b>❌ Error:</b> {data.get('message', 'Link tidak dapat diproses')}")
             return None
         
-        pattern = r"^(?:https?://(?:www\.)?tiktok\.com)/(?P<user>[\a-zA-Z0-9-]+)(?P<content_type>video|photo)+/(?P<id>\d+)"
-        match = re.match(pattern, str(hasil))
-        if match:  
-            content_type = match.group("content_type")
-            id = match.group('id')
-        else:
-            await editMessage(message, f"Link yang anda berikan sepertinya salah atau belum support, silahkan coba dengan link yang lain !")
-            return None
+        # Get TikTok info
+        title = data.get("desc", "No description")
+        author = data.get("author", {}).get("nickname", "Unknown author")
         
-    async with niquests.AsyncSession() as client:
-        data = ""
-        try:
-            while len(data) == 0:
-                r = await client.get(
-                        url=f"https://api16-normal-useast5.us.tiktokv.com/aweme/v1/feed/?aweme_id={id}",
-                        headers={
-                            "User-Agent": user_agent,
-                        }
-                    )
-                r.raise_for_status()
-                data = r.text
-            data = loads(data)
-        except Exception as e:
-            await sendMessage(mess, f"Hai {uname}, Terjadi kesalahan saat mencoba mengambil data, silahkan coba kembali.\n\n<blockquote>{e}</blockquote>")
+        # Handle different download types
+        if audio:
+            # Download audio
+            audio_url = data.get("music_url")
+            if not audio_url:
+                await editMessage(mess, "<b>❌ Error:</b> Audio tidak ditemukan")
+                return None
+                
+            await editMessage(mess, f"<b>⬇️ Mengunduh audio dari TikTok...</b>\n\n<i>{title}</i>")
+            
+            # Download and send audio
+            audio_file = f"{config_dict['TEMP_PATH']}/{message.id}_audio.mp3"
+            await download_file(audio_url, audio_file)
+            
+            caption = f"<b>🎵 Audio TikTok</b>\n\n<b>Judul:</b> {title}\n<b>Pembuat:</b> {author}"
+            
+            await message.reply_audio(
+                audio=audio_file,
+                caption=caption,
+                title=f"TikTok Audio - {author}"
+            )
+            
             await deleteMessage(mess)
-            return None
-        try:
-            music = data["aweme_list"][0]["music"]["play_url"]["url_list"][-1]
-            m_capt = data["aweme_list"][0]["music"]["title"]
-            if content_type == "video":
-                link = data["aweme_list"][0]["video"]["play_addr"]["url_list"][-1]
-                filename = data["aweme_list"][0]["desc"]
-                capt = f"<code>{filename}</code> \n\n<b>Tugas Oleh:</b> {uname}"
-                if audio is False:                
-                    await customSendVideo(message, link, capt, None, None, None, None, None)
-                else:
-                    await customSendAudio(message, music, m_capt, None, None, None, None, None)
-            if content_type == "photo":
-                if audio is False:
-                    photo_urls = []
-                    for aweme in data["aweme_list"][0]["image_post_info"]["images"]:
-                        for link in aweme["display_image"]["url_list"][1:]:
-                            photo_urls.append(link)
-                    photo_groups = [photo_urls[i:i+10] for i in range(0, len(photo_urls), 10)]
-                    for photo_group in photo_groups:
-                        await message.reply_media_group([InputMediaPhoto(photo_url) for photo_url in photo_group])
-                else:
-                    await customSendAudio(message, music, m_capt, None, None, None, None, None)
-               
-        except Exception as e:
-                await sendMessage(message, f"ERROR: Gagal mengupload media {e}")
-        finally:
+            await aioremove(audio_file)
+            
+        elif type == "nowm":
+            # Download video without watermark
+            nowm_url = data.get("video_no_wm")
+            if not nowm_url:
+                await editMessage(mess, "<b>❌ Error:</b> Video tanpa watermark tidak tersedia")
+                return None
+                
+            await editMessage(mess, f"<b>⬇️ Mengunduh video TikTok tanpa watermark...</b>\n\n<i>{title}</i>")
+            
+            # Download and send video
+            video_file = f"{config_dict['TEMP_PATH']}/{message.id}_nowm.mp4"
+            await download_file(nowm_url, video_file)
+            
+            caption = f"<b>🎬 Video TikTok (Tanpa Watermark)</b>\n\n<b>Judul:</b> {title}\n<b>Pembuat:</b> {author}"
+            
+            await message.reply_video(
+                video=video_file,
+                caption=caption
+            )
+            
             await deleteMessage(mess)
+            await aioremove(video_file)
+            
+        else:  # Regular video with watermark
+            # Download video with watermark
+            video_url = data.get("video_url")
+            if not video_url:
+                await editMessage(mess, "<b>❌ Error:</b> Video tidak ditemukan")
+                return None
+                
+            await editMessage(mess, f"<b>⬇️ Mengunduh video TikTok...</b>\n\n<i>{title}</i>")
+            
+            # Download and send video
+            video_file = f"{config_dict['TEMP_PATH']}/{message.id}_video.mp4"
+            await download_file(video_url, video_file)
+            
+            caption = f"<b>🎬 Video TikTok</b>\n\n<b>Judul:</b> {title}\n<b>Pembuat:</b> {author}"
+            
+            await message.reply_video(
+                video=video_file,
+                caption=caption
+            )
+            
+            await deleteMessage(mess)
+            await aioremove(video_file)
+            
+    except Exception as e:
+        await editMessage(mess, f"<b>❌ Error:</b> {str(e)}")
+        LOGGER.error(f"TikTok download error: {str(e)}")
+
+async def download_file(url, path):
+    """Helper function to download files from URL"""
+    async with httpx.AsyncClient() as client:
+        async with client.stream("GET", url) as response:
+            response.raise_for_status()
+            async with aiofiles.open(path, "wb") as f:
+                async for chunk in response.aiter_bytes():
+                    await f.write(chunk)
 
 #########################################
 #Tiktok Search
@@ -476,13 +511,59 @@ async def auto_tk(client, message):
     user_id = message.from_user.id
     isi = {user_id: message}
     tiktok.append(isi)
-    msg = f"<b>Link Tiktok terdeteksi, silahkan pilih untuk download Media atau Audio saja...</b>"
-    user_id = message.from_user.id
+    
+    text = message.text
+    urls = re.findall(r"https?://[^\s]+", text)
+    if not urls:
+        return
+        
+    tkurl = urls[0]
+    
+    try:
+        preview_img = None
+        video_info = "Mengambil info..."
+        
+        pattern = r"^(?:https?://(?:www\.)?tiktok\.com)/(?P<user>[\a-zA-Z0-9-]+)(?P<content_type>video|photo)+/(?P<id>\d+)"
+        match = re.match(pattern, tkurl)
+        
+        if match:
+            username = match.group("user")
+            content_type = match.group("content_type")
+            video_id = match.group('id')
+            
+            preview_img = f"https://p16-sign-va.tiktokcdn.com/obj/tos-useast2a-p-0037-aiso/{video_id}?x-expires=1623456789&x-signature=XXXXX"
+            video_info = f"<b>TikTok dari:</b> @{username}\n<b>Tipe:</b> {content_type.capitalize()}"
+    except Exception as e:
+        LOGGER.error(f"Error getting TikTok preview: {e}")
+        preview_img = None
+        video_info = "TikTok video/audio"
+    
+    msg = "<b>🎵 Link TikTok terdeteksi</b>\n\n"
+    
+    if video_info:
+        msg += f"{video_info}\n\n"
+        
+    msg += f"<b>URL:</b> <code>{tkurl}</code>\n\n"
+    msg += "<i>Silahkan pilih format yang diinginkan:</i>"
+    
     butt = ButtonMaker()
-    butt.ibutton("🎞 Media", f"tk media {user_id}")
-    butt.ibutton("🔈 Audio", f"tk audio {user_id}")
-    butt.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", f"tk cancel {user_id}")
+    butt.ibutton("🎬 Unduh Video", f"tk media {user_id}")
+    butt.ibutton("🔊 Unduh Audio", f"tk audio {user_id}")
+    butt.ibutton("📽️ Video Tanpa Watermark", f"tk nowm {user_id}")
+    butt.ibutton("⛔️ Batal", f"tk cancel {user_id}")
     butts = butt.build_menu(2)
+    
+    if preview_img:
+        try:
+            await message.reply_photo(
+                photo=preview_img,
+                caption=msg,
+                reply_markup=butts
+            )
+            return
+        except Exception as e:
+            LOGGER.error(f"Error sending TikTok preview: {e}")
+    
     await sendMessage(message, msg, butts)
 
 async def tk_query(_, query):
@@ -490,6 +571,7 @@ async def tk_query(_, query):
     user_id = query.from_user.id
     data = query.data.split()
     uid = int(data[2])
+    
     for isi in tiktok:
         if uid in isi:
             msgs = isi
@@ -498,19 +580,30 @@ async def tk_query(_, query):
             urls = re.findall(r"https?://[^\s]+", text)
             if urls:
                 tkurl = urls[0]
+    
     if user_id != uid:
-        return await query.answer(text="Bukan Tugas Anda !", show_alert=True)
+        return await query.answer(text="Bukan Tugas Anda!", show_alert=True)
     
     elif data[1] == "media":
+        await query.answer(text="Mengunduh video dengan watermark...", show_alert=False)
         await deleteMessage(message)
         del msgs[uid]   
-        await tiktokdl(bot, msg, url=tkurl) 
+        await tiktokdl(bot, msg, url=tkurl, type="video") 
+        
     elif data[1] == "audio":
+        await query.answer(text="Mengunduh audio saja...", show_alert=False)
         await deleteMessage(message)
         del msgs[uid]
         await tiktokdl(bot, msg, url=tkurl, audio=True)
+        
+    elif data[1] == "nowm":
+        await query.answer(text="Mengunduh video tanpa watermark...", show_alert=False)
+        await deleteMessage(message)
+        del msgs[uid]
+        await tiktokdl(bot, msg, url=tkurl, type="nowm")
+        
     else:
-        await query.answer()
+        await query.answer(text="Dibatalkan", show_alert=False)
         del msgs[uid]
         await editMessage(message, "Tugas Dibatalkan.")
 
@@ -529,7 +622,7 @@ async def get_data(name=None, id=None):
             }
     if id:
         data = {
-            "api_key": "J23oFXWYe-GMQZgddqKx6JiUkPgkymlE",
+            "api_key": "J23oFXWYe-GMQZkddqKx6JiUkPgkymlE",
             "languages": "ID",
             "type": "movie",
             "sd_id": id
@@ -654,36 +747,98 @@ async def subdl_query(_, query):
 ####################################################################
 youtube = {}
 async def yt_request(uid, keyword):
+    """
+    Approve Fungsi Yt Search
+    """
     try:
-        api_key = "AIzaSyBmQVnzf5khHZE8GSbVzNmVefzPFGPW7aU" #please use your own api_key (this is pikachu api_key)
-        search_url = f"https://www.googleapis.com/youtube/v3/search?part=snippet&q={keyword}&type=video&regionCode=ID&maxResults=10&key={api_key}"
+        msg = f"<b>🔎 Hasil Pencarian YouTube untuk:</b> <code>{keyword}</code>\n\n"
+        api_key = "AIzaSyBmQVnzf5khHZE8GSbVzNmVefzPFGPW7aU"
+        search_url = f"https://www.googleapis.com/youtube/v3/search?part=snippet&q={keyword}&type=video&maxResults=10&key={api_key}"
+        
         async with httpx.AsyncClient() as client:
             response = await client.get(search_url)
             data = response.json()
-        results = []
-
-        if "items" in data:
-            for item in data["items"]:
-                video_id = item["id"]["videoId"]
-                title = item["snippet"]["title"]
-                results.append({'title': title, 'id': video_id})
-                if len(results) >= 10:
-                    break
         
-        msg = f"<b>Hasil Pencarian dengan Keyword: <code>{keyword}</code></b>\n\n"
+        if "items" not in data or not data["items"]:
+            return f"<b>❌ Tidak ditemukan hasil untuk:</b> <code>{keyword}</code>\n\nCoba dengan kata kunci lain."
+        
+        video_ids = [item["id"]["videoId"] for item in data["items"]]
+        ids_str = ",".join(video_ids)
+        
+        details_url = f"https://www.googleapis.com/youtube/v3/videos?part=contentDetails,statistics&id={ids_str}&key={api_key}"
+        async with httpx.AsyncClient() as client:
+            details_response = await client.get(details_url)
+            details_data = details_response.json()
+        
+        video_details = {}
+        if "items" in details_data:
+            for item in details_data["items"]:
+                video_details[item["id"]] = {
+                    "duration": item["contentDetails"]["duration"],
+                    "views": item["statistics"].get("viewCount", "0"),
+                    "likes": item["statistics"].get("likeCount", "0")
+                }
+        
+        def parse_duration(duration_str):
+            match = re.match(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?', duration_str)
+            if not match:
+                return "00:00"
+            
+            hours, minutes, seconds = match.groups()
+            hours = int(hours) if hours else 0
+            minutes = int(minutes) if minutes else 0
+            seconds = int(seconds) if seconds else 0
+            
+            if hours > 0:
+                return f"{hours:02}:{minutes:02}:{seconds:02}"
+            else:
+                return f"{minutes:02}:{seconds:02}"
+        
+        def format_count(count_str):
+            count = int(count_str)
+            if count >= 1000000000:
+                return f"{count/1000000000:.1f}B"
+            elif count >= 1000000:
+                return f"{count/1000000:.1f}M"
+            elif count >= 1000:
+                return f"{count/1000:.1f}K"
+            else:
+                return str(count)
+        
+        results = []
+        for i, item in enumerate(data["items"], 1):
+            video_id = item["id"]["videoId"]
+            title = item["snippet"]["title"]
+            channel = item["snippet"]["channelTitle"]
+            thumbnail = item["snippet"]["thumbnails"]["high"]["url"]
+            
+            detail_text = ""
+            if video_id in video_details:
+                detail = video_details[video_id]
+                duration = parse_duration(detail["duration"])
+                views = format_count(detail["views"])
+                likes = format_count(detail["likes"])
+                detail_text = f"⏱️ {duration} | 👁️ {views} | 👍 {likes}"
+            
+            msg += f"<b>{i}.</b> <a href='https://youtube.com/watch?v={video_id}'>{title}</a>\n"
+            msg += f"<i>📢 {channel}</i> {detail_text}\n\n"
+            
+            results.append({'title': title, 'id': video_id, 'channel': channel, 'thumbnail': thumbnail})
+        
         butt = ButtonMaker()
-        butt.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", f"youtube cancel {uid}", position="footer")          
-        for index,video in enumerate(results, start=1):      
-            judul = video['title']
-            video_id = video['id']
-            msg += f"<a href='https://www.youtube.com/watch?v={video_id}'><b>{index:02d}. </b></a>{judul}\n"
-            butt.ibutton(f"{index}", f"youtube select {uid} {video_id}")
+        for index, video in enumerate(results, 1):
+            butt.ibutton(f"{index}", f"youtube select {uid} {video['id']}")
+            
+        butt.ibutton("⛔️ Batal", f"youtube cancel {uid}", position="footer")
         butts = butt.build_menu(5)
-        upd = {"msg": msg, "butts": butts}
+        
+        upd = {"msg": msg, "butts": butts, "results": results}
         youtube[uid].update(upd)
+        
         return msg, butts
     except Exception as e:
-        return f"Terjadi kesalahan saat mengambil video, atau video ini belum tersedia \n\n{e}"
+        LOGGER.error(f"Error in YouTube search: {e}")
+        return f"<b>❌ Terjadi kesalahan saat mencari video:</b>\n\n<code>{str(e)}</code>"
 
 async def edit_durasi(duration):
     duration = duration[2:]
@@ -694,7 +849,7 @@ async def edit_durasi(duration):
     return duration
 
 async def yt_extra(video_id):
-    api_key = "AIzaSyBmQVnzf5khHZE8GSbVzNmVefzPFGPW7aU" #please use your own api_key (this is pikachu api_key)
+    api_key = "AIzaSyBmQVnzf5khHZE8GSbVzNmVefzPFGPW7aU" 
     video_url = f"https://www.googleapis.com/youtube/v3/videos?id={video_id}&part=contentDetails,snippet&key={api_key}"
     async with httpx.AsyncClient() as client:
         response = await client.get(video_url)
@@ -747,33 +902,60 @@ async def yt_query(_, query):
     edit_media = query.edit_message_media
     data = query.data.split()
     uid = int(data[2])
+    
     if user_id != uid:
-        return await query.answer(text="Bukan Tugas Anda !", show_alert=True)
+        return await query.answer(text="Bukan Tugas Anda!", show_alert=True)
+    
     elif data[1] == "select":
         try:
             details = await yt_extra(data[3])
-        except Exception as e:
-            return await query.answer(text=f"Terjadi kesalahan saat mengambil video, atau video ini belum tersedia. {e}", show_alert=True)
-        try:
-            msg = f"<b>🎬 Judul: </b><code>{details['title']}</code>\n\n"
-            msg += f"<b>📢 Channel: </b><code>{details['channel_title']}</code>\n"
-            msg += f"<b>⏱ Durasi: </b><code>{await edit_durasi(details['duration'])}</code>\n"
-            msg += f"<b>🌐 Link: </b><code>https://www.youtube.com/watch?v={data[3]}</code>"
+            
+            msg = f"<b>🎬 Detail Video YouTube</b>\n\n"
+            msg += f"<b>📌 Judul:</b> <code>{details['title']}</code>\n\n"
+            msg += f"<b>📢 Channel:</b> <code>{details['channel_title']}</code>\n"
+            msg += f"<b>⏱️ Durasi:</b> <code>{await edit_durasi(details['duration'])}</code>\n"
+            
+            if 'view_count' in details:
+                view_count = int(details['view_count'])
+                if view_count > 1000000:
+                    view_format = f"{view_count/1000000:.1f}M"
+                elif view_count > 1000:
+                    view_format = f"{view_count/1000:.1f}K"
+                else:
+                    view_format = str(view_count)
+                msg += f"<b>👁️ Views:</b> <code>{view_format}</code>\n"
+            
+            if 'description' in details and details['description']:
+                desc = details['description']
+                if len(desc) > 150:
+                    desc = desc[:150] + "..."
+                msg += f"\n<b>📝 Deskripsi:</b>\n<code>{desc}</code>\n"
+            
+            msg += f"\n<b>🔗 Link:</b> https://youtu.be/{details['video_id']}\n"
+            
             butt = ButtonMaker()
-            butt.ibutton("☁️ 𝙼𝚒𝚛𝚛𝚘𝚛", f"youtube mirror {uid} {data[3]}")
-            butt.ibutton("☀️ 𝙻𝚎𝚎𝚌𝚑", f"youtube leech {uid} {data[3]}")
-            butt.ibutton("🔙 𝙱𝚊𝚌𝚔", f"youtube back {uid}")
-            butt.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", f"youtube cancel {uid}")
+            butt.ibutton("🔄 Mirror", f"youtube mirror {uid} {data[3]}")
+            butt.ibutton("📥 Leech", f"youtube leech {uid} {data[3]}")
+            butt.ibutton("🎵 Audio", f"youtube audio {uid} {data[3]}")
+            butt.ibutton("🔙 Kembali", f"youtube back {uid}")
             butts = butt.build_menu(2)
-            new_media = InputMediaPhoto(details['thumbnail_url'], caption=msg)
-            no_thumbnail = InputMediaPhoto("https://telegra.ph/file/5e7fde2b232ae1b682625.jpg", caption=msg)
+            
+            thumbnail = f"https://i.ytimg.com/vi/{data[3]}/maxresdefault.jpg"
+            
             try:
-                await edit_media(new_media, reply_markup=butts)
-            except:
-                await edit_media(no_thumbnail, reply_markup=butts)
+                new_media = InputMediaPhoto(media=thumbnail, caption=msg)
+                await edit_media(media=new_media, reply_markup=butts)
+            except Exception:
+                fallback_thumbnail = f"https://i.ytimg.com/vi/{data[3]}/hqdefault.jpg"
+                try:
+                    new_media = InputMediaPhoto(media=fallback_thumbnail, caption=msg)
+                    await edit_media(media=new_media, reply_markup=butts)
+                except Exception:
+                    no_thumbnail = InputMediaPhoto("https://telegra.ph/file/5e7fde2b232ae1b682625.jpg", caption=msg)
+                    await edit_media(new_media=no_thumbnail, reply_markup=butts)
         except Exception as e:
-            await editMessage(message, f"Gagal mengambil video, atau video ini tidak tersedia. \n\n{e}")
-            del youtube[uid]
+            await query.answer(text=f"Terjadi kesalahan saat mengambil video: {str(e)}", show_alert=True)
+            LOGGER.error(f"Error in YouTube video selection: {e}") 
     elif data[1] == "mirror":
         try:
             details = await yt_extra(data[3])
@@ -821,81 +1003,132 @@ async def yt_query(_, query):
 #####################################
 #GALLERY-DL
 #####################################
-async def downloader(url):
-    output_dir = "gallery_dl/"
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-    # Perintah untuk menjalankan gallery-dl
-    command = ['gallery-dl', '-d', output_dir, url]
-    if "instagram" in url:
-        command.extend(['--cookies', 'instagram.txt'])
-        
-    process = await create_subprocess_exec(
-        *command,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
-    )
-    
-    stdout, stderr = await process.communicate()
-
-    if process.returncode == 0:
-        file_paths = []
-        for root, _, files in os.walk(output_dir):
-            for file_name in files:
-                file_paths.append(os.path.join(root, file_name))
-        return file_paths
-    else:
-        return None
-    
+@new_task
 async def gallery_dl(client, message, auto=False):
+    # Periksa apakah ada URL dalam pesan
+    url = None
     if auto:
-        url = message.text
+        # Auto mode - gunakan pesan teks sebagai URL
+        if message.text:
+            urls = re.findall(r'https?://[^\s]+', message.text)
+            if urls:
+                url = urls[0]
     else:
-        rply = message.reply_to_message
-        if rply:
-            url = rply.text if rply.caption is None else rply.caption
-        else:
-            msg = message.text.split(maxsplit=1)
-            if len(msg) > 1:
-                url = msg[1].strip()
-            else:
-                await sendMessage (message, "Silahkan kirimkan link yang akan diunduh dengan gallery-dl !!.")
-                return
-
-    mess = await sendMessage(message, f"<b>Mengunduh media dengan Gallery-DL...</b>\n\n<b>Link: </b><code>{url}</code>")
-    file_paths = await downloader(url)
-    if file_paths is None:
-        await editMessage(mess, f"Gagal mendownload media dari link anda.\n\n<b>Link: </b><code>{url}</code>")
+        # Command mode - periksa argumen perintah
+        args = message.text.split(maxsplit=1)
+        if len(args) > 1:
+            possible_url = args[1].strip()
+            if is_url(possible_url):
+                url = possible_url
+    
+    # Cek apakah URL valid
+    if not url:
+        await sendMessage(message, "<b>❌ Error:</b> Silahkan berikan URL yang valid!\n\n"
+                                  f"<b>Contoh:</b> <code>/{BotCommands.GallerydlCommand[0]} https://www.instagram.com/p/xxx</code>")
         return
-
-    media_group = []
-    for file_path in file_paths:
-        if file_path.endswith(('.mp4', '.mkv', '.webm')):
-            media_group.append(InputMediaVideo(media=file_path))
-        elif file_path.endswith(('.png', '.jpeg', '.jpg')):
-            media_group.append(InputMediaPhoto(media=file_path))
-
-    if media_group:
-        for i in range(0, len(media_group), 10):
-            batch = media_group[i:i+10]
-            await message.reply_media_group(media=batch)
-        await deleteMessage(mess)
-        await sendMessage(message, f"Hai {message.from_user.mention}, tugas anda sudah selesai diupload.")
-
-        for file_path in file_paths:
-            os.remove(file_path)
-    else:
-        await editMessage(mess, "Tidak ada media yang ditemukan untuk diunggah.")
-
-async def gallery_dl_auto(client, message):
-    if len(message.text.split()) == 1:
-        await gallery_dl(client, message, auto=True)
+    
+    # Deteksi platform
+    platform_info = detect_platform(url)
+    if not platform_info:
+        await sendMessage(message, "<b>❌ Error:</b> URL tidak didukung!\n\n"
+                                  "<b>Platform yang didukung:</b>\n"
+                                  "- Instagram (Post/Reels/Stories)\n"
+                                  "- Twitter/X\n"
+                                  "- TikTok\n"
+                                  "- Reddit\n"
+                                  "- Imgur\n"
+                                  "- Flickr\n"
+                                  "- Pinterest")
+        return
+    
+    platform_name = platform_info['name']
+    platform_type = platform_info['type']
+    options = platform_info['options']
+    
+    mess = await sendMessage(message, f"<b>⏳ Memulai download dari {platform_name} {platform_type}...</b>\n\n"
+                                    f"<b>URL:</b> <code>{url}</code>\n\n"
+                                    "<i>Gallery-DL sedang mengekstrak informasi media. Harap tunggu...</i>")
+    
+    temp_folder = f"{config_dict['TEMP_PATH']}/{message.id}"
+    await makedirs(temp_folder, exist_ok=True)
+    
+    try:
+        cmd = [
+            "gallery-dl",
+            "--verbose",
+            "--directory", temp_folder
+        ]
+        
+        cmd.extend(options)
+        cmd.append(url)
+        
+        process = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        
+        file_count = 0
+        total_files = 0
+        update_interval = 3 
+        last_update_time = time()
+        
+        async for line in process.stdout:
+            decoded_line = line.decode().strip()
+            
+            if "file downloaded" in decoded_line or "# files" in decoded_line:
+                file_count += 1
+                
+                current_time = time()
+                if current_time - last_update_time >= update_interval:
+                    progress_text = f"<b>⏳ Mengunduh {platform_name} {platform_type}...</b>\n\n"
+                    progress_text += f"<b>URL:</b> <code>{url}</code>\n"
+                    progress_text += f"<b>Diunduh:</b> {file_count} file" + (f" dari {total_files}" if total_files else "") + "\n"
+                    
+                    await editMessage(mess, progress_text)
+                    last_update_time = current_time
+                
+            total_match = re.search(r"Found (\d+) files", decoded_line)
+            if total_match:
+                total_files = int(total_match.group(1))
+        
+        await process.wait()
+        exit_code = process.returncode
+        
+        if exit_code != 0:
+            stderr = await process.stderr.read()
+            error_message = stderr.decode().strip()
+            await editMessage(mess, f"<b>❌ Gagal mengunduh media!</b>\n\n<code>{error_message}</code>")
+            return
+            
+        all_files = await listdir(temp_folder)
+        file_paths = [f"{temp_folder}/{file}" for file in all_files if not file.startswith(".")]
+        file_paths.sort()  # Urutkan file
+        
+        if not file_paths:
+            await editMessage(mess, f"<b>❌ Tidak ada file yang diunduh dari {platform_name}!</b>\n\n"
+                                  f"URL mungkin tidak valid atau konten telah dihapus.")
+            return
+            
+        await editMessage(mess, f"<b>✅ Berhasil mengunduh {len(file_paths)} file dari {platform_name}!</b>\n\n"
+                              f"<b>URL:</b> <code>{url}</code>\n\n"
+                              f"<i>Sedang memproses file untuk dikirim...</i>")
+        
+        await send_files_with_caption(message, file_paths, platform_name, platform_type, url)
+        
+    except Exception as e:
+        await editMessage(mess, f"<b>❌ Terjadi kesalahan saat mengunduh media:</b>\n\n<code>{str(e)}</code>")
+    finally:
+        try:
+            await rmtree(temp_folder)
+        except:
+            pass
 
 ###########################
 #Pickle Generator
 ###########################
 OAUTH_SCOPE = ['https://www.googleapis.com/auth/drive']
-client_id = "905059780985-usekgpt4cp42u2idqjtk089us0cm4qkr.apps.googleusercontent.com"
+client_id = "905059780985-usekgpt4cp42u2idqtk089us0cm4qkr.apps.googleusercontent.com"
 client_secret = "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"
 
 @new_task
@@ -1046,7 +1279,6 @@ async def gen_token(client, message):
             )
             auth_url, _ = flow.authorization_url(access_type='offline', include_granted_scopes='true')
             
-            # Enhanced detailed instructions message
             msg = (
                 "<b>🔐 GENERATE TOKEN GOOGLE DRIVE</b>\n"
                 "━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
@@ -1170,7 +1402,154 @@ async def gen_token(client, message):
     except Exception as e:
         await sendMessage(message, f"<b>❌ Error:</b> {e}")
 
-########################################################################################
+def detect_platform(url):
+    """
+    Mendeteksi platform dan tipe konten dari URL
+    
+    Returns:
+        dict: Informasi platform dan opsi khusus
+    """
+    platforms = [
+        {
+            'domain': ['instagram.com', 'instagr.am'],
+            'name': 'Instagram',
+            'types': {
+                '/reel/': 'Reel',
+                '/reels/': 'Reel',
+                '/stories/': 'Story',
+                '/p/': 'Post'
+            },
+            'default_type': 'Post',
+            'options': ['--output', '%(uploader)s/%(post_id)s_%(num)s.%(ext)s']
+        },
+        {
+            'domain': ['twitter.com', 'x.com'],
+            'name': 'Twitter/X',
+            'types': {
+                '/status/': 'Tweet'
+            },
+            'default_type': 'Tweet',
+            'options': ['--output', '%(tweet_id)s_%(num)s.%(ext)s']
+        },
+        {
+            'domain': ['tiktok.com'],
+            'name': 'TikTok',
+            'types': {
+                '/@': 'Video'
+            },
+            'default_type': 'Video',
+            'options': ['--output', '%(id)s.%(ext)s']
+        },
+        {
+            'domain': ['reddit.com'],
+            'name': 'Reddit',
+            'types': {
+                '/r/': 'Subreddit',
+                '/comments/': 'Post'
+            },
+            'default_type': 'Post',
+            'options': ['--output', '%(id)s_%(num)s.%(ext)s']
+        },
+        {
+            'domain': ['imgur.com'],
+            'name': 'Imgur',
+            'default_type': 'Album',
+            'options': ['--output', '%(title)s_%(num)s.%(ext)s']
+        }
+    ]
+    
+    for platform in platforms:
+        if any(domain in url for domain in platform['domain']):
+            content_type = platform['default_type']
+            
+            if 'types' in platform:
+                for type_url, type_name in platform['types'].items():
+                    if type_url in url:
+                        content_type = type_name
+                        break
+            
+            return {
+                'name': platform['name'],
+                'type': content_type,
+                'options': platform['options']
+            }
+    
+    return None
+
+async def send_files_with_caption(message, file_paths, platform_name, platform_type, url):
+    """
+    Mengirim file dengan caption yang sesuai
+    """
+    from pyrogram.types import InputMediaPhoto, InputMediaVideo
+    
+    if len(file_paths) == 1:
+        file_path = file_paths[0]
+        file_ext = file_path.split(".")[-1].lower()
+        
+        caption = f"<b>🔗 {platform_name} {platform_type}</b>\n\n<code>{url}</code>"
+        
+        if file_ext in ['jpg', 'jpeg', 'png']:
+            await message.reply_photo(
+                photo=file_path,
+                caption=caption
+            )
+        elif file_ext in ['mp4', 'webm', 'mkv']:
+            await message.reply_video(
+                video=file_path,
+                caption=caption
+            )
+        else:
+            await message.reply_document(
+                document=file_path,
+                caption=caption
+            )
+    else:
+        photos = []
+        videos = []
+        documents = []
+        
+        for file_path in file_paths:
+            file_ext = file_path.split(".")[-1].lower()
+            
+            if file_ext in ['jpg', 'jpeg', 'png']:
+                photos.append(file_path)
+            elif file_ext in ['mp4', 'webm', 'mkv']:
+                videos.append(file_path)
+            else:
+                documents.append(file_path)
+        
+        if photos:
+            caption = f"<b>🔗 {platform_name} {platform_type} Photos</b>\n\n<code>{url}</code>"
+            
+            for i in range(0, len(photos), 10):
+                chunk = photos[i:i+10]
+                media = []
+                
+                for idx, photo in enumerate(chunk):
+                    media.append(
+                        InputMediaPhoto(
+                            media=photo,
+                            caption=caption if idx == 0 else ""
+                        )
+                    )
+                
+                await message.reply_media_group(media=media)
+        
+        if videos:
+            caption = f"<b>🔗 {platform_name} {platform_type} Videos</b>\n\n<code>{url}</code>"
+            
+            for video in videos:
+                await message.reply_video(
+                    video=video,
+                    caption=caption
+                )
+                caption = ""
+        
+        for doc in documents:
+            await message.reply_document(
+                document=doc,
+                caption=f"<b>🔗 {platform_name} {platform_type}</b>\n\n<code>{url}</code>"
+            )
 
 tiktokregex = r"(https?://(?:www\.)?[a-zA-Z0-9.-]*tiktok\.com/)"
 gallery_dl_regex = r'https?:\/\/(www\.)?(instagram\.com\/[a-zA-Z0-9._-]+|twitter\.com\/[a-zA-Z0-9_]+|x\.com\/[a-zA-Z0-9_]+)'

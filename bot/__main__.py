@@ -74,25 +74,52 @@ from .modules import (
 def get_quotes():
     try:
         quotez = str(Quote.print_series_quote())
-        quote = quotez.split(": ")[1]
-        oleh = quotez.split(":")[0]
-        quotes = f"{quote}\n=> {oleh}"
-    except:
-        quotes = "Ngga ada Quote bijak buatmu wahai Tuan yang bijaksana :D"
-    return quotes
-
+        parts = quotez.split(":", 1)
+        if len(parts) >= 2:
+            oleh, quote = parts[0], parts[1].strip()
+            return f"{quote}\n=> {oleh}"
+        return f"{quotez}"
+    except Exception as e:
+        # Log the error if needed: LOGGER.error(f"Error getting quote: {e}")
+        return "Ngga ada Quote bijak buatmu wahai Tuan yang bijaksana :D"
 
 def progress_bar(percentage):
     if isinstance(percentage, str):
         return "NaN"
     try:
         percentage = int(percentage)
-    except:
-        percentage = 0
-    return "".join(
-        "■" if i <= percentage // 10 else "□" for i in range(1, 11)
-    )
-
+        percentage = max(0, min(100, percentage))
+        
+        if percentage < 30:
+            bar_color = "🔴"
+        elif percentage < 70:
+            bar_color = "🟡"
+        else:
+            bar_color = "🟢"
+        
+        filled = "■"
+        empty = "□"
+        
+        if hasattr(progress_bar, 'animation_frame') and progress_bar.animation_frame % 4 == 0:
+            filled = "█"
+        elif hasattr(progress_bar, 'animation_frame') and progress_bar.animation_frame % 4 == 1:
+            filled = "▓"
+        elif hasattr(progress_bar, 'animation_frame') and progress_bar.animation_frame % 4 == 2:
+            filled = "▒"
+        elif hasattr(progress_bar, 'animation_frame') and progress_bar.animation_frame % 4 == 3:
+            filled = "░"
+        
+        if hasattr(progress_bar, 'animation_frame'):
+            progress_bar.animation_frame += 1
+        else:
+            progress_bar.animation_frame = 0
+        
+        filled_length = percentage // 10
+        bar = bar_color + " " + "".join(filled if i <= filled_length else empty for i in range(1, 11))
+        
+        return bar
+    except (ValueError, TypeError):
+        return "□□□□□□□□□□"
 
 async def stats(_, message):
     if await aiopath.exists(".git"):
@@ -233,7 +260,7 @@ async def start(client, message):
     
     buttons.ubutton("👨‍💻 Maintainer", "https://t.me/WzdDizzyFlasherr", "header")
     buttons.ubutton("📢 Channel", "https://t.me/DizzyStuffProject")
-    buttons.ubutton("💬 Group", "https://t.me/TranssionCore5")
+    buttons.ubutton("💬 Group", "https://t.me/YourGroupLink")  # Replace with your actual group link
     
     buttons.ubutton("💰 Donate", "https://telegra.ph/Donate-and-Support-Us-03-21", "footer")
     
@@ -332,7 +359,7 @@ async def donate(_, message):
     buttons.ubutton("👨‍💻 Maintainer", "https://t.me/WzdDizzyFlasherr", "header")
     
     buttons.ubutton("📢 Channel", "https://t.me/DizzyStuffProject")
-    buttons.ubutton("💬 Group", "https://t.me/TranssionCore5")
+    buttons.ubutton("💬 Group", "https://t.me/YourGroupLink")
 
     buttons.ubutton("💰 Donate Here", "https://telegra.ph/Donate-and-Support-Us-03-21", "footer")
     
@@ -536,7 +563,6 @@ async def restart_notification():
 
 
 async def main():
-    #jdownloader.initiate()
     await gather(
         clean_all(),
         torrent_search.initiate_search_tools(), 

@@ -3,6 +3,7 @@ import json
 import os
 import requests
 import re
+import base64
 
 from logging import getLogger
 from time import time
@@ -400,60 +401,55 @@ class DdlUploader:
         async_to_sync(self.listener.onUploadComplete, link, size, files_count, folders_count, mime_type, None, None, "Buzzheavier")
     
     def pd_upload(self, size):
-        file_name = f"{os.path.basename(self._path)}".encode("UTF-8")
-        if self._api_key is None:
-            api_key = "a0ac91f8-dabb-40b1-b81c-17b237a3df49"
-        else:
-            api_key = self._api_key
-        server = "pixeldrain.com"
-        response_buffer = BytesIO()
-        ca_cert_path = '/etc/ssl/certs/ca-certificates.crt'
-        self._pycurl.setopt(self._pycurl.URL, f"https://{server}/api/file")
-        self._pycurl.setopt(pycurl.CAINFO, ca_cert_path)
-        self._pycurl.setopt(self._pycurl.POST, 1)
-        self._pycurl.setopt(self._pycurl.USERPWD, f":{api_key}")
-        self._pycurl.setopt(self._pycurl.WRITEDATA, response_buffer)
-        self._pycurl.setopt(self._pycurl.NOPROGRESS, False)
-        self._pycurl.setopt(self._pycurl.XFERINFOFUNCTION, self._upload_progress)
-        self._pycurl.setopt(self._pycurl.HTTPPOST, [
-                ('name', file_name),
-                ('anonymouse', 'false'),
-                ('file', (self._pycurl.FORM_FILE, f"{self._path}".encode("UTF-8"))),
-            ])
         try:
-            self._pycurl.perform()
-            if self._is_cancelled:
-                LOGGER.info("Upload was cancelled during the process")
-                return
-            response_data = response_buffer.getvalue()
-            if not response_data:
-                async_to_sync(self.listener.onUploadError,'Terjadi kesalahan saat proses upload ke pixeldrain')
-                return
-            response = response_data.decode()
-            try:
-                r = json.loads(response)
-            except Exception as e:
-                async_to_sync(self.listener.onUploadError,f'Terjadi kesalahan saat proses upload ke pixeldrain: {e}')
-                return
-            data = r.get('id')
-            link = f"https://{server}/u/{data}"
-            files = 1
-            folders = 0
-            mime_type = get_mime_type(self._path)
-            async_to_sync(self.listener.onUploadComplete, link, size, files, folders, mime_type, None, None, server)
+            self._pycurl.setopt(self._pycurl.PROGRESSFUNCTION, self._upload_progress)
+            self._pycurl.setopt(self._pycurl.NOPROGRESS, False)
             
-        except pycurl.error as e:
-            if not self._is_cancelled:
-                async_to_sync(self.listener.onUploadError, f'Pycurl error:{e}')
-                return
+            max_retries = 3
+            retry_count = 0
+            success = False
+            
+            while retry_count < max_retries and not success:
+                try:
+                    response_buffer = BytesIO()
+                    ca_cert_path = '/etc/ssl/certs/ca-certificates.crt'
+                    
+                    self._pycurl.setopt(self._pycurl.URL, "https://pixeldrain.com/api/file")
+                    self._pycurl.setopt(pycurl.CAINFO, ca_cert_path)
+                    
+                    if self._pd_apikey:
+                        self._pycurl.setopt(self._pycurl.HTTPHEADER, ['Authorization: Basic ' + base64.b64encode(f":{self._pd_apikey}".encode()).decode()])
+                    
+                    self._pycurl.setopt(self._pycurl.READDATA, open(self._path, 'rb'))
+                    self._pycurl.setopt(self._pycurl.UPLOAD, 1)
+                    self._pycurl.setopt(self._pycurl.WRITEDATA, response_buffer)
+                    
+                    self._pycurl.perform()
+                    
+                    response_data = json.loads(response_buffer.getvalue().decode('utf-8'))
+                    if 'id' in response_data:
+                        file_id = response_data['id']
+                        link = f"https://pixeldrain.com/u/{file_id}"
+                        async_to_sync(self.listener.onUploadComplete, link, size, 1, 0, "File", file_id, "pixeldrain")
+                        success = True
+                    else:
+                        LOGGER.error(f"Pixeldrain upload error: {response_data.get('message', 'Unknown error')}")
+                        retry_count += 1
+                        if retry_count >= max_retries:
+                            async_to_sync(self.listener.onUploadError, f"Gagal upload ke Pixeldrain: {response_data.get('message', 'Unknown error')}")
+                        else:
+                            LOGGER.info(f"Retrying Pixeldrain upload (attempt {retry_count}/{max_retries})...")
+                            time.sleep(5)
+                except Exception as e:
+                    LOGGER.error(f"Exception in Pixeldrain upload: {str(e)}")
+                    retry_count += 1
+                    if retry_count >= max_retries:
+                        async_to_sync(self.listener.onUploadError, f"Error saat mengupload ke Pixeldrain: {str(e)}")
+                    else:
+                        LOGGER.info(f"Retrying Pixeldrain upload (attempt {retry_count}/{max_retries})...")
+                        time.sleep(5)
         except Exception as e:
-            async_to_sync(self.listener.onUploadError, f'Error: {e}')
-            return
-        finally:
-            self._pycurl.close()
-            if self._is_cancelled:
-                LOGGER.info("Upload was cancelled")
-                return
+            async_to_sync(self.listener.onUploadError, f"Terjadi kesalahan saat mengupload file ke Pixeldrain: {str(e)}")
         
     @property
     def speed(self):

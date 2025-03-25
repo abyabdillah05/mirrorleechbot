@@ -332,26 +332,35 @@ class VideEditor:
     
     async def compress_button(self):
         msg = "<b>📌 Pilih resolusi untuk kompres video anda </b>\n\n"
-        msg += f"\n\n<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
+        
+        msg += "<b>ℹ️ Info Resolusi:</b>\n"
+        msg += "• <b>1080p</b>: Full HD (1920x1080) - File besar, kualitas tinggi\n"
+        msg += "• <b>720p</b>: HD (1280x720) - Seimbang antara ukuran dan kualitas\n"
+        msg += "• <b>540p</b>: qHD (960x540) - Ukuran lebih kecil, kualitas masih baik\n"
+        msg += "• <b>480p</b>: SD (854x480) - Ukuran kecil, kualitas cukup baik\n"
+        msg += "• <b>360p</b>: Low (640x360) - File sangat kecil, kualitas rendah\n"
+        msg += "• <b>144p</b>: Lowest (256x144) - File terkecil, kualitas sangat rendah\n\n"
+
         compress = self.video_editor.get("compress", None)
+        if compress and "preset" in self.video_editor:
+            preset = self.video_editor["preset"]
+            msg += f"<b>🔧 Preset:</b> <code>{preset.capitalize()}</code>\n\n"
+        
+        msg += f"<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
+        
         resolution = compress.get("resolution", "") if compress else ""
         butt = ButtonMaker()
-        s = "✅" if "1080p" in resolution else ""
-        butt.ibutton(f"1080p {s}", f"ve 1080p")
-        s = "✅" if "720p" in resolution else ""
-        butt.ibutton(f"720p {s}", f"ve 720p")
-        s = "✅" if "540p" in resolution else ""
-        butt.ibutton(f"540p {s}", f"ve 540p")
-        s = "✅" if "480p" in resolution else ""
-        butt.ibutton(f"480p {s}", f"ve 480p")
-        s = "✅" if "360p" in resolution else ""
-        butt.ibutton(f"360p {s}", f"ve 360p")
-        s = "✅" if "144p" in resolution else ""
-        butt.ibutton(f"144p {s}", f"ve 144p")
+        
+        resolutions = ["1080p", "720p", "540p", "480p", "360p", "144p"]
+        for res in resolutions:
+            s = "✅" if res in resolution else ""
+            butt.ibutton(f"{res} {s}", f"ve {res}")
+        
+        butt.ibutton("🔧 Preset", f"ve preset_menu")
         butt.ibutton("🔙 𝙺𝚎𝚖𝚋𝚊𝚕𝚒", f"ve back")
         butt.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", f"ve cancel")
-        buttons = butt.build_menu(2)
-        await editMessage(self._reply_to, msg, buttons)
+        butts = butt.build_menu(3)
+        await editMessage(self._reply_to, msg, butts)
     
     async def rename_button(self):
         msg = "<b>📌 Silahkan masukan nama baru untuk video anda ! </b>\n\nKlik /batal untuk membatalkan"
@@ -991,19 +1000,26 @@ class VideEditor:
     async def preset_button(self):
         msg = "<b>📌 Silahkan pilih preset anda !</b>\n\n"
         msg += "<b>⚠️ Note:</b> Semakin cepat proses kompresi, semakin besar ukuran file video\n\n"
+        
+        msg += "<b>ℹ️ Panduan Pemilihan Preset:</b>\n"
+        msg += "• <b>Ultrafast/Superfast</b>: Kompresi sangat cepat, file lebih besar\n"
+        msg += "• <b>Veryfast/Faster</b>: Kompresi cepat, ukuran sedang\n"
+        msg += "• <b>Medium</b>: Seimbang antara kecepatan dan ukuran\n"
+        msg += "• <b>Slow/Slower/Veryslow</b>: Kompresi lambat, file lebih kecil dan kualitas lebih baik\n\n"
+        
         msg += f"<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
         butt = ButtonMaker()
-        butt.ibutton("Ultrafast", f"ve preset ultrafast")
-        butt.ibutton("Superfast", f"ve preset superfast")
-        butt.ibutton("Veryfast", f"ve preset veryfast")
-        butt.ibutton("Faster", f"ve preset faster")
-        butt.ibutton("Fast", f"ve preset fast")
-        butt.ibutton("Medium", f"ve preset medium")
-        butt.ibutton("Slow", f"ve preset slow")
-        butt.ibutton("Slower", f"ve preset slower")
-        butt.ibutton("Veryslow", f"ve preset veryslow")
-        butt.ibutton("🔙 𝙺𝚎𝚖𝚋𝚊𝚕𝚒", f"ve encoder_back", position="footer")
-        buttons = butt.build_menu(2)
+        
+        current_preset = self.video_editor.get("preset", "medium")
+        
+        presets = ["ultrafast", "superfast", "veryfast", "faster", "fast", "medium", "slow", "slower", "veryslow"]
+        for preset in presets:
+            s = "✅" if current_preset == preset else ""
+            butt.ibutton(f"{preset.capitalize()} {s}", f"ve preset {preset}")
+        
+        butt.ibutton("🔙 𝙺𝚎𝚖𝚋𝚊𝚕𝚒", f"ve compress")
+        butt.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", f"ve cancel")
+        buttons = butt.build_menu(3)
         await editMessage(self._reply_to, msg, buttons)
     
     async def crf_button(self):

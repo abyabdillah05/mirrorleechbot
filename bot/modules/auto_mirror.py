@@ -13,8 +13,10 @@ from bot.helper.ext_utils.bot_utils import (
 from bot.helper.ext_utils.media_utils import createThumb
 from functools import partial
 from time import time
+import re
+import asyncio
 from asyncio import wait_for, Event, wrap_future
-from bot.helper.ext_utils.status_utils import get_readable_time
+from bot.helper.ext_utils.status_utils import get_readable_file_size, get_readable_time
 
 #Auto Detect Mirror by: Pikachu
 #https://github.com/aenulrofik
@@ -93,17 +95,137 @@ async def main_select(_, query, obj):
         obj.event.set()
         
 @new_task
-async def home_button(url):
+async def home_button(url=None, message=None):
     butt = ButtonMaker()
-    if is_url(url) or is_magnet(url):
-        msg = "<b>Sebuah Link terdeteksi di pesan anda...</b>\n\nApakah anda mau Mirror/Leech ?"
+    media_info = {}
+    
+    if url is None and message is not None:
+        if message.text:
+            urls = re.findall(r'https?://[^\s]+', message.text)
+            if urls:
+                url = urls[0]
+        
+        media_info = extract_media_info(message)
+    
+    if url and (is_url(url) or is_magnet(url)):
+        platform = detect_url_platform(url)
+        
+        msg = f"<b>🔎 Link {platform['name']} terdeteksi di pesan Anda</b>\n\n"
+        
+        if platform['description']:
+            msg += f"<i>{platform['description']}</i>\n\n"
+            
+        msg += "<i>Silahkan pilih aksi yang diinginkan:</i>"
+        
+        butt.ibutton("☁️ Mirror", f"auto mirror")
+        butt.ibutton("☀️ Leech", f"auto leech")
+        
+        if platform['special_buttons']:
+            for button in platform['special_buttons']:
+                butt.ibutton(button['label'], button['callback'])
+    
+    elif media_info and media_info['type']:
+        file_type = media_info['type']
+        file_name = media_info.get('file_name', 'Tidak ada nama')
+        file_size = media_info.get('file_size', 0)
+        
+        readable_size = get_readable_file_size(file_size) if file_size else "Unknown size"
+        
+        msg = f"<b>📁 {file_type.capitalize()} terdeteksi pada pesan Anda</b>\n\n"
+        msg += f"<b>Nama:</b> <code>{file_name}</code>\n"
+        msg += f"<b>Ukuran:</b> <code>{readable_size}</code>\n\n"
+        
+        if file_type == 'video':
+            duration = media_info.get('duration', 0)
+            if duration:
+                readable_duration = get_readable_time(duration)
+                msg += f"<b>Durasi:</b> <code>{readable_duration}</code>\n\n"
+        
+        msg += "<i>Silahkan pilih aksi yang diinginkan:</i>"
+        
+        butt.ibutton("☁️ Mirror", f"auto mirror")
+        butt.ibutton("☀️ Leech", f"auto leech")
+        
+        if file_type == 'video':
+            butt.ibutton("🎬 Edit Video", f"auto video_edit")
+    
     else:
-        msg = "<b>File terdeteksi pada pesan anda atau pesan yang anda balas...</b>\n\nApakah anda mau Mirror/Leech ?"
-    butt.ibutton("☁️ Mirror", f"auto mirror")
-    butt.ibutton("☀️ Leech", f"auto leech")
-    butt.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", f"auto cancel")
+        msg = "<b>🔍 Silahkan pilih aksi yang diinginkan:</b>"
+        butt.ibutton("☁️ Mirror", f"auto mirror")
+        butt.ibutton("☀️ Leech", f"auto leech")
+    
+    butt.ibutton("⛔️ Batal", f"auto cancel")
     butts = butt.build_menu(2)
+    
     return msg, butts
+
+def extract_media_info(message): 
+    info = {'type': None, 'file_name': None, 'file_size': None}
+    
+    if message.document:
+        info['type'] = 'document'
+        info['file_name'] = message.document.file_name
+        info['file_size'] = message.document.file_size
+        info['mime_type'] = message.document.mime_type
+        
+    elif message.video:
+        info['type'] = 'video'
+        info['file_name'] = message.video.file_name
+        info['file_size'] = message.video.file_size
+        info['duration'] = message.video.duration
+        info['width'] = message.video.width
+        info['height'] = message.video.height
+        
+    elif message.audio:
+        info['type'] = 'audio'
+        info['file_name'] = message.audio.file_name
+        info['file_size'] = message.audio.file_size
+        info['duration'] = message.audio.duration
+        
+    elif message.photo:
+        info['type'] = 'photo'
+        # Use the largest photo
+        photo = message.photo[-1]
+        info['file_size'] = photo.file_size
+        info['width'] = photo.width
+        info['height'] = photo.height
+    
+    return info
+
+def detect_url_platform(url):
+    platform = {
+        'name': 'URL',
+        'description': '',
+        'special_buttons': []
+    }
+    
+    if 'youtube.com' in url or 'youtu.be' in url:
+        platform['name'] = 'YouTube'
+        platform['description'] = 'Video YouTube dapat diunduh dalam berbagai format dan kualitas.'
+        platform['special_buttons'] = [
+            {'label': '🎬 YT-DLP', 'callback': 'auto ytdl'},
+            {'label': '🎵 Audio', 'callback': 'auto ytdl_audio'}
+        ]
+        
+    elif is_magnet(url) or url.endswith('.torrent'):
+        platform['name'] = 'Torrent'
+        platform['description'] = 'File torrent akan diunduh menggunakan qBittorrent.'
+        platform['special_buttons'] = [
+            {'label': '🧲 Qbit', 'callback': 'auto qbit'}
+        ]
+        
+    elif 'drive.google.com' in url:
+        platform['name'] = 'Google Drive'
+        platform['description'] = 'File Google Drive dapat dimirror atau dileech.'
+        
+    elif 'mediafire.com' in url:
+        platform['name'] = 'MediaFire'
+        
+    else:
+        platform['name'] = 'URL'
+        platform['description'] = 'Link akan diproses menggunakan Direct Link Generator.'
+    
+    return platform
 
 
 class AutoMirror:
@@ -230,6 +352,11 @@ class AutoMirror:
 
             s = "" if "zip" not in auto_args else "✅"
             butt.ibutton(f"Buat ZIP  {s}", f"auto zip")
+
+        # Tambahkan opsi kompresi untuk ZIP
+        if "zip" in auto_args and not self.gofile and not self.buzzheavier:
+            s = "" if "compress_level" not in auto_args else "✅"
+            butt.ibutton(f"Kompresi {s}", f"auto compress_level")
 
         #s = "❌" if "multi" not in auto_args else "✅"
         #butt.ibutton(f"{s} Multi", f"auto multi")
@@ -415,3 +542,89 @@ class AutoMirror:
                 pass
         except:
             return
+    
+    async def batch_process(self):
+        if "multi" not in self._auto_args:
+            msg = "<b>Mode Batch Activated</b>\n\nKirim semua link yang ingin diproses, satu per baris.\nSetelah selesai, kirim <code>/done</code> untuk memulai pemrosesan."
+            await editMessage(self._reply_to, msg)
+            
+            batch_links = []
+            while True:
+                try:
+                    msg = await bot.listen(filters=filters.text & filters.user(self._listener.user_id), timeout=120)
+                    
+                    if msg.text == "/done" or msg.text == f"/done@{bot.me.username}":
+                        await msg.delete()
+                        break
+                    elif msg.text == "/batal" or msg.text == f"/batal@{bot.me.username}":
+                        await msg.delete()
+                        await editMessage(self._reply_to, "<b>Batch processing cancelled!</b>")
+                        return
+                    
+                    urls = re.findall(r'https?://[^\s]+', msg.text) or re.findall(r'magnet:\?[^\s]+', msg.text)
+                    batch_links.extend(urls)
+                    
+                    await msg.delete()
+                    await editMessage(self._reply_to, f"<b>Mode Batch Activated</b>\n\n<b>Total links added:</b> {len(batch_links)}\n\nKirim lebih banyak link atau kirim <code>/done</code> untuk memulai pemrosesan.")
+                    
+                except asyncio.TimeoutError:
+                    break
+            
+            if batch_links:
+                self._auto_args["multi"] = batch_links
+                await editMessage(self._reply_to, f"<b>Batch processing ready:</b> {len(batch_links)} links\n\nSemua link akan diproses dengan pengaturan yang sama.")
+                
+                butt = ButtonMaker()
+                butt.ibutton("▶️ Start Batch Processing", f"auto start_batch")
+                butt.ibutton("🔙 Kembali", f"auto back")
+                butt.ibutton("⛔️ Batal", f"auto cancel")
+                await editMessage(self._reply_to, f"<b>Batch processing ready:</b> {len(batch_links)} links\n\nSemua link akan diproses dengan pengaturan yang sama.", butt.build_menu(2))
+            else:
+                await editMessage(self._reply_to, "<b>No links provided for batch processing!</b>")
+                await asyncio.sleep(3)
+                sub_pesan, sub_buttons = await self.sub_button()
+                await editMessage(self._reply_to, sub_pesan, sub_buttons)
+        else:
+            del self._auto_args["multi"]
+            sub_pesan, sub_buttons = await self.sub_button()
+            await editMessage(self._reply_to, sub_pesan, sub_buttons)
+    
+    async def start_batch_processing(self):
+        if "multi" not in self._auto_args:
+            sub_pesan, sub_buttons = await self.sub_button()
+            await editMessage(self._reply_to, sub_pesan, sub_buttons)
+            return
+            
+        batch_links = self._auto_args["multi"]
+        total_links = len(batch_links)
+        
+        msg = f"<b>Memulai batch processing</b>\n\n<b>Total links:</b> {total_links}\n\n"
+        await editMessage(self._reply_to, msg)
+        
+        batch_settings = self._auto_args.copy()
+        del batch_settings["multi"]
+        
+        self._auto_args["batch_settings"] = batch_settings
+        self._auto_args["batch_links"] = batch_links
+        self.event.set()
+
+    async def set_compression_level(self):
+        if "compress_level" not in self._auto_args and "zip" in self._auto_args:
+            msg = "<b>Pilih level kompresi ZIP:</b>\n\n"
+            msg += "• <b>1</b> - Tercepat, kompresi minimal\n"
+            msg += "• <b>5</b> - Seimbang (default)\n"
+            msg += "• <b>9</b> - Terkecil, kompresi maksimal\n\n"
+            msg += "<i>Semakin tinggi level kompresi akan menghasilkan file lebih kecil tetapi waktu pemrosesan lebih lama.</i>"
+            
+            butt = ButtonMaker()
+            butt.ibutton("1️⃣ Tercepat", f"auto set_level_1")
+            butt.ibutton("5️⃣ Seimbang", f"auto set_level_5")
+            butt.ibutton("9️⃣ Terkecil", f"auto set_level_9")
+            butt.ibutton("🔙 Kembali", f"auto back_to_options")
+            butts = butt.build_menu(3)
+            
+            await editMessage(self._reply_to, msg, butts)
+        else:
+            del self._auto_args["compress_level"]
+            sub_pesan, sub_buttons = await self.sub_button()
+            await editMessage(self._reply_to, sub_pesan, sub_buttons)

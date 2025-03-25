@@ -1530,12 +1530,12 @@ def streamvid(url: str):
                 ):
                     raise DirectDownloadLinkException(f"ERROR: {error[0]}")
                 raise DirectDownloadLinkException(
-                    "ERROR: Direct link tidak ditemukan!"
+                    "ERROR: Direct link tidak ditemukan! URL yang Anda berikan tampaknya tidak valid atau memerlukan kualitas tertentu."
                 )
             if directLink := findall(r'document\.location\.href="(.*)"', script[0]):
                 return directLink[0]
             raise DirectDownloadLinkException(
-                "ERROR: Direct link tidak ditemukan!"
+                "ERROR: Direct link tidak ditemukan! URL yang Anda berikan tampaknya tidak valid atau memerlukan kualitas tertentu."
             )
         elif (qualities_urls := html.xpath('//div[@id="dl_versions"]/a/@href')) and (
             qualities := html.xpath('//div[@id="dl_versions"]/a/text()[2]')

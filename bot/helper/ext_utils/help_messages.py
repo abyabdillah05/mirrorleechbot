@@ -192,7 +192,6 @@ QBLEECH_HELP_MESSAGE = """<b>Link tidak ditemukan, atau format perintah yang and
 YT_HELP_MESSAGE = """<b>Link tidak ditemukan, atau format perintah yang anda berikan salah, silahkan gunakan /help untuk melihat bantuan!</b>"""
 RSS_HELP_MESSAGE = """<b>Link tidak ditemukan, atau format perintah yang anda berikan salah, silahkan gunakan /help untuk melihat bantuan!</b>"""
 
-#ORIGINAL HELP MESSAGE
 
 mirror = """<b>Send link along with command line or </b>
 
