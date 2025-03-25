@@ -770,7 +770,7 @@ youtube = {}
 async def yt_request(uid, keyword, page=1):
     try:
         api_key = "AIzaSyBmQVnzf5khHZE8GSbVzNmVefzPFGPW7aU"
-        results_per_page = 10 
+        results_per_page = 10  
         max_results = 30  
         
         search_url = f"https://www.googleapis.com/youtube/v3/search?part=snippet&q={keyword}&type=video&maxResults={max_results}&key={api_key}"
@@ -810,7 +810,7 @@ async def yt_request(uid, keyword, page=1):
         start_idx = (page - 1) * results_per_page
         end_idx = min(start_idx + results_per_page, total_results)
         
-        msg = f"<b>🔎 Hasil Pencarian YouTube untuk:</b> <code>{keyword}</code>\n\n"
+        msg = f"<b>🔎 Hasil Pencarian:</b> <code>{keyword}</code>\n\n"
         
         page_items = data["items"][start_idx:end_idx]
         page_results = []
@@ -831,13 +831,18 @@ async def yt_request(uid, keyword, page=1):
                 detail_text = f"⏱️ {duration} | 👁️ {views} | 👍 {likes}"
             
             entry += f"📢 {channel} {detail_text}\n\n"
+            
+            if len(msg + entry) > 900:
+                msg += f"\n<i>...dan {total_results - i + 1} hasil lainnya</i>"
+                break
+                
             msg += entry
             
             page_results.append({
                 'title': title, 
                 'id': video_id, 
                 'channel': channel,
-                'idx': i  
+                'idx': i 
             })
         
         msg += f"\n<b>Halaman {page} dari {total_pages}</b>"
@@ -856,9 +861,7 @@ async def yt_request(uid, keyword, page=1):
         else:
             butt.ibutton("▶️", f"youtube none {uid}", position="header")
         
-        page_buttons = []
         max_page_buttons = 5
-        
         start_page = max(1, page - max_page_buttons // 2)
         end_page = min(total_pages, start_page + max_page_buttons - 1)
         
@@ -895,7 +898,7 @@ async def yt_request(uid, keyword, page=1):
     except Exception as e:
         LOGGER.error(f"Error in YouTube search: {e}")
         return f"<b>❌ Terjadi kesalahan saat mencari video:</b>\n\n<code>{str(e)}</code>", None
-
+    
 
 async def edit_durasi(duration):
     return duration.replace("PT", "").replace("H", ":").replace("M", ":").replace("S", "")
@@ -968,18 +971,35 @@ async def yt_search(client, message, keyword=None):
                 LOGGER.error(f"Error deleting message: {e}")
                 
             try:
+                # Delete the user's command message if possible
                 try:
                     await message.delete()
                 except Exception as e:
                     LOGGER.error(f"Error deleting command message: {e}")
                 
-                # Send the response as a new message
-                sent_message = await message.reply_photo(
-                    "https://telegra.ph/file/9fbae069402df1710585f.jpg", 
-                    caption=msg, 
-                    reply_markup=butts
-                )
-                youtube[uid]["sent_message"] = sent_message
+                # Try to send with photo and full caption
+                try:
+                    sent_message = await message.reply_photo(
+                        "https://telegra.ph/file/9fbae069402df1710585f.jpg", 
+                        caption=msg, 
+                        reply_markup=butts
+                    )
+                    youtube[uid]["sent_message"] = sent_message
+                except pyrogram.errors.exceptions.bad_request_400.MediaCaptionTooLong:
+                    # If caption is too long, send with a shorter caption
+                    short_msg = f"<b>🔎 Hasil Pencarian:</b> <code>{keyword}</code>\n\n<i>Hasil terlalu panjang, silahkan pilih nomor untuk melihat detail.</i>"
+                    sent_message = await message.reply_photo(
+                        "https://telegra.ph/file/9fbae069402df1710585f.jpg", 
+                        caption=short_msg, 
+                        reply_markup=butts
+                    )
+                    youtube[uid]["sent_message"] = sent_message
+                    
+                    # Then send the full results as a text message
+                    await message.reply_text(
+                        msg,
+                        disable_web_page_preview=True
+                    )
             except Exception as e:
                 LOGGER.error(f"Error sending YouTube search results: {e}")
                 if uid in youtube:
@@ -1011,6 +1031,11 @@ async def yt_query(_, query):
     if uid not in youtube:
         return await query.answer(text="Tugas sudah tidak ada atau dibatalkan!", show_alert=True)
     
+    if data[1] == "cancel":
+        if uid in youtube:
+            del youtube[uid]
+        return await query.answer("✅ Tugas pencarian dibatalkan.", show_alert=True)
+
     if data[1] == "none":
         await query.answer("Tidak ada halaman di arah ini", show_alert=True)
         return
