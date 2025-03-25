@@ -3,27 +3,31 @@ from asyncio import sleep as asleep
 from http.cookiejar import MozillaCookieJar
 from random import randint, choice
 from json import loads
-from bot import (bot,
-                 LOGGER,
-                 config_dict)
+
 from pyrogram.filters import (command,
                               regex)
 from pyrogram.handlers import MessageHandler, CallbackQueryHandler
 from pyrogram.types import InputMediaPhoto, InputMediaVideo
-from bot.helper.telegram_helper.button_build import ButtonMaker
 from pyrogram import filters
+
+from bot import (bot,
+                 LOGGER,
+                 config_dict)
+from bot.modules.ytdlp import YtDlp
 from bot.helper.telegram_helper.message_utils import(sendMessage,
                                                      editMessage,
                                                      deleteMessage,
-                                                     customSendAudio,
-                                                     customSendVideo)
-from bot.helper.ext_utils.yt_dlp_download_helper import YtDlp
+                                                     customSendAudio,)
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.bot_commands import BotCommands
+from bot.helper.telegram_helper.button_build import ButtonMaker
 import re
 import httpx
 
-# Constants
+####################
+## Auto Detect TikTok
+####################
+
 tiktokregex = r"(https?:\/\/)?(vm|vt|www|v)?\.?tiktok\.com\/"
 
 user_agents = [
