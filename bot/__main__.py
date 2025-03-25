@@ -233,7 +233,7 @@ async def start(client, message):
     
     buttons.ubutton("👨‍💻 Maintainer", "https://t.me/WzdDizzyFlasherr", "header")
     buttons.ubutton("📢 Channel", "https://t.me/DizzyStuffProject")
-    buttons.ubutton("💬 Group", "https://t.me/YourGroupLink")  # Replace with your actual group link
+    buttons.ubutton("💬 Group", "https://t.me/TranssionCore5")
     
     buttons.ubutton("💰 Donate", "https://telegra.ph/Donate-and-Support-Us-03-21", "footer")
     
@@ -332,7 +332,7 @@ async def donate(_, message):
     buttons.ubutton("👨‍💻 Maintainer", "https://t.me/WzdDizzyFlasherr", "header")
     
     buttons.ubutton("📢 Channel", "https://t.me/DizzyStuffProject")
-    buttons.ubutton("💬 Group", "https://t.me/YourGroupLink")
+    buttons.ubutton("💬 Group", "https://t.me/TranssionCore5")
 
     buttons.ubutton("💰 Donate Here", "https://telegra.ph/Donate-and-Support-Us-03-21", "footer")
     
