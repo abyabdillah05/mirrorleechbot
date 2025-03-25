@@ -388,11 +388,11 @@ async def get_tiktok_results(keyword, page=1, count=5):
                             data = response.json()
                             
                             if 'aweme_list' in data and len(data['aweme_list']) > 0:
-                                # Getting TikTok API aweme data
+
                                 aweme_list = data['aweme_list']
                                 
                                 total_count = data.get('total', 100 * count)
-                                total_pages = 0 
+                                total_pages = 0
                                 
                                 processed_results = []
                                 for item in aweme_list[:count]:
@@ -469,7 +469,7 @@ async def get_tiktok_results(keyword, page=1, count=5):
                         timeout=15,
                         follow_redirects=True
                     )
-    
+                    
                     if response.status_code == 200 and response.text.strip():
                         try:
                             data = response.json()
@@ -481,12 +481,10 @@ async def get_tiktok_results(keyword, page=1, count=5):
                                     continue
                                 
                                 total_results = data.get('total', 0)
-                                total_pages = 0 
-                                
+                                total_pages = 0                                 
                                 processed_results = []
                                 for item in video_items[:count]:
-                                    try:
-                                        video_id = item.get('id', '')
+                                    try:                                     video_id = item.get('id', '')
                                         author = item.get('author', {}).get('uniqueId', 'Unknown')
                                         nickname = item.get('author', {}).get('nickname', 'Unknown')
                                         desc = item.get('desc', 'TikTok Video')
@@ -516,7 +514,7 @@ async def get_tiktok_results(keyword, page=1, count=5):
                                             if isinstance(thumb, dict) and 'url_list' in thumb:
                                                 thumb = thumb['url_list'][0]
                                         
-                                        duration = 15  # Default duration estimate
+                                        duration = 15 
                                         if 'video' in item and 'duration' in item['video']:
                                             duration = item['video']['duration']
                                         
@@ -546,7 +544,7 @@ async def get_tiktok_results(keyword, page=1, count=5):
                 error_messages.append(f"Request to {endpoint} failed: {str(e)}")
                 LOGGER.warning(f"Error with request to {endpoint}: {str(e)}")
                 continue
-
+        
         try:
             search_url = f"https://www.tiktok.com/search/video?q={keyword}"
             
@@ -569,7 +567,7 @@ async def get_tiktok_results(keyword, page=1, count=5):
                     
                     if 'ItemModule' in data:
                         items = list(data['ItemModule'].values())
-
+                        
                         total_results = len(items)
                         if total_results > 0:
                             total_pages = 0
@@ -659,7 +657,7 @@ async def get_tiktok_results(keyword, page=1, count=5):
             })
         
         LOGGER.warning(f"Using mock data for TikTok search '{keyword}' page {page}")
-        return mock_results, None, page, 0
+        return mock_results, None, page, 0 
         
     except Exception as e:
         LOGGER.error(f"Error in TikTok search: {str(e)}")
@@ -758,7 +756,6 @@ async def tiktok_paginated_search(_, message):
                 return
             except Exception as e:
                 LOGGER.error(f"Failed to send video preview: {e}")
-                # Fall back to using thumbnail
         
         if video.get('thumb'):
             sent_msg = await message.reply_photo(
@@ -789,6 +786,7 @@ async def tiktok_search_callback(_, query):
     action = data[1]
     uid = int(data[2])
     
+    # Check if task exists
     if uid not in tiktok_searches:
         return await query.answer("Tugas tidak ditemukan atau sudah selesai.", show_alert=True)
     
@@ -844,6 +842,7 @@ async def tiktok_search_callback(_, query):
         
         current_page = int(data[3])
         
+        # Calculate target page
         if action == "prev":
             page = current_page - 1
         else:
@@ -887,7 +886,7 @@ async def tiktok_search_callback(_, query):
             
         butt.ibutton("🔗 Join", f"ttsearch join {uid}")
         
-        if page < total_pages or total_pages == 0:
+        if page < total_pages or total_pages == 0:  # Allow unlimited pages if total_pages is 0
             butt.ibutton("Next ▶️", f"ttsearch next {uid} {page} {keyword}")
         else:
             butt.ibutton("▶️", f"ttsearch none {uid}")
