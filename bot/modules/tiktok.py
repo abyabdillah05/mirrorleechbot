@@ -666,12 +666,15 @@ async def get_tiktok_results(keyword, page=1, count=5):
     
 
 async def tiktok_paginated_search(_, message):
+    """Handle TikTok search with pagination"""
     uid = message.from_user.id
     
+    # Get search keyword
     if len(message.command) > 1:
         keyword = ' '.join(message.command[1:])
         is_random = False
     else:
+        # Random popular tags if no keyword provided
         popular_tags = [
             "fyp", "viral", "trending", "dance", "comedy", "music", "funny",
             "challenge", "fashion", "food", "beauty", "foryou", "foryoupage", 
@@ -680,6 +683,7 @@ async def tiktok_paginated_search(_, message):
         keyword = choice(popular_tags)
         is_random = True
     
+    # Show loading message
     loading_text = "<b>⌛️ Sedang mencari video TikTok"
     if is_random:
         loading_text += " random"
@@ -688,6 +692,7 @@ async def tiktok_paginated_search(_, message):
     mess = await sendMessage(message, loading_text)
     
     try:
+        # Get first page of results
         results, error_msg, page, total_pages = await get_tiktok_results(keyword)
         
         if error_msg:
@@ -702,8 +707,10 @@ async def tiktok_paginated_search(_, message):
             await deleteMessage(mess)
             return
             
+        # Get the first video from results
         video = results[0]
         
+        # Format the message with detailed information
         msg = f"<b>🔰 {config_dict.get('BOT_NAME', 'TikTok Search')}</b>\n\n"
         msg += f"<b>🎬 Video:</b>\n<code>{video['desc']}</code>\n\n"
         msg += f"<b>⏱️ Duration:</b> <code>{format_duration(video['duration'])}</code>\n"
@@ -712,10 +719,18 @@ async def tiktok_paginated_search(_, message):
         msg += f"<b>❤️ Likes:</b> <code>{format_count(video['stats']['likes'])}</code>\n"
         msg += f"<b>👁️ Views:</b> <code>{format_count(video['stats']['plays'])}</code>\n"
         msg += f"<b>💬 Comments:</b> <code>{format_count(video['stats']['comments'])}</code>\n\n"
-        msg += f"<b>Halaman {page} dari {total_pages}</b>"
         
+        # Add thumbnail URL if available
+        if video.get('thumb'):
+            msg += f"<b>🖼️ Thumbnail:</b> <a href='{video['thumb']}'>Link</a>\n\n"
+            
+        msg += f"<b>🔗 Video URL:</b> <a href='{video['url']}'>Open in TikTok</a>\n\n"
+        msg += f"<b>Halaman {page}</b>"
+        
+        # Create navigation buttons
         butt = ButtonMaker()
         
+        # Navigation row
         if page > 1:
             butt.ibutton("◀️ Prev", f"ttsearch prev {uid} {page} {keyword}")
         else:
@@ -723,15 +738,20 @@ async def tiktok_paginated_search(_, message):
             
         butt.ibutton("🔗 Join", f"ttsearch join {uid}")
         
-        if page < total_pages or total_pages == 0:
-            butt.ibutton("Next ▶️", f"ttsearch next {uid} {page} {keyword}")
-        else:
-            butt.ibutton("▶️", f"ttsearch none {uid}")
+        # Always show Next since we have unlimited pages
+        butt.ibutton("Next ▶️", f"ttsearch next {uid} {page} {keyword}")
         
+        # Close button
         butt.ibutton("⛔️ Close", f"ttsearch close {uid}")
         
-        butts = butt.build_menu(3, 1)
+        # Download buttons
+        butt.ibutton("🎞️ Download", f"ttsearch dl {uid}")
+        butt.ibutton("🔊 Audio", f"ttsearch audio {uid}")
         
+        # Build the menu with specified layout
+        butts = butt.build_menu(3, 2)
+        
+        # Store data for callback handling
         tiktok_searches[uid] = {
             "keyword": keyword,
             "page": page,
@@ -741,37 +761,9 @@ async def tiktok_paginated_search(_, message):
             "current_video": video
         }
         
-        await deleteMessage(mess)
-        
-        video_url = video.get('url', '')
-        
-        if video_url:
-            try:
-                sent_msg = await message.reply_video(
-                    video=video_url,
-                    caption=msg,
-                    reply_markup=butts,
-                    supports_streaming=True
-                )
-                tiktok_searches[uid]["sent_message"] = sent_msg
-                return
-            except Exception as e:
-                LOGGER.error(f"Failed to send video preview: {e}")
-        
-        if video.get('thumb'):
-            sent_msg = await message.reply_photo(
-                photo=video['thumb'],
-                caption=msg,
-                reply_markup=butts
-            )
-        else:
-            sent_msg = await message.reply_photo(
-                photo="https://telegra.ph/file/9ac54179d1dbbdd3490d5.jpg",
-                caption=msg,
-                reply_markup=butts
-            )
-            
-        tiktok_searches[uid]["sent_message"] = sent_msg
+        # Update the message with results
+        await editMessage(mess, msg, butts)
+        tiktok_searches[uid]["sent_message"] = mess
         
     except Exception as e:
         LOGGER.error(f"TikTok search error: {str(e)}")
@@ -780,6 +772,7 @@ async def tiktok_paginated_search(_, message):
         await deleteMessage(mess)
 
 async def tiktok_search_callback(_, query):
+    """Handle TikTok search pagination callbacks"""
     message = query.message
     user_id = query.from_user.id
     data = query.data.split()
@@ -793,10 +786,13 @@ async def tiktok_search_callback(_, query):
     
     search_data = tiktok_searches[uid]
     keyword = search_data["keyword"]
+    video = search_data["current_video"]
     
-    is_owner = user_id in config_dict['OWNER_ID']
+    # Allow owners to use any buttons, but restrict regular users
+    is_owner = user_id in config_dict.get('OWNER_ID', [])
     is_sudo = user_id in config_dict.get('SUDO_USERS', [])
     
+    # Check if user is authorized
     if not is_owner and not is_sudo and user_id != uid:
         return await query.answer("Bukan tugas Anda!", show_alert=True)
     
@@ -805,13 +801,16 @@ async def tiktok_search_callback(_, query):
         return
     
     elif action == "close":
-        await message.edit_caption("<b>Tugas pencarian dibatalkan.</b>")
+        # Show cancellation message before deletion
+        await editMessage(message, "<b>Tugas pencarian dibatalkan.</b>")
         await query.answer("Tugas Dibatalkan.", show_alert=True)
         await asyncio.sleep(2)
         
+        # Delete messages
         try:
             await message.delete()
             
+            # Also try to delete the command message if possible
             orig_msg = search_data.get("message")
             if orig_msg:
                 try:
@@ -821,26 +820,58 @@ async def tiktok_search_callback(_, query):
         except:
             pass
         
+        # Remove from dictionary
         if uid in tiktok_searches:
             del tiktok_searches[uid]
         return
     
     elif action == "join":
+        # Join channel button
         butt = ButtonMaker()
         butt.ubutton("🔗 Join Dizzy Project", "https://t.me/DizzyStuffProject")
         butts = butt.build_menu(1)
         
-        await message.edit_caption(
+        await editMessage(
+            message,
             caption=f"<b>📣 Join our channel for updates and more features!</b>\n\n<i>Click the button below to join, then return to your search.</i>",
-            reply_markup=butts
+            buttons=butts
         )
         
+        # Add flag to know we need to return to search results
         search_data["return_from_join"] = True
+        return
+        
+    elif action == "dl":
+        # Download the video
+        await query.answer("Mendownload video...")
+        
+        # Get video URL from current result
+        video_url = video.get('url', '')
+        if not video_url:
+            return await query.answer("URL Video tidak ditemukan", show_alert=True)
+        
+        # Pass to tiktokdl function
+        await tiktokdl(bot, search_data["message"], url=video_url, type="video")
+        return
+        
+    elif action == "audio":
+        # Download as audio
+        await query.answer("Mendownload audio...")
+        
+        # Get video URL from current result
+        video_url = video.get('url', '')
+        if not video_url:
+            return await query.answer("URL Video tidak ditemukan", show_alert=True)
+        
+        # Pass to tiktokdl function
+        await tiktokdl(bot, search_data["message"], url=video_url, audio=True)
         return
     
     elif action in ["prev", "next"]:
-        await message.edit_caption("<b>⌛️ Loading page...</b>")
+        # Show loading message
+        await editMessage(message, "<b>⌛️ Loading page...</b>")
         
+        # Get current page from data
         current_page = int(data[3])
         
         # Calculate target page
@@ -849,18 +880,21 @@ async def tiktok_search_callback(_, query):
         else:
             page = current_page + 1
             
+        # Fetch new results
         results, error_msg, page, total_pages = await get_tiktok_results(keyword, page=page)
         
         if error_msg:
-            await message.edit_caption(error_msg)
+            await editMessage(message, error_msg)
             await asyncio.sleep(5)
             if uid in tiktok_searches:
                 del tiktok_searches[uid]
             await message.delete()
             return
         
+        # Get the first video from new page
         video = results[0]
         
+        # Update stored data
         search_data.update({
             "page": page,
             "total_pages": total_pages, 
@@ -868,6 +902,7 @@ async def tiktok_search_callback(_, query):
             "current_video": video
         })
         
+        # Format the message with detailed information
         msg = f"<b>🔰 {config_dict.get('BOT_NAME', 'TikTok Search')}</b>\n\n"
         msg += f"<b>🎬 Video:</b>\n<code>{video['desc']}</code>\n\n"
         msg += f"<b>⏱️ Duration:</b> <code>{format_duration(video['duration'])}</code>\n"
@@ -876,10 +911,18 @@ async def tiktok_search_callback(_, query):
         msg += f"<b>❤️ Likes:</b> <code>{format_count(video['stats']['likes'])}</code>\n"
         msg += f"<b>👁️ Views:</b> <code>{format_count(video['stats']['plays'])}</code>\n"
         msg += f"<b>💬 Comments:</b> <code>{format_count(video['stats']['comments'])}</code>\n\n"
-        msg += f"<b>Halaman {page} dari {total_pages}</b>"
         
+        # Add thumbnail URL if available
+        if video.get('thumb'):
+            msg += f"<b>🖼️ Thumbnail:</b> <a href='{video['thumb']}'>Link</a>\n\n"
+            
+        msg += f"<b>🔗 Video URL:</b> <a href='{video['url']}'>Open in TikTok</a>\n\n"
+        msg += f"<b>Halaman {page}</b>"
+        
+        # Create navigation buttons
         butt = ButtonMaker()
         
+        # Navigation row
         if page > 1:
             butt.ibutton("◀️ Prev", f"ttsearch prev {uid} {page} {keyword}")
         else:
@@ -887,43 +930,21 @@ async def tiktok_search_callback(_, query):
             
         butt.ibutton("🔗 Join", f"ttsearch join {uid}")
         
-        if page < total_pages or total_pages == 0:  # Allow unlimited pages if total_pages is 0
-            butt.ibutton("Next ▶️", f"ttsearch next {uid} {page} {keyword}")
-        else:
-            butt.ibutton("▶️", f"ttsearch none {uid}")
+        # Always show Next for unlimited pages
+        butt.ibutton("Next ▶️", f"ttsearch next {uid} {page} {keyword}")
         
+        # Close button
         butt.ibutton("⛔️ Close", f"ttsearch close {uid}")
         
-        butts = butt.build_menu(3, 1)
+        # Download buttons
+        butt.ibutton("🎞️ Download", f"ttsearch dl {uid}")
+        butt.ibutton("🔊 Audio", f"ttsearch audio {uid}")
         
-        try:
-            video_url = video.get('url', '')
-            if video_url:
-                await message.edit_media(
-                    media=InputMediaVideo(
-                        media=video_url,
-                        caption=msg
-                    ),
-                    reply_markup=butts
-                )
-                return
-        except Exception as e:
-            LOGGER.error(f"Failed to update with video: {e}")
-            
-        try:
-            if video['thumb']:
-                await message.edit_media(
-                    media=InputMediaPhoto(
-                        media=video['thumb'],
-                        caption=msg
-                    ),
-                    reply_markup=butts
-                )
-            else:
-                await message.edit_caption(caption=msg, reply_markup=butts)
-        except Exception as e:
-            LOGGER.error(f"Error updating search: {e}")
-            await message.edit_caption(caption=msg, reply_markup=butts)
+        # Build the menu with specified layout
+        butts = butt.build_menu(3, 2)
+        
+        # Update message
+        await editMessage(message, msg, butts)
 
 
 ####################

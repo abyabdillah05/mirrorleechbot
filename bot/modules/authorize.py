@@ -89,7 +89,6 @@ async def check_quota(_, message):
     sudo = False
     from_user_id = message.from_user.id
     
-    # Check if this is a reply to someone's message
     is_reply = message.reply_to_message is not None
     replied_user_id = message.reply_to_message.from_user.id if is_reply else None
     
@@ -102,11 +101,9 @@ async def check_quota(_, message):
             await sendMessage(message, "❌ <b>Format ID tidak valid.</b>")
             return
     elif is_reply:
-        # This is a reply to someone else's message
         user_id = replied_user_id
         self = False
     else:
-        # This is a check for oneself
         self = True
         user_id = from_user_id
     
@@ -117,7 +114,6 @@ async def check_quota(_, message):
     else:
         quota = 0
         
-    # Basic info that appears in all messages
     header = "📊 <b>INFORMASI KUOTA PENGGUNA</b>"
     divider = "\n─────────────────────────\n"
     
@@ -135,7 +131,6 @@ async def check_quota(_, message):
     
     base_msg += divider
     
-    # Define quota levels
     GB_20 = 20 * 1024 * 1024 * 1024
     GB_15 = 15 * 1024 * 1024 * 1024
     GB_10 = 10 * 1024 * 1024 * 1024
@@ -180,7 +175,6 @@ async def check_quota(_, message):
         mess = await sendMessage(message, msg)
         
     else:
-        # For all other users (not sudo or owner)
         if quota == 0:
             detail_msg = (
                 "<b>⚠️ Belum memiliki kuota!</b>\n\n"
@@ -244,7 +238,6 @@ async def check_quota(_, message):
                 "• Tambah kuota SEKARANG untuk menghindari gangguan\n\n"
             )
         
-        # Add status indicator based on quota level
         if quota >= GB_20:
             status_indicator = "✅ Status Kuota: Sangat Baik"
         elif quota >= GB_15:
