@@ -174,15 +174,12 @@ async def status_pages(_, query):
     elif action == "help":
         help_text = (
             "📋 BANTUAN STATUS\n\n"
-            "<b>Perintah Status:</b>\n"
-            "• /status - Status berdasarkan konteks\n"
-            "• /status me - Status tugas pribadi\n"
-            "• /status all - Semua tugas (Owner)\n"
-            "• /status help - Tampilkan bantuan\n\n"
-            "<b>Tips Penggunaan:</b>\n"
-            "• Gunakan tombol filter untuk melihat tugas berdasarkan status\n"
-            "• Batalkan tugas dengan klik perintah cancel di bawah setiap tugas\n"
-            "• Jika kecepatan tugas rendah (<20KB/s), sebaiknya batalkan dan coba link/server alternatif"
+            "• /status - Status konteks\n"
+            "• /status me - Status pribadi\n"
+            "• /status all - Semua tugas (Owner)\n\n"
+            "TIPS:\n"
+            "• Gunakan filter untuk melihat status\n"
+            "• Batalkan tugas lambat (<20KB/s)"
         )
         await query.answer(help_text, show_alert=True)
     
@@ -279,22 +276,17 @@ async def status_pages(_, query):
                         tasks["SamVid"] += 1
         
         info_text = (
-            f"ℹ️ INFORMASI STATUS\n\n"
-            f"<b>Mode Tampilan:</b> {view_type}\n"
-            f"<b>ID Status:</b> {sid}\n"
-            f"<b>ID Pengguna:</b> {cmd_user_id or 'Tidak ada batasan'}\n\n"
-            f"<b>📊 RINGKASAN TUGAS:</b>\n"
-            f"• Download: {tasks['Download']} | Upload: {tasks['Upload']} | Seed: {tasks['Seed']}\n"
-            f"• Archive: {tasks['Archive']} | Extract: {tasks['Extract']} | Split: {tasks['Split']}\n"
-            f"• QueueDl: {tasks['QueueDl']} | QueueUp: {tasks['QueueUp']} | Clone: {tasks['Clone']}\n"
-            f"• CheckUp: {tasks['CheckUp']} | Pause: {tasks['Pause']} | SamVid: {tasks['SamVid']}\n\n"
-            f"<b>🚀 INFORMASI KECEPATAN:</b>\n"
-            f"• Kecepatan Seed: {get_readable_file_size(seed_speed)}/s\n"
-            f"• Kecepatan Unduh: {get_readable_file_size(dl_speed)}/s\n"
-            f"• Kecepatan Unggah: {get_readable_file_size(up_speed)}/s\n\n"
-            f"<b>💡 TIPS:</b>\n"
-            f"• Gunakan tombol filter untuk melihat tugas berdasarkan status\n"
-            f"• Jika kecepatan < 20KB/s, pertimbangkan untuk membatalkan tugas"
+            f"ℹ️ INFO STATUS\n\n"
+            f"Mode: {view_type}\n"
+            f"ID: {sid}\n\n"
+            f"TUGAS:\n"
+            f"• DL: {tasks['Download']} | UP: {tasks['Upload']} | Seed: {tasks['Seed']}\n"
+            f"• Arc: {tasks['Archive']} | Ext: {tasks['Extract']}\n"
+            f"• QDL: {tasks['QueueDl']} | QUP: {tasks['QueueUp']}\n\n"
+            f"KECEPATAN:\n"
+            f"• Seed: {get_readable_file_size(seed_speed)}/s\n"
+            f"• DL: {get_readable_file_size(dl_speed)}/s\n"
+            f"• UP: {get_readable_file_size(up_speed)}/s"
         )
         await query.answer(info_text, show_alert=True)
 
