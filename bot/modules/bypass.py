@@ -13,7 +13,7 @@ from pyrogram.handlers import MessageHandler
 from pyrogram.filters import command
 from urllib.parse import urlparse, unquote
 
-from bot import bot
+from bot import bot, LOGGER
 import time
 from bot.helper.ext_utils.bot_utils import sync_to_async
 from bot.helper.ext_utils.links_utils import is_url
@@ -619,32 +619,51 @@ async def direct(_, message):
                 f"<b>🔗 Domain:</b> <code>{host}</code>"
             )
             
-            buttons = ButtonMaker()
-            buttons.ubutton("❤️ 𝚂𝚞𝚙𝚙𝚘𝚛𝚝 𝙼𝚎", "https://telegra.ph/Donate-and-Support-Us-03-21", "footer")
-            button = buttons.build_menu(1)
-            await editMessage(ray, success_message + cc, button)
+            try:
+                buttons = ButtonMaker()
+                buttons.ubutton("❤️ Support Me", "https://telegra.ph/Donate-and-Support-Us-03-21", "footer")
+                button = buttons.build_menu(1)
+                await editMessage(ray, success_message + cc, button)
+            except Exception as btn_error:
+                LOGGER.error(f"Button error: {str(btn_error)}")
+                await editMessage(ray, success_message + cc)
             
         except Exception as e:
             await asleep(1)
-            buttons = ButtonMaker()
-            buttons.ubutton("📚 Daftar Link Didukung", "https://gist.github.com/aenulrofik/20405f81fc9da2d12478a5754b7bf34e")
-            buttons.ubutton("🔄 Coba Lagi", f"/bypass {link}")
-            b_limz = buttons.build_menu(2)
-            error_message = f"<b>⚠️ Gagal membypass link!</b>\n<i>{str(e)}</i>\n\n<b>Link:</b> <code>{link}</code>"
-            await editMessage(ray, error_message, b_limz)
+            try:
+                buttons = ButtonMaker()
+                buttons.ubutton("📚 Daftar Link Didukung", "https://gist.github.com/aenulrofik/20405f81fc9da2d12478a5754b7bf34e")
+                buttons.ubutton("🔄 Coba Lagi", f"/bypass {link}")
+                b_limz = buttons.build_menu(2)
+                error_message = f"<b>⚠️ Gagal membypass link!</b>\n<i>{str(e)}</i>\n\n<b>Link:</b> <code>{link}</code>"
+                await editMessage(ray, error_message, b_limz)
+            except Exception as btn_error:
+                LOGGER.error(f"Button error: {str(btn_error)}")
+                error_message = f"<b>⚠️ Gagal membypass link!</b>\n<i>{str(e)}</i>\n\n<b>Link:</b> <code>{link}</code>"
+                await editMessage(ray, error_message)
 
     elif len(message.command) == 1:
-         buttons = ButtonMaker()
-         buttons.ubutton("📚 Daftar Link Didukung", "https://gist.github.com/aenulrofik/20405f81fc9da2d12478a5754b7bf34e")
-         buttons.ubutton("💡 Cara Penggunaan", f"/help {BotCommands.DirectCommand[0]}")
-         b_limz1 = buttons.build_menu(2)
-         help_text = (
-            "<b>⚠️ Link tidak ditemukan!</b>\n\n"
-            "<b>Cara Penggunaan:</b>\n"
-            f"<code>/{BotCommands.DirectCommand[0]} link_shorterurl</code>\n"
-            "atau balas ke pesan yang berisi link dengan perintah ini."
-         )
-         await sendMessage(message, help_text, b_limz1)
+        try:
+            buttons = ButtonMaker()
+            buttons.ubutton("📚 Daftar Link Didukung", "https://gist.github.com/aenulrofik/20405f81fc9da2d12478a5754b7bf34e")
+            buttons.ubutton("💡 Cara Penggunaan", f"/help {BotCommands.DirectCommand[0]}")
+            b_limz1 = buttons.build_menu(2)
+            help_text = (
+               "<b>⚠️ Link tidak ditemukan!</b>\n\n"
+               "<b>Cara Penggunaan:</b>\n"
+               f"<code>/{BotCommands.DirectCommand[0]} link_shorterurl</code>\n"
+               "atau balas ke pesan yang berisi link dengan perintah ini."
+            )
+            await sendMessage(message, help_text, b_limz1)
+        except Exception as btn_error:
+            LOGGER.error(f"Button error: {str(btn_error)}")
+            help_text = (
+               "<b>⚠️ Link tidak ditemukan!</b>\n\n"
+               "<b>Cara Penggunaan:</b>\n"
+               f"<code>/{BotCommands.DirectCommand[0]} link_shorterurl</code>\n"
+               "atau balas ke pesan yang berisi link dengan perintah ini."
+            )
+            await sendMessage(message, help_text)
 
 
 bot.add_handler(MessageHandler(direct, filters=command(BotCommands.DirectCommand) & CustomFilters.authorized))
