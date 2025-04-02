@@ -101,6 +101,8 @@ class Mirror(TaskListener):
         self.video_editor = video_editor
         self.user_id = self.message.from_user.id
         self.disable_button = user_data.get(self.user_id, {}).get("disable_button", False)
+        self.md5 = ""
+        
     @new_task
     async def newEvent(self):
         rply = self.message.reply_to_message
