@@ -2,9 +2,12 @@
 # Poweered by RKMBot and Rozakul Halim
 # https://t.me/MRojeck_Lim
 # mod by pikachu
+# Enhanced version
 
 from datetime import datetime
 from http.cookies import SimpleCookie
+from random import choice
+from time import time
 
 from pyrogram.handlers import MessageHandler
 from pyrogram.filters import command
@@ -44,6 +47,25 @@ http = httpx.AsyncClient(
     timeout=httpx.Timeout(40),
 )
 
+class BypassException(Exception):
+    def __init__(self, message, service_name=None, suggestion=None):
+        self.service_name = service_name
+        self.suggestion = suggestion
+        super().__init__(message)
+    
+    def __str__(self):
+        msg = super().__str__()
+        if self.service_name:
+            msg = f"[{self.service_name}] {msg}"
+        if self.suggestion:
+            msg = f"{msg}\n\nSaran: {self.suggestion}"
+        return msg
+
+class DDLException(Exception):
+    """Tidak ada metode untuk extract link ini"""
+    pass
+
+# Helper Functions
 async def get(url: str, *args, **kwargs):
     async with ClientSession() as session:
         async with session.get(url, *args, **kwargs) as resp:
@@ -73,22 +95,48 @@ async def post(url: str, *args, **kwargs):
                 data = await resp.text()
         return data
 
-class DDLException(Exception):
-    """Tidak ada metode untuk extract link ini"""
-    pass
+
+async def show_progress_message(message, step, total_steps, title):
+    progress = min(100, int((step / total_steps) * 100))
+    progress_bar = "".join(["■" for _ in range(progress // 5)]) + "".join(["□" for _ in range(20 - (progress // 5))])
+    
+    text = f"<b>{title}</b>\n" \
+           f"<code>{progress_bar}</code> {progress}%\n" \
+           f"<i>Tahap {step}/{total_steps} - Mohon tunggu...</i>"
+    
+    await editMessage(message, text)
+
+
+def format_bypass_result(url, result):
+    host = urlparse(url).hostname
+    
+    if "<b>" in result or "<code>" in result:
+        return result
+        
+    if "gdrive" in result.lower() or "drive.google.com" in result:
+        return f"<b>🔗 Google Drive:</b>\n<code>{result}</code>"
+    elif "mediafire" in host:
+        return f"<b>🔗 MediaFire Direct Link:</b>\n<code>{result}</code>"
+    elif any(x in host for x in ["mega.nz", "mega.co.nz"]):
+        return f"<b>🔗 MEGA Link:</b>\n<code>{result}</code>"
+    elif "dropbox" in host:
+        return f"<b>🔗 Dropbox Direct Link:</b>\n<code>{result}</code>"
+    elif "pixeldrain" in host:
+        return f"<b>🔗 Pixeldrain Direct Link:</b>\n<code>{result}</code>"
+    
+    return f"<code>{result}</code>"
 
 
 async def rentry(teks):
-    # buat dapetin cookie
+    start_message = "<b>📄 Hasil bypass sangat panjang! Menyiapkan halaman Rentry...</b>"
+    
     cookie = SimpleCookie()
     kuki = (await http.get("https://rentry.co")).cookies
     cookie.load(kuki)
     kukidict = {key: value.value for key, value in cookie.items()}
-    # headernya
     header = {"Referer": "https://rentry.co"}
     payload = {"csrfmiddlewaretoken": kukidict["csrftoken"], "text": teks}
     
-    # Kirim permintaan ke rentry
     response = await http.post(
         "https://rentry.co/api/new",
         data=payload,
@@ -99,11 +147,11 @@ async def rentry(teks):
     # Dapatkan URL dari respons JSON
     result_url = response.json().get("url")
     
-    # Tambahkan teks tambahan
-    additional_text = "<i>• Hasil bypass dikirim ke rentry karena keterbatasan karakter di telegram.</i>"
-    final_result = f"\n🔗 {result_url}\n\n{additional_text}"
+    additional_text = "<i>• Hasil bypass sangat panjang dan telah dikirim ke Rentry untuk kemudahan pembacaan.</i>"
+    final_result = f"\n<b>🔗 Link Rentry:</b> <a href='{result_url}'>{result_url}</a>\n\n{additional_text}"
     
     return final_result
+
 
 def RecaptchaV3():
     import requests
@@ -125,6 +173,7 @@ def RecaptchaV3():
     answer = re.findall(r'"rresp","(.*?)"', res.text)[0]    
     return answer
 
+
 client = requests.Session()
 client.headers.update({
     'authority': 'ouo.io',
@@ -135,6 +184,7 @@ client.headers.update({
     'upgrade-insecure-requests': '1',
 })
 
+
 def ouo_bypass(url: str) -> str:
     tempurl = url.replace("ouo.press", "ouo.io")
     p = urlparse(tempurl)
@@ -143,7 +193,6 @@ def ouo_bypass(url: str) -> str:
     next_url = f"{p.scheme}://{p.hostname}/go/{id}"
 
     for _ in range(2):
-
         if res.headers.get('Location'): break
 
         bs4 = BeautifulSoup(res.content, 'lxml')
@@ -162,49 +211,60 @@ def ouo_bypass(url: str) -> str:
 
     return url
 
+
 async def transcript(url: str, DOMAIN: str, ref: str, sltime) -> str:
     code = url.rstrip("/").split("/")[-1]
-    cget = create_scraper(allow_brotli=False).request
-    resp = cget("GET", f"{DOMAIN}/{code}", headers={"referer": ref})
-    soup = BeautifulSoup(resp.content, "html.parser")
-    data = { inp.get('name'): inp.get('value') for inp in soup.find_all("input") }
-    await asleep(sltime)
-    resp = cget("POST", f"{DOMAIN}/links/go", data=data, headers={ "x-requested-with": "XMLHttpRequest" })
-    try: 
-        return resp.json()['url']
-    except: return "Gagal membypass link :("
+    try:
+        cget = create_scraper(allow_brotli=False).request
+        resp = cget("GET", f"{DOMAIN}/{code}", headers={"referer": ref})
+        soup = BeautifulSoup(resp.content, "html.parser")
+        data = { inp.get('name'): inp.get('value') for inp in soup.find_all("input") }
+        
+        await asleep(sltime)
+        resp = cget("POST", f"{DOMAIN}/links/go", data=data, headers={ "x-requested-with": "XMLHttpRequest" })
+        try: 
+            return resp.json()['url']
+        except: 
+            return "❌ Gagal membypass link: API tidak memberikan respons yang valid."
+    except Exception as e:
+        return f"❌ Gagal membypass link: {str(e)}"
+
 
 async def try2link(url: str) -> str:
     cget = create_scraper(allow_brotli=False).request
     url = url.rstrip("/")
-    res = cget("GET", url, params=(('d', int(time()) + (60 * 4)),), headers={'Referer': 'https://fx-gd.net/'})
-    soup = BeautifulSoup(res.text, 'html.parser')
-    inputs = soup.find(id="go-link").find_all(name="input")
-    data = { inp.get('name'): inp.get('value') for inp in inputs }    
-    await asleep(7)
-    headers = {'Host': 'try2link.com', 'X-Requested-With': 'XMLHttpRequest', 'Origin': 'https://try2link.com', 'Referer': url}
-    resp = cget('POST', 'https://try2link.com/links/go', headers=headers, data=data)
     try:
-        return resp.json()["url"]
-    except:
-        raise DDLException("Gagal mengekstrak linkS")
+        res = cget("GET", url, params=(('d', int(time()) + (60 * 4)),), headers={'Referer': 'https://fx-gd.net/'})
+        soup = BeautifulSoup(res.text, 'html.parser')
+        inputs = soup.find(id="go-link").find_all(name="input")
+        data = { inp.get('name'): inp.get('value') for inp in inputs }    
+        await asleep(7)
+        headers = {'Host': 'try2link.com', 'X-Requested-With': 'XMLHttpRequest', 'Origin': 'https://try2link.com', 'Referer': url}
+        resp = cget('POST', 'https://try2link.com/links/go', headers=headers, data=data)
+        try:
+            return resp.json()["url"]
+        except:
+            raise BypassException("Gagal mengekstrak link", "Try2Link", "Coba lagi nanti atau gunakan layanan lain")
+    except Exception as e:
+        raise BypassException(f"Error: {str(e)}", "Try2Link")
 
 
 async def gyanilinks(url: str) -> str:
     DOMAIN = "https://go.hipsonyc.com/"
     cget = create_scraper(allow_brotli=False).request
     code = url.rstrip("/").split("/")[-1]
-    soup = BeautifulSoup(cget("GET", f"{DOMAIN}/{code}").content, "html.parser")
-    try: 
+    try:
+        soup = BeautifulSoup(cget("GET", f"{DOMAIN}/{code}").content, "html.parser")
         inputs = soup.find(id="go-link").find_all(name="input")
-    except: 
-        return "Gagal membypass link :("
-    await asleep(5)
-    resp = cget("POST", f"{DOMAIN}/links/go", data= { input.get('name'): input.get('value') for input in inputs }, headers={ "x-requested-with": "XMLHttpRequest" })
-    try: 
-        return resp.json()['url']
+        await asleep(5)
+        resp = cget("POST", f"{DOMAIN}/links/go", data={ input.get('name'): input.get('value') for input in inputs }, headers={ "x-requested-with": "XMLHttpRequest" })
+        try: 
+            return resp.json()['url']
+        except:
+            return "❌ Gagal membypass link"
     except:
-        return "Gagal membypass link :("
+        return "❌ Gagal membypass link"
+
 
 async def mdisk(url: str) -> str: # Depreciated ( Code Preserved )
     header = {'Accept': '*/*', 
@@ -216,34 +276,45 @@ async def mdisk(url: str) -> str: # Depreciated ( Code Preserved )
     res = rget(url=URL, headers=header).json() 
     return res['download'] + '\n\n' + res['source']
 
+
 async def shareus(url: str) -> str: 
     DOMAIN = "https://api.shrslink.xyz" 
     cget = create_scraper().request
-    params = {'shortid': url.rstrip('/').split("/")[-1] , 'initial': 'true', 'referrer': 'https://shareus.io/'}
-    headers = {'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36'}
-    resp = cget("GET", f'{DOMAIN}/v', params=params, headers=headers)
-    for page in range(1, 4): 
-        resp = cget("POST", f'{DOMAIN}/v', headers=headers, json={'current_page': page}) 
     try:
-        return (cget('GET', f'{DOMAIN}/get_link', headers=headers).json())["link_info"]["destination"]
-    except:
-        return "Gagal membypass link :("
+        params = {'shortid': url.rstrip('/').split("/")[-1] , 'initial': 'true', 'referrer': 'https://shareus.io/'}
+        headers = {'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36'}
+        resp = cget("GET", f'{DOMAIN}/v', params=params, headers=headers)
+        for page in range(1, 4): 
+            resp = cget("POST", f'{DOMAIN}/v', headers=headers, json={'current_page': page}) 
+        try:
+            return (cget('GET', f'{DOMAIN}/get_link', headers=headers).json())["link_info"]["destination"]
+        except:
+            return "❌ Gagal membypass link"
+    except Exception as e:
+        return f"❌ Error: {str(e)}"
+    
     
 async def linkvertise(url: str) -> str:
-    resp = rget('https://bypass.pm/bypass2', params={'url': url}).json()
-    if resp["success"]: 
-        return resp["destination"]
-    else: 
-        return "Gagal membypass link :("
+    try:
+        resp = rget('https://bypass.pm/bypass2', params={'url': url}).json()
+        if resp["success"]: 
+            return resp["destination"]
+        else: 
+            return "❌ Gagal membypass link"
+    except Exception as e:
+        return f"❌ Error: {str(e)}"
 
 
 async def rslinks(url: str) -> str:
-      resp = rget(url, stream=True, allow_redirects=False)
-      code = resp.headers["location"].split('ms9')[-1]
-      try:
-          return f"http://techyproio.blogspot.com/p/short.html?{code}=="
-      except:
-          return "Gagal membypass link :("
+    try:
+        resp = rget(url, stream=True, allow_redirects=False)
+        code = resp.headers["location"].split('ms9')[-1]
+        try:
+            return f"http://techyproio.blogspot.com/p/short.html?{code}=="
+        except:
+            return "❌ Gagal membypass link"
+    except Exception as e:
+        return f"❌ Error: {str(e)}"
       
 
 async def shorter(url: str) -> str:
@@ -252,21 +323,27 @@ async def shorter(url: str) -> str:
         resp = cget("GET", url, allow_redirects=False)
         return resp.headers['Location']
     except: 
-        return "Gagal membypass link :("
+        return "❌ Gagal membypass link"
 
 
 async def appurl(url: str):
-    cget = create_scraper().request 
-    resp = cget("GET", url, allow_redirects=False)
-    soup = BeautifulSoup(resp.text, 'html.parser')
-    return soup.select('meta[property="og:url"]')[0]['content']
+    try:
+        cget = create_scraper().request 
+        resp = cget("GET", url, allow_redirects=False)
+        soup = BeautifulSoup(resp.text, 'html.parser')
+        return soup.select('meta[property="og:url"]')[0]['content']
+    except Exception as e:
+        return f"❌ Error: {str(e)}"
     
     
 async def surl(url: str):
-    cget = create_scraper().request
-    resp = cget("GET", f"{url}+")
-    soup = BeautifulSoup(resp.text, 'html.parser')
-    return soup.select('p[class="long-url"]')[0].string.split()[1]
+    try:
+        cget = create_scraper().request
+        resp = cget("GET", f"{url}+")
+        soup = BeautifulSoup(resp.text, 'html.parser')
+        return soup.select('p[class="long-url"]')[0].string.split()[1]
+    except Exception as e:
+        return f"❌ Error: {str(e)}"
 
 
 async def shrtco(url: str) -> str:
@@ -274,14 +351,15 @@ async def shrtco(url: str) -> str:
         code = url.rstrip("/").split("/")[-1]
         return rget(f'https://api.shrtco.de/v2/info?code={code}').json()['result']['url']
     except: 
-        return "Gagal membypass link :("
+        return "❌ Gagal membypass link"
     
 
 async def thinfi(url: str) -> str:
     try: 
-        return BeautifulSoup(rget(url).content,  "html.parser").p.a.get("href")
+        return BeautifulSoup(rget(url).content, "html.parser").p.a.get("href")
     except: 
-        return "Gagal membypass link :("
+        return "❌ Gagal membypass link"
+
 
 def pling_bypass(url):
     try:
@@ -311,6 +389,7 @@ def pling_bypass(url):
     except Exception:
         return err
 
+
 async def direct(_, message):
     if message.caption is not None:
         args = message.caption.split()
@@ -329,23 +408,34 @@ async def direct(_, message):
 
     if is_url(link):
         s = datetime.now()
-        mess = f"<b><i>⏳ Sedang membypass link dari</i></b> <code>{link}</code>.."
+        loading_messages = [
+            "🔄 <b>Memulai proses bypass...</b>",
+            "🔎 <b>Mencari jalur bypass...</b>",
+            "⚡ <b>Menyiapkan metode ekstraksi...</b>",
+            "🔓 <b>Membuka blokir link...</b>",
+            "🔍 <b>Menganalisis struktur URL...</b>"
+        ]
+        loading_msg = choice(loading_messages)
+        mess = f"{loading_msg}\n\n<code>{link}</code>"
         ray = await sendMessage(message, mess)
         try:
             await asleep(1)
             if 'ouo.io' in link or 'ouo.press' in link:
+                await editMessage(ray, f"⏳ <b>Memproses link OUO</b>\n<i>Mohon tunggu, ini bisa memakan waktu...</i>\n\n<code>{link}</code>")
                 res = await sync_to_async(ouo_bypass, link)
             elif 'uptobox.com' in link:
-                res = f"Uptobox udah ded :("
-            #elif bool(match(r"https?:\/\/devuploads\.\S+", link)):
-            #    res = f"Devuploads belum bisa dimirror !"
+                res = f"⚠️ Uptobox sudah tidak dapat dibypass. Gunakan metode lain."
             elif bool(match(r"https?:\/\/try2link\.\S+", link)):
+                await editMessage(ray, f"⏳ <b>Memproses Try2Link...</b>\n\n<code>{link}</code>")
                 res = await try2link(link)
             elif bool(match(r"https?:\/\/ronylink\.\S+", link)):
+                await editMessage(ray, f"⏳ <b>Memproses RonyLink...</b>\n\n<code>{link}</code>")
                 res = await transcript(link, "https://go.ronylink.com/", "https://livejankari.com/", 9)
             elif bool(match(r"https?:\/\/(gyanilinks|gtlinks)\.\S+", link)):
+                await editMessage(ray, f"⏳ <b>Memproses GyaniLinks...</b>\n\n<code>{link}</code>")
                 res = await gyanilinks(link)
             elif bool(match(r"https?:\/\/.+\.tnshort\.\S+", link)):
+                await editMessage(ray, f"⏳ <b>Memproses TNShort...</b>\n\n<code>{link}</code>")
                 res = await transcript(link, "https://go.tnshort.net/", "https://market.finclub.in/", 8)
             elif bool(match(r"https?:\/\/(xpshort|push.bdnewsx|techymozo)\.\S+", link)):
                 res = await transcript(link, "https://techymozo.com/", "https://portgyaan.in/", 8)
@@ -495,39 +585,66 @@ async def direct(_, message):
             elif 'pling.com' in link:
                 res = await sync_to_async(pling_bypass, link)
             else:
+                await editMessage(ray, f"🔄 <b>Menggunakan generator direct link generik...</b>\n\n<code>{link}</code>")
                 res = await sync_to_async(direct_link_generator, link)
+            
+            # Format the result for better presentation
+            res = format_bypass_result(link, res)
+            
             if len(res) > 3500:
+                await editMessage(ray, f"📄 <b>Hasil terlalu panjang! Menyiapkan rentry...</b>\n\n<code>{link}</code>")
                 res = await rentry(res)
+            
             await asleep(1)
             e = datetime.now()
             ms = (e - s).seconds
             host = urlparse(link).netloc
+            
+            # Format username
             if message.from_user.username:
                 uname = f'@{message.from_user.username}'
             else:
                 uname = f'<code>{message.from_user.first_name}</code>'
+            
             if uname is not None:
-                cc = f'\n<b>🙎🏻‍♂️ Tugas_Oleh :</b> {uname}'
-            mess3 = f"<b>🌐 <u>Link Sumber</u>: </b>\n<code>{link}</code>\n\n<b>🔄 <u>Hasil Bypass</u>: </b>\n{res}\n\n<b>🕐 Waktu: </b> <code>{ms}s</code>" 
+                cc = f'\n<b>👤 Diminta oleh:</b> {uname}'
+            
+            # Create a more visually appealing message
+            success_message = (
+                f"<b>🌐 <u>Link Original</u></b>\n"
+                f"<code>{link}</code>\n\n"
+                f"<b>✅ <u>Hasil Bypass</u></b>\n"
+                f"{res}\n\n"
+                f"<b>⏱️ Waktu Proses:</b> <code>{ms}s</code>\n"
+                f"<b>🔗 Domain:</b> <code>{host}</code>"
+            )
+            
             buttons = ButtonMaker()
             buttons.ubutton("❤️ 𝚂𝚞𝚙𝚙𝚘𝚛𝚝 𝙼𝚎", "https://telegra.ph/Donate-and-Support-Us-03-21", "footer")
             button = buttons.build_menu(1)
-            await editMessage(ray, mess3 + cc, button)
+            await editMessage(ray, success_message + cc, button)
+            
         except Exception as e:
             await asleep(1)
             buttons = ButtonMaker()
-            buttons.ubutton("💠 Link Yang Disupport", "https://gist.github.com/aenulrofik/20405f81fc9da2d12478a5754b7bf34e")
-            b_limz = buttons.build_menu(1)
-            limz = f"<b><i>⚠️ {e}</i></b>"
-            await editMessage(ray, f"{limz}", b_limz)
-
-
+            buttons.ubutton("📚 Daftar Link Didukung", "https://gist.github.com/aenulrofik/20405f81fc9da2d12478a5754b7bf34e")
+            buttons.ubutton("🔄 Coba Lagi", f"/bypass {link}")
+            b_limz = buttons.build_menu(2)
+            error_message = f"<b>⚠️ Gagal membypass link!</b>\n<i>{str(e)}</i>\n\n<b>Link:</b> <code>{link}</code>"
+            await editMessage(ray, error_message, b_limz)
 
     elif len(message.command) == 1:
          buttons = ButtonMaker()
-         buttons.ubutton("💠 Link Yang Disupport", "https://gist.github.com/aenulrofik/20405f81fc9da2d12478a5754b7bf34e")
-         b_limz1 = buttons.build_menu(1)
-         await sendMessage(message, f"<b>⚠️ Link tidak ditemukan, silahkan masukkan link atau balas link dari pesan !!. </b>", b_limz1)
-         
+         buttons.ubutton("📚 Daftar Link Didukung", "https://gist.github.com/aenulrofik/20405f81fc9da2d12478a5754b7bf34e")
+         buttons.ubutton("💡 Cara Penggunaan", f"/help {BotCommands.DirectCommand[0]}")
+         b_limz1 = buttons.build_menu(2)
+         help_text = (
+            "<b>⚠️ Link tidak ditemukan!</b>\n\n"
+            "<b>Cara Penggunaan:</b>\n"
+            f"<code>/{BotCommands.DirectCommand[0]} link_shorterurl</code>\n"
+            "atau balas ke pesan yang berisi link dengan perintah ini."
+         )
+         await sendMessage(message, help_text, b_limz1)
+
 
 bot.add_handler(MessageHandler(direct, filters=command(BotCommands.DirectCommand) & CustomFilters.authorized))

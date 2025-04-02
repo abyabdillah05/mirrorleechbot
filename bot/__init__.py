@@ -471,6 +471,8 @@ RCLONE_SERVE_PASS = environ.get("RCLONE_SERVE_PASS", "")
 if len(RCLONE_SERVE_PASS) == 0:
     RCLONE_SERVE_PASS = ""
 
+AUTO_DETECT_LINKS = environ.get("AUTO_DETECT_LINKS", "")
+AUTO_DETECT_LINKS = AUTO_DETECT_LINKS.lower() == "true"
 
 config_dict = {
     "ALLDEBRID_API": ALLDEBRID_API,
@@ -530,7 +532,8 @@ config_dict = {
     "USER_SESSION_STRING": USER_SESSION_STRING,
     "USE_SERVICE_ACCOUNTS": USE_SERVICE_ACCOUNTS,
     "WEB_PINCODE": WEB_PINCODE,
-    "YT_DLP_OPTIONS": YT_DLP_OPTIONS
+    "YT_DLP_OPTIONS": YT_DLP_OPTIONS,
+    "AUTO_DETECT_LINKS": AUTO_DETECT_LINKS,
 }
 
 if GDRIVE_ID:
@@ -627,7 +630,11 @@ def get_qb_options():
     else:
         qb_opt = {**qbit_options}
         get_client().app_set_preferences(qb_opt)
-get_qb_options()
+try:
+    get_qb_options()
+except:
+    LOGGER.error("Failed to get qBittorrent options!")
+    pass
 
 log_info("Creating client from BOT_TOKEN...")
 bot = tgClient(

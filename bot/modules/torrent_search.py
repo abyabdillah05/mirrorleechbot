@@ -16,7 +16,7 @@ from bot.helper.ext_utils.status_utils import get_readable_file_size
 PLUGINS = []
 SITES = None
 TELEGRAPH_LIMIT = 300
-
+botnname = bot.me.first_name
 
 async def initiate_search_tools():
     qbclient = await sync_to_async(get_client)
@@ -200,7 +200,7 @@ async def _getResult(search_results, key, message, method):
     path = [
         (
             await telegraph.create_page(
-                title="Pencarian 𝚃𝚛𝚊𝚗𝚜𝚜𝚒𝚘𝚗 𝙲𝚘𝚛𝚎 𝙼𝚒𝚛𝚛𝚘𝚛 - 𝙱𝚘𝚝", content=content
+                title="Pencarian {botnname}", content=content
             )
         )["path"]
         for content in telegraph_content

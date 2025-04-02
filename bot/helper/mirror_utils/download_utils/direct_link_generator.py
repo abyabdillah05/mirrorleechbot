@@ -1530,12 +1530,12 @@ def streamvid(url: str):
                 ):
                     raise DirectDownloadLinkException(f"ERROR: {error[0]}")
                 raise DirectDownloadLinkException(
-                    "ERROR: Direct link tidak ditemukan! URL yang Anda berikan tampaknya tidak valid atau memerlukan kualitas tertentu."
+                    "ERROR: Direct link tidak ditemukan!"
                 )
             if directLink := findall(r'document\.location\.href="(.*)"', script[0]):
                 return directLink[0]
             raise DirectDownloadLinkException(
-                "ERROR: Direct link tidak ditemukan! URL yang Anda berikan tampaknya tidak valid atau memerlukan kualitas tertentu."
+                "ERROR: Direct link tidak ditemukan!"
             )
         elif (qualities_urls := html.xpath('//div[@id="dl_versions"]/a/@href')) and (
             qualities := html.xpath('//div[@id="dl_versions"]/a/text()[2]')
@@ -2138,7 +2138,7 @@ def berkasdrive(url):
     by https://github.com/aenulrofik"""
     pattern = r'^https?://dl\.berkasdrive\.com/.*'
     if not re.match(pattern, url):
-        return "ERROR: URL tidak valid, hanya link dari dl.berkasdrive.com yang didukung"
+        raise DirectDownloadLinkException("ERROR: URL tidak valid, hanya link dari dl.berkasdrive.com yang didukung")
     with create_scraper() as session:
         try:
             sesi = session.get(url).text
@@ -2338,7 +2338,7 @@ def devuploads(url):
     """
     pattern = r'^https?://devuploads\.com/.*'
     if not re.match(pattern, url):
-        return "ERROR: URL tidak valid, gunakan format link <code>https://devuploads.com/xxxxxxxx</code>"
+        raise DirectDownloadLinkException("ERROR: URL tidak valid, gunakan format link <code>https://devuploads.com/xxxxxxxx</code>")
     session = Session()
     res = session.get(url)
     html = HTML(res.text)

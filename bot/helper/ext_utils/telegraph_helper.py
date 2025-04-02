@@ -4,8 +4,9 @@ from asyncio import sleep
 from telegraph.aio import Telegraph
 from telegraph.exceptions import RetryAfterError
 
-from bot import LOGGER, bot_loop
+from bot import LOGGER, bot_loop, bot
 
+botnname = bot.me.first_name
 
 class TelegraphHelper:
     def __init__(self, author_name=None, author_url=None):
@@ -84,14 +85,14 @@ class TelegraphHelper:
                     nxt_page += 1
             await self.edit_page(
                 path=path[prev_page],
-                title="Pencarian 𝚃𝚛𝚊𝚗𝚜𝚜𝚒𝚘𝚗 𝙲𝚘𝚛𝚎 𝙼𝚒𝚛𝚛𝚘𝚛 - 𝙱𝚘𝚝",
+                title="Pencarian ",
                 content=content,
             )
         return
 
 
 telegraph = TelegraphHelper(
-    "𝚃𝚛𝚊𝚗𝚜𝚜𝚒𝚘𝚗 𝙲𝚘𝚛𝚎 𝙼𝚒𝚛𝚛𝚘𝚛 - 𝙱𝚘𝚝", "https://t.me/TranssionCoreMirror_Bot"
+    "{botnname}", "https://t.me/KazumaXcl_Bot"
 )
 
 bot_loop.run_until_complete(telegraph.create_account())

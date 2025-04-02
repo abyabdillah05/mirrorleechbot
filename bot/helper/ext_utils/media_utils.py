@@ -3,6 +3,7 @@ import string
 import glob
 import json
 
+from bot import bot
 from os import path as ospath, cpu_count, listdir
 from aiofiles.os import remove as aioremove, path as aiopath, makedirs
 from time import time
@@ -697,8 +698,11 @@ async def PerformVideoEditor(
             codec_type = stream["codec_type"]
             if codec_type in ["video", "audio"]:
                 for key, value in metadata_fields.items():
+                    cmd.extend(["-metadata:s:{}".format(index), f"ENCODE_BY=@{bot.me.username}"])
                     if metadata.get(key):
                         cmd.extend(["-metadata:s:{}".format(index), f"{value}={metadata[key]}"])
+    
+    cmd.extend(["-metadata", f"ENCODE_BY=@{bot.me.username}"])
     
     # Encoding
     video_codec = listener.video_editor.get("video_codec", "default")
@@ -860,8 +864,12 @@ async def merge_streams(listener, dl_path):
     
     video_files = glob.glob(ospath.join(dir, "**", "*"), recursive=True)
     video_files = [f for f in video_files if any(f.lower().endswith(ext.lower()) for ext in video_extensions)]
+    video_files.sort()
+
     audio_files = glob.glob(ospath.join(dir, "**", "*"), recursive=True)
     audio_files = [f for f in audio_files if any(f.lower().endswith(ext.lower()) for ext in audio_extensions)]
+    audio_files.sort()
+    
     if video_files:
         output_ext = ospath.splitext(video_files[0])[1]
     else:

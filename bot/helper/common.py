@@ -127,7 +127,7 @@ class TaskConfig:
         self.video_editor = None
         self.ve = False
 
-    def getTokenPath(self, dest):
+    def getTokenPath(self, dest, is_downlaod=None):
         if dest.startswith("mtp:"):
             return f"tokens/{self.user_id}.pickle"
         elif (
@@ -137,7 +137,10 @@ class TaskConfig:
         ):
             return "accounts"
         else:
-            return "token.pickle"
+            if is_downlaod:
+                return "token.pickle"
+            else:
+                return f"tokens/{self.user_id}.pickle"
 
     def getConfigPath(self, dest):
         return (
@@ -154,14 +157,17 @@ class TaskConfig:
         elif (
             status == "dl"
             and is_gdrive_link(path)
-            or status == "up"
+        ):
+            token_path = self.getTokenPath(path, True)
+            if not await aiopath.exists(token_path):
+                raise ValueError(f"<b>Token pickle GoogleDrive anda tidak ditemukan! </b>")
+        elif (
+            status == "up"
             and is_gdrive_id(path)
         ):
             token_path = self.getTokenPath(path)
-            if token_path.startswith("tokens/") and status == "up":
-                self.privateLink = True
             if not await aiopath.exists(token_path):
-                raise ValueError(f"<b>Token.pickle atau SAccounts</b> <code>{token_path}</code> <b>tidak ditemukan!</b>")
+                raise ValueError(f"<b>Upload Ke Google Drive Gagal! (Token pickle tidak ditemukan)</b>\n\nGunakan perintah /{BotCommands.GenTokenCommand} untuk memberikan izin dan mulai mirror ke GoogleDrive pribadi anda !")
 
     async def beforeStart(self):
         self.extension_filter = (
@@ -212,6 +218,36 @@ class TaskConfig:
                 self.upDest = (
                     self.user_dict.get("gdrive_id") or config_dict["GDRIVE_ID"]
                 )
+            if (
+                not self.upDest
+                and (
+                    default_upload == "gf"
+                    or not default_upload
+                    and config_dict["DEFAULT_UPLOAD"] == "gf"
+                )
+                or self.upDest == "gf"
+            ):
+                self.upDest = "gofile"
+            if (
+                not self.upDest
+                and (
+                    default_upload == "bh"
+                    or not default_upload
+                    and config_dict["DEFAULT_UPLOAD"] == "bh"
+                )
+                or self.upDest == "bh"
+            ):
+                self.upDest = "buzzheavier"
+            if (
+                not self.upDest
+                and (
+                    default_upload == "pd"
+                    or not default_upload
+                    and config_dict["DEFAULT_UPLOAD"] == "pd"
+                )
+                or self.upDest == "pd"
+            ):
+                self.upDest = "pixeldrain"
             if not self.upDest:
                 raise ValueError("<b>Tujuan upload tidak ditemukan!</b>")
                 

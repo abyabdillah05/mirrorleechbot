@@ -7,12 +7,15 @@ from yt_dlp import YoutubeDL
 from functools import partial
 from time import time
 import re
+import os
+from secrets import token_hex
 
 from bot import DOWNLOAD_DIR, bot, config_dict, LOGGER
 from bot.helper.telegram_helper.message_utils import (
     sendMessage,
     editMessage,
     deleteMessage,
+    customSendVideo,
 )
 from bot.helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.ext_utils.bot_utils import (
@@ -70,6 +73,50 @@ async def select_format(_, query, obj):
         obj.qual = None
         obj.is_cancelled = True
         obj.event.set()
+
+    ## Added Preview Button | @WzdDizzyFlasherr ##
+
+    elif data[1] == "preview":
+        await query.answer("Generating preview...")
+        preview_msg = await sendMessage(message, "<b>⏳ Generating preview...</b>")
+        try:
+            # Generate 5-second preview
+            preview_opts = obj._listener.opts.copy()
+            preview_opts.update({
+                "format": "worst[height>=144]",
+                "postprocessor_args": {
+                    "ffmpeg": ["-ss", "30", "-t", "5"]
+                },
+                "outtmpl": f"{DOWNLOAD_DIR}/preview_{token_hex(5)}.%(ext)s"
+            })
+            
+            with YoutubeDL(preview_opts) as ydl:
+                info = ydl.extract_info(obj._listener.link, download=True)
+                filename = ydl.prepare_filename(info)
+            
+            # Send preview as video
+            await customSendVideo(message, filename, caption="Video preview (5 seconds)")
+            await deleteMessage(preview_msg)
+            # Clean up
+            os.remove(filename)
+        except Exception as e:
+            await editMessage(preview_msg, f"<b>Error generating preview:</b> <code>{e}</code>")
+
+    elif data[1] == "format_info":
+        format_info = """
+<b>Penjelasan Format:</b>
+
+<b>MP3</b> - Audio dalam format MP3 (pilih bitrate)
+<b>Format Audio</b> - Audio dalam berbagai format (AAC, FLAC, dll)
+<b>Video Terbaik</b> - Video dengan kualitas terbaik + audio
+<b>Audio Terbaik</b> - Audio dengan kualitas terbaik
+
+<b>144p-2160p</b> - Resolusi video (semakin tinggi semakin besar ukuran)
+"""
+        await editMessage(message, format_info, obj._main_buttons)
+    
+        ## End Code | @WzdDizzyFlasherr ##
+
     else:
         if data[1] == "sub":
             obj.qual = obj.formats[data[2]][data[3]][1]
@@ -116,6 +163,24 @@ class YtSelection:
     async def get_quality(self, result):
         future = self._event_handler()
         buttons = ButtonMaker()
+        
+        ## Added Info Message | @WzdDizzyFlasherr ##
+
+        info_text = "<b>Video Information:</b>\n"
+        if result.get('title'):
+            info_text += f"<b>Title:</b> <code>{result['title']}</code>\n"
+        if result.get('channel') or result.get('uploader'):
+            info_text += f"<b>Channel:</b> <code>{result['channel'] or result.get('uploader')}</code>\n"
+        if result.get('duration'):
+            duration = get_readable_time(result['duration'])
+            info_text += f"<b>Duration:</b> <code>{duration}</code>\n"
+        if result.get('view_count'):
+            info_text += f"<b>Views:</b> <code>{result['view_count']:,}</code>\n"
+        
+        thumb_url = result.get('thumbnail')
+
+        ## End Code | @WzdDizzyFlasherr ##
+
         if "entries" in result:
             self._is_playlist = True
             for i in ["144", "240", "360", "480", "720", "1080", "1440", "2160"]:
@@ -131,9 +196,16 @@ class YtSelection:
             buttons.ibutton("Formats Audio", "ytq audio")
             buttons.ibutton("Videos Terbaik", "ytq bv*+ba/b")
             buttons.ibutton("Audios Terbaik", "ytq ba/b")
-            buttons.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", "ytq cancel", "footer")
+            buttons.ibutton("Batalkan", "ytq cancel", "footer")
+
+            ## Added Preview Button | @WzdDizzyFlasherr ##
+
+            buttons.ibutton("🎬 Preview", f"ytq preview")
+
+            ## End Code | @WzdDizzyFlasherr ##
+            
             self._main_buttons = buttons.build_menu(3)
-            msg = f"<b>Pilih kualitas video playlist :</b>\n<b>Waktu Habis :</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
+            msg = f"{info_text}\n<b>Pilih kualitas video playlist :</b>\n<b>Waktu Habis :</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
         else:
             format_dict = result.get("formats")
             if format_dict is not None:
@@ -182,11 +254,18 @@ class YtSelection:
                         buttons.ibutton(b_name, f"ytq dict {b_name}")
             buttons.ibutton("MP3", "ytq mp3")
             buttons.ibutton("Format Audio", "ytq audio")
-            buttons.ibutton("Video Terbaik", "ytq bv*+ba/b")
-            buttons.ibutton("Audio Terbaik", "ytq ba/b")
-            buttons.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", "ytq cancel", "footer")
+            buttons.ibutton("Video Terbaik (HD)", "ytq bv*+ba/b")
+            buttons.ibutton("Audio Terbaik (HQ)", "ytq ba/b")
+            buttons.ibutton("Batalkan", "ytq cancel", "footer")
+            ## Added Preview Button | @WzdDizzyFlasherr ##
+            buttons.ibutton("🎬 Preview", f"ytq preview")
+            ## End Code | @WzdDizzyFlasherr ##
+            ## Added Help Button | @WzdDizzyFlasherr ##
+            buttons.ibutton("ℹ️ Format Info", "ytq format_info")
+            ## End Code | @WzdDizzyFlasherr ##
             self._main_buttons = buttons.build_menu(2)
-            msg = f"<b>Pilih kualitas video :</b>\n<b>Waktu habis :</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
+            ## Adjustment | @WzdDizzyFlasherr ##
+            msg = f"{info_text}\n<b>Pilih kualitas video :</b>\n<b>Waktu habis :</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
         self._reply_to = await sendMessage(
             self._listener.message, msg, self._main_buttons
         )
@@ -208,8 +287,8 @@ class YtSelection:
         for tbr, d_data in tbr_dict.items():
             button_name = f"{tbr}K ({get_readable_file_size(d_data[0])})"
             buttons.ibutton(button_name, f"ytq sub {b_name} {tbr}")
-        buttons.ibutton("◀️ 𝙺𝚎𝚖𝚋𝚊𝚕𝚒", "ytq back", "footer")
-        buttons.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", "ytq cancel", "footer")
+        buttons.ibutton("Kembali", "ytq back", "footer")
+        buttons.ibutton("Batalkan", "ytq cancel", "footer")
         subbuttons = buttons.build_menu(2)
         msg = f"<b>Pilih video bitrate untuk</b> <code>{b_name}</code> <b>:</b>\n<b>Waktu habis :</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
         await editMessage(self._reply_to, msg, subbuttons)
@@ -221,8 +300,8 @@ class YtSelection:
         for q in audio_qualities:
             audio_format = f"ba/b-mp3-{q}"
             buttons.ibutton(f"{q}K-mp3", f"ytq {audio_format}")
-        buttons.ibutton("◀️ 𝙺𝚎𝚖𝚋𝚊𝚕𝚒", "ytq back")
-        buttons.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", "ytq cancel")
+        buttons.ibutton("Kembali", "ytq back")
+        buttons.ibutton("Batalkan", "ytq cancel")
         subbuttons = buttons.build_menu(3)
         msg = f"<b>Pilih audio{i} bitrate :</b>\n<b>Waktu habis :</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
         await editMessage(self._reply_to, msg, subbuttons)
@@ -233,8 +312,8 @@ class YtSelection:
         for frmt in ["aac", "alac", "flac", "m4a", "opus", "vorbis", "wav"]:
             audio_format = f"ba/b-{frmt}-"
             buttons.ibutton(frmt, f"ytq aq {audio_format}")
-        buttons.ibutton("◀️ 𝙺𝚎𝚖𝚋𝚊𝚕𝚒", "ytq back", "footer")
-        buttons.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", "ytq cancel", "footer")
+        buttons.ibutton("Kembali", "ytq back", "footer")
+        buttons.ibutton("Batalkan", "ytq cancel", "footer")
         subbuttons = buttons.build_menu(3)
         msg = f"<b>Pilih format audio{i} :</b>\n<b>Waktu habis :</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
         await editMessage(self._reply_to, msg, subbuttons)
@@ -245,8 +324,8 @@ class YtSelection:
         for qual in range(11):
             audio_format = f"{format}{qual}"
             buttons.ibutton(qual, f"ytq {audio_format}")
-        buttons.ibutton("◀️ 𝙺𝚎𝚖𝚋𝚊𝚕𝚒", "ytq aq back")
-        buttons.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", "ytq aq cancel")
+        buttons.ibutton("Kembali", "ytq aq back")
+        buttons.ibutton("Batalkan", "ytq aq cancel")
         subbuttons = buttons.build_menu(5)
         msg = f"<b>Pilih kualitas audio{i} :</b>\n<b>0 = Kualitas terbaik</b>\n<b>10 = Kualitas terburuk</b>\n<b>Waktu habis :</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
         await editMessage(self._reply_to, msg, subbuttons)
@@ -326,6 +405,7 @@ class YtDlp(TaskListener):
             "-up": "",
             "-rcf": "",
             "-t": "",
+            "-trim": "",
         }
 
         args = arg_parser(input_list[1:], arg_base)
@@ -465,9 +545,55 @@ class YtDlp(TaskListener):
 
         options["playlist_items"] = "0"
 
+        trim = args["-trim"]
+        if trim:
+            try:
+                if "-" in trim:
+                    start, end = trim.split("-")
+                    # Convert to seconds if in MM:SS format
+                    if ":" in start:
+                        m, s = start.split(":")
+                        start = int(m) * 60 + int(s)
+                    if ":" in end:
+                        m, s = end.split(":")
+                        end = int(m) * 60 + int(s)
+                        
+                    # Add to options
+                    options["download_ranges"] = {
+                        "fragments": [{"start_time": float(start), "end_time": float(end)}]
+                    }
+                    options["force_keyframes_at_cuts"] = True
+            except Exception as e:
+                LOGGER.error(f"Error parsing trim times: {e}")
+
+        ## Added Progress Message | @WzdDizzyFlasherr ##
+        progress_msg = await sendMessage(self.message, "<b>⏳ Mengekstrak informasi video...</b>")
+        
+        # Add a function to detect platform and set appropriate options
+        def set_platform_options(link, options):
+            if "tiktok.com" in link:
+                # TikTok specific options
+                options["extractor_args"] = {"tiktok": {"embed": True}}
+            elif "instagram.com" in link:
+                # Instagram specific options
+                options["add_header"] = [f"User-Agent: Mozilla/5.0"]
+                options["cookiefile"] = "instagram.txt"
+            elif "twitter.com" in link or "x.com" in link:
+                # Twitter specific options
+                options["add_header"] = [f"User-Agent: Mozilla/5.0"]
+            return options
+
+        # Call this in newEvent
+        options = set_platform_options(self.link, options)
+
+        ## End Code | @WzdDizzyFlasherr ##
+
         try:
             result = await sync_to_async(extract_info, self.link, options)
+            await deleteMessage(progress_msg)
         except Exception as e:
+            await deleteMessage(progress_msg)
+            ## End Code | @WzdDizzyFlasherr ##
             error = str(e).replace("<", " ").replace(">", " ")
             await sendMessage(
                 self.message, 
@@ -523,7 +649,7 @@ async def auto_yt(client, message):
     butt = ButtonMaker()
     butt.ibutton("☁️ Mirror", f"pikayt mirror {user_id}")
     butt.ibutton("☀️ Leech", f"pikayt leech {user_id}")
-    butt.ibutton("⛔️ 𝙱𝚊𝚝𝚊𝚕", f"pikayt cancel {user_id}")
+    butt.ibutton("⛔️ Batal", f"pikayt cancel {user_id}")
     butts = butt.build_menu(2)
     await sendMessage(message, msg, butts)
 
@@ -555,7 +681,7 @@ async def yt_query(_, query):
         del msgs[uid]
         await editMessage(message, "Tugas Dibatalkan.")
 
-#ytregex = r"(https?://(?:www\.)?(?:instagram\.com/(?:tv/|reel/)|youtu\.be/|youtube\.com/(?:shorts/|watch\?|playlist\?)|m\.youtube\.com/(?:shorts/|watch\?)|twitter\.com/|music\.youtube\.com/|facebook\.com/|x\.com/|www\.facebook\.com/|fb\.me/|m\.facebook\.com/)[^\s]+)"
+ytregex = r"(https?://(?:www\.)?(?:instagram\.com/(?:tv/|reel/)|youtu\.be/|youtube\.com/(?:shorts/|watch\?|playlist\?)|m\.youtube\.com/(?:shorts/|watch\?)|twitter\.com/|music\.youtube\.com/|facebook\.com/|x\.com/|www\.facebook\.com/|fb\.me/|m\.facebook\.com/)[^\s]+)"
 
 bot.add_handler(
     MessageHandler(
@@ -573,14 +699,14 @@ bot.add_handler(
     )
 )
 
-#bot.add_handler(
-#    MessageHandler(
-#        auto_yt,
-#        filters=CustomFilters.authorized & filters.regex(
-#            f"{ytregex}"
-#        )
-#    )
-#)
+bot.add_handler(
+    MessageHandler(
+        auto_yt,
+        filters=CustomFilters.authorized & filters.regex(
+            f"{ytregex}"
+        )
+    )
+)
 
 bot.add_handler(
     CallbackQueryHandler(

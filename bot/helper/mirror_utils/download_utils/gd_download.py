@@ -8,7 +8,7 @@ from bot.helper.mirror_utils.status_utils.queue_status import QueueStatus
 from bot.helper.telegram_helper.message_utils import sendMessage, sendStatusMessage
 from bot.helper.ext_utils.bot_utils import sync_to_async
 from bot.helper.ext_utils.task_manager import is_queued, stop_duplicate_check, limit_checker
-from bot.helper.ext_utils.pikachu_utils import quota_check
+from bot.helper.ext_utils.quota_utils import quota_check
 
 
 async def add_gd_download(listener, path):

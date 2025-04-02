@@ -52,7 +52,7 @@ from bot.modules.video_editor import VideEditor
 from urllib.parse import urlparse
 from bot.modules.sourceforge_extract import sourceforgeExtract
 
-urlregex = r"^(https?:\/\/)(www\.)?([a-zA-Z0-9-]+\.[a-zA-Z]{2,})(\/[^#\s]*)?(\?[^#\s]*)?(#.*)?$"
+urlregex = r"^(https?:\/\/)([a-zA-Z0-9-]+\.)*([a-zA-Z0-9-]+\.[a-zA-Z]{2,})(\/[^#\s]*)?(\?[^#\s]*)?(#.*)?$"
 magnetregex = r"magnet:\?xt=urn:(btih|btmh):[a-zA-Z0-9]*\s*"
 class Mirror(TaskListener):
     def __init__(
@@ -553,13 +553,12 @@ async def pixeldrain(client, message):
 async def qb_mirror(client, message):
     Mirror(client, message, isQbit=True).newEvent()
 
-
 async def leech(client, message):
     Mirror(client, message, isLeech=True).newEvent()
 
-
 async def qb_leech(client, message):
     Mirror(client, message, isQbit=True, isLeech=True).newEvent()
+
 
 async def auto_mirror(client, message):
     user_id = message.from_user.id
@@ -584,6 +583,13 @@ async def auto_mirror(client, message):
     except ValueError:
         return
     Mirror(client, message, auto_url=text, auto_mode=True).newEvent()
+
+async def mirror_leech(client, message):
+    cmd = message.command[0].lower()
+    if cmd in BotCommands.LeechCommand:
+        await leech(client, message)
+    else:
+        await mirror(client, message)
 
 bot.add_handler(
     MessageHandler(

@@ -22,7 +22,7 @@ from bot.helper.ext_utils.links_utils import get_mega_link_type
 from bot.helper.mirror_utils.status_utils.mega_download_status import MegaDownloadStatus
 from bot.helper.mirror_utils.status_utils.queue_status import QueueStatus
 from bot.helper.ext_utils.task_manager import is_queued, stop_duplicate_check, limit_checker
-from bot.helper.ext_utils.pikachu_utils import quota_check
+from bot.helper.ext_utils.quota_utils import quota_check
 
 
 class MegaAppListener(MegaListener):

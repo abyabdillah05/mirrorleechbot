@@ -1,955 +1,138 @@
-import re
-import httpx
-import random
 import asyncio
-from asyncio import sleep as asleep
-from http.cookiejar import MozillaCookieJar
-from random import randint, choice
-from json import loads
+import httpx
+import niquests
+import re
+import json
+import time
+import os
+import random
+from datetime import datetime
 
+###############################
+## Import Libraries Pyrogram ##
+###############################
+
+from pyrogram import filters
 from pyrogram.filters import (command,
                               regex)
-from pyrogram.handlers import MessageHandler, CallbackQueryHandler
-from pyrogram.types import InputMediaPhoto, InputMediaVideo
-from pyrogram import filters
+from pyrogram.handlers import (MessageHandler,
+                               CallbackQueryHandler)
+from pyrogram.types import (InputMediaPhoto,
+                            InputMediaVideo)
+
+####################################################
+
+from json import loads
+from random import randint
+from http.cookiejar import MozillaCookieJar
+
+###################################
+## Import Libraries From Project ##
+###################################
 
 from bot import (bot,
-                 LOGGER,
-                 config_dict)
-from bot.modules.ytdlp import YtDlp
-from bot.helper.telegram_helper.message_utils import(sendMessage,
-                                                     editMessage,
-                                                     deleteMessage,
-                                                     customSendAudio,
-                                                     customSendVideo,)
+                 LOGGER)
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.telegram_helper.button_build import ButtonMaker
+from bot.helper.telegram_helper.message_utils import (sendMessage,
+                                                      deleteMessage,
+                                                      editMessage,
+                                                      customSendAudio,
+                                                      customSendVideo)
 
+########################
+## Required Variables ##
+########################
 
-####################
-## Auto Detect TikTok
-####################
+tiktok = []
+user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0"
+tiktokregex = r"(https?://(?:www\.)?[a-zA-Z0-9.-]*tiktok\.com/)"
 
-tiktokregex = r"(https?:\/\/)?(vm|vt|www|v)?\.?tiktok\.com\/"
-
-user_agents = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36",
-    "Mozilla/5.0 (iPhone; CPU iPhone OS 14_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1 Mobile/15E148 Safari/604.1",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36"
-]
-
-# Storage dictionaries
-tiktok = [] ## For auto tiktok download
-tiktok_searches = {} ## For paginated search
-
-####################
-## Helper Functions
-####################
-
-def format_count(count):
-    try:
-        count = int(count)
-        if count >= 1000000:
-            return f"{count/1000000:.1f}M"
-        elif count >= 1000:
-            return f"{count/1000:.1f}K"
-        else:
-            return str(count)
-    except:
-        return str(count)
-
-def format_duration(seconds):
-    try:
-        seconds = int(seconds)
-        minutes = seconds // 60
-        seconds %= 60
-        return f"{minutes}:{seconds:02d}"
-    except:
-        return "0:00"
-
-def get_file_size(duration):
-    try:
-        minutes = duration / 60
-        size_mb = minutes * 5
-        
-        if size_mb > 1024:
-            return f"{size_mb/1024:.2f} GB"
-        else:
-            return f"{size_mb:.2f} MB"
-    except:
-        return "Unknown size"
-
-
-####################
-## tiktok downloader
-####################
-
-async def tiktokdl(client, message, url, audio=False, type="video"):
+############################################
+## Tiktok Downloader | Credit @aenulrofik ##
+############################################
+async def tiktokdl(client, message, url, audio=False):
+    url = url
     if message.from_user.username:
         uname = f'@{message.from_user.username}'
     else:
         uname = f'<code>{message.from_user.first_name}</code>'
-    
     if audio:
         mess = await sendMessage(message, f"<b>⌛️Mendownload audio dari tiktok, silahkan tunggu sebentar...</b>")
     else:
         mess = await sendMessage(message, f"<b>⌛️Mendownload video dari tiktok, silahkan tunggu sebentar...</b>")
-    
-    try:
-        async with httpx.AsyncClient(follow_redirects=True) as client:
-            r = await client.get(url)
-            final_url = str(r.url)
-            
-            video_id = None
-            
-            pattern1 = r"(?:https?://)?(?:www\.)?tiktok\.com/@[\w\.-]+/video/(\d+)"
-            pattern2 = r"(?:https?://)?(?:www\.)?tiktok\.com/t/(\w+)"
-            pattern3 = r"(?:https?://)?(?:www\.)?vm\.tiktok\.com/(\w+)"
-            pattern4 = r"(?:https?://)?(?:www\.)?vt\.tiktok\.com/(\w+)"
-            
-            match1 = re.search(pattern1, final_url)
-            if match1:
-                video_id = match1.group(1)
+    async with niquests.AsyncSession() as client:
+        try:
+            r = await client.get(url, allow_redirects=False)
+            if r.status_code == 301:
+                new_url = r.headers['Location']
+                r = await client.get(new_url)
+                hasil = r.url
             else:
-                vm_code = None
-                for pattern in [pattern2, pattern3, pattern4]:
-                    match = re.search(pattern, final_url)
-                    if match:
-                        vm_code = match.group(1)
-                        break
-                
-                if not vm_code and "tiktok.com" in final_url:
-                    path_parts = final_url.split("/")
-                    for part in path_parts:
-                        if part.isdigit() and len(part) > 8:
-                            video_id = part
-                            break
-                
-                if vm_code and not video_id:
-                    try:
-                        headers = {
-                            "User-Agent": choice(user_agents),
-                            "Referer": "https://tiksave.ai/"
-                        }
-                        
-                        data = {
-                            "id": url
-                        }
-                        
-                        response = await client.post(
-                            "https://tiksave.ai/api/download", 
-                            headers=headers,
-                            data=data
-                        )
-                        
-                        if response.status_code == 200:
-                            result = response.json()
-                            if "id" in result:
-                                video_id = result["id"]
-                    except Exception as e:
-                        LOGGER.error(f"Error resolving VM code: {e}")
-            
-            if not video_id:
-                try:
-                    await deleteMessage(mess)
-                    if audio:
-                        YtDlp(client, message, yturl=url, options='-x --audio-format mp3', isLeech=True).newEvent()
-                    else:
-                        YtDlp(client, message, yturl=url, isLeech=True).newEvent()
-                    return
-                except Exception as e:
-                    LOGGER.error(f"Error with yt-dlp fallback: {e}")
-                    await editMessage(mess, f"<b>❌ Error:</b> Tidak dapat mengekstrak ID video dari URL: {url}\n\nLink yang anda berikan sepertinya salah atau belum support, silahkan coba dengan link yang lain!")
-                    return None
-            
-            try:
-                api_url = f"https://api16-normal-useast5.us.tiktokv.com/aweme/v1/feed/?aweme_id={video_id}"
+                hasil = r.url
+        except Exception as e:
+            await sendMessage(mess, f"Terjadi kesalahan saat mencoba mengakses url, silahkan coba kembali.\n\n<blockquote>{e}</blockquote>")
+            await deleteMessage(mess)
+            return None
+        
+        pattern = r"^(?:https?://(?:www\.)?tiktok\.com)/(?P<user>[\a-zA-Z0-9-]+)(?P<content_type>video|photo)+/(?P<id>\d+)"
+        match = re.match(pattern, str(hasil))
+        if match:  
+            content_type = match.group("content_type")
+            id = match.group('id')
+        else:
+            await editMessage(message, f"Link yang anda berikan sepertinya salah atau belum support, silahkan coba dengan link yang lain !")
+            return None
+        
+    async with niquests.AsyncSession() as client:
+        data = ""
+        try:
+            while len(data) == 0:
                 r = await client.get(
-                    api_url,
-                    headers={"User-Agent": choice(user_agents)},
-                    timeout=10
-                )
-                
-                data = r.json()
-                
-                if "aweme_list" in data and len(data["aweme_list"]) > 0:
-                    item = data["aweme_list"][0]
-                    
-                    music_url = item["music"]["play_url"]["url_list"][-1]
-                    music_title = item["music"]["title"]
-                    
-                    if "video" in item:
-                        video_desc = item.get("desc", "TikTok Video")
-                        capt = f"<code>{video_desc}</code>\n\n<b>Tugas Oleh:</b> {uname}"
-                        
-                        if audio is True or type == "audio":
-                            await customSendAudio(message, music_url, music_title, None, None, None, None, None)
-                        else:
-                            if type == "nowm":
-                                video_url = None
-                                for url in item["video"]["play_addr"]["url_list"]:
-                                    if "watermark=0" in url:
-                                        video_url = url
-                                        break
-                                
-                                if not video_url:
-                                    video_url = item["video"]["play_addr"]["url_list"][-1]
-                            else:
-                                video_url = item["video"]["play_addr"]["url_list"][-1]
-                                
-                            await customSendVideo(message, video_url, capt, None, None, None, None, None)
-                    
-                    elif "image_post_info" in item:
-                        if audio is True or type == "audio":
-                            await customSendAudio(message, music_url, music_title, None, None, None, None, None)
-                        else:
-                            photo_urls = []
-                            for image in item["image_post_info"]["images"]:
-                                url = image["display_image"]["url_list"][-1]
-                                photo_urls.append(url)
-                            
-                            photo_groups = [photo_urls[i:i+10] for i in range(0, len(photo_urls), 10)]
-                            for photo_group in photo_groups:
-                                await message.reply_media_group([InputMediaPhoto(photo_url) for photo_url in photo_group])
-                    
-                    else:
-                        raise Exception("Unsupported content type")
-                
-                else:
-                    raise Exception("No data from TikTok API")
-                    
-            except Exception as e:
-                LOGGER.error(f"TikTok API error: {e}")
-                
-                headers = {
-                    "User-Agent": choice(user_agents),
-                    "Referer": "https://tiksave.ai/"
-                }
-                
-                data = {
-                    "id": url  
-                }
-                
-                response = await client.post(
-                    "https://tiksave.ai/api/download", 
-                    headers=headers,
-                    data=data,
-                    timeout=15
-                )
-                
-                if response.status_code != 200:
-                    raise Exception(f"TikSave API Error: Status {response.status_code}")
-                
-                result = response.json()
-                
-                if "type" in result and result["type"] in ["success", "ok"]:
-                    if audio is True or type == "audio":
-                        if "music" in result and result["music"]:
-                            music_url = result["music"]
-                            title = result.get("title", "TikTok Audio")
-                            await customSendAudio(message, music_url, title, None, None, None, None, None)
-                        else:
-                            raise Exception("Audio not found")
-                    else:
-                        video_url = None
-                        if type == "nowm" and "video_no_wm" in result and result["video_no_wm"]:
-                            video_url = result["video_no_wm"]
-                        elif "video" in result and result["video"]:
-                            video_url = result["video"]
-                        else:
-                            raise Exception("Video not found")
-                        
-                        title = result.get("title", "TikTok Video")
-                        capt = f"<code>{title}</code>\n\n<b>Tugas Oleh:</b> {uname}"
-                        await customSendVideo(message, video_url, capt, None, None, None, None, None)
-                else:
-                    await deleteMessage(mess)
-                    if audio:
-                        YtDlp(client, message, yturl=url, options='-x --audio-format mp3', isLeech=True).newEvent()
-                    else:
-                        YtDlp(client, message, yturl=url, isLeech=True).newEvent()
-                    return
-    
-    except Exception as e:
-        LOGGER.error(f"Error in TikTok download: {str(e)}")
-        try:
-            await editMessage(mess, "<b>Mencoba metode alternatif untuk mengunduh...</b>")
-            await asleep(2)
-            await deleteMessage(mess)
-            
-            if audio:
-                YtDlp(client, message, yturl=url, options='-x --audio-format mp3', isLeech=True).newEvent()
-            else:
-                if type == "nowm":
-                    YtDlp(client, message, yturl=url, options='--no-check-certificate', isLeech=True).newEvent()
-                else:
-                    YtDlp(client, message, yturl=url, isLeech=True).newEvent()
-        except Exception as e2:
-            LOGGER.error(f"Final fallback error: {str(e2)}")
-            await message.reply_text(f"<b>❌ Error:</b> Gagal mengunduh: {str(e)}\n\nFinal error: {str(e2)}")
-    finally:
-        try:
-            await deleteMessage(mess)
-        except:
-            pass
-
-
-####################
-## tiktok search
-## tiktok scroll
-####################
-
-async def get_tiktok_results(keyword, page=1, count=5):
-    try:
-        try:
-            jar = MozillaCookieJar()
-            jar.load("tiktok.txt", ignore_discard=True, ignore_expires=True)
-            
-            cookies = {}
-            for cookie in jar:
-                cookies[cookie.name] = cookie.value
-        except Exception as e:
-            LOGGER.warning(f"Could not load TikTok cookies: {e.__class__.__name__}. Proceeding without cookies.")
-            cookies = {}
-        
-        offset = (page - 1) * count
-        
-        params = {
-            "aid": 1988,
-            "app_language": "en",
-            "app_name": "tiktok_web",
-            "browser_language": "en-US",
-            "browser_name": "Mozilla",
-            "browser_online": True,
-            "browser_platform": "Win32",
-            "browser_version": "5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-            "channel": "tiktok_web",
-            "cookie_enabled": True,
-            "device_id": 7335161018286622210,
-            "device_platform": "web_pc",
-            "device_type": "web_h264",
-            "focus_state": True,
-            "from_page": "search",
-            "history_len": 3,
-            "is_fullscreen": False,
-            "is_page_visible": True,
-            "keyword": keyword,
-            "offset": offset,
-            "os": "windows",
-            "priority_region": "id",
-            "referer": "",
-            "region": "id",
-            "screen_height": 1080,
-            "screen_width": 1920,
-            "search_source": "normal_search",
-            "tz_name": "Asia/Jakarta",
-            "count": count
-        }
-        
-        params["search_type"] = "video"
-        
-        video_urls = [
-            f"https://api16-normal-c-useast1a.tiktokv.com/aweme/v1/search/?{keyword}&count=20&offset={offset}",
-            f"https://api16-core-c-useast1a.tiktokv.com/aweme/v1/search/?{keyword}&count=20&offset={offset}",
-            f"https://api.tiktokv.com/aweme/v1/search/?{keyword}&count=20&offset={offset}"
-        ]
-        
-        api_endpoints = [
-            "https://www.tiktok.com/api/search/item/full/",
-            "https://m.tiktok.com/api/search/item/full/",
-            "https://www.tiktok.com/api/search/general/full/",
-            "https://api19-normal-c-alisg.tiktokv.com/aweme/v1/search/item/"
-        ]
-        
-        results = None
-        error_messages = []
-        
-        for url in video_urls:
-            try:
-                async with httpx.AsyncClient() as client:
-                    headers = {
-                        "User-Agent": choice(user_agents),
-                        "Accept": "application/json",
-                        "X-Requested-With": "XMLHttpRequest"
-                    }
-                    
-                    response = await client.get(
-                        url=url,
-                        headers=headers,
-                        timeout=15,
-                        follow_redirects=True
+                        url=f"https://api16-normal-useast5.us.tiktokv.com/aweme/v1/feed/?aweme_id={id}",
+                        headers={
+                            "User-Agent": user_agent,
+                        }
                     )
-                    
-                    if response.status_code == 200 and response.text.strip():
-                        try:
-                            data = response.json()
-                            
-                            if 'aweme_list' in data and len(data['aweme_list']) > 0:
-
-                                aweme_list = data['aweme_list']
-                                
-                                total_count = data.get('total', 100 * count)
-                                total_pages = 0
-                                
-                                processed_results = []
-                                for item in aweme_list[:count]:
-                                    try:
-                                        video_id = item.get('aweme_id', '')
-                                        author = item.get('author', {}).get('unique_id', 'Unknown')
-                                        nickname = item.get('author', {}).get('nickname', 'Unknown')
-                                        desc = item.get('desc', 'TikTok Video')
-                                        
-                                        play_addr = item.get('video', {}).get('play_addr', {})
-                                        video_url = ''
-                                        if 'url_list' in play_addr and play_addr['url_list']:
-                                            video_url = play_addr['url_list'][0]
-                                        
-                                        stats = {
-                                            'likes': item.get('statistics', {}).get('digg_count', 0),
-                                            'comments': item.get('statistics', {}).get('comment_count', 0),
-                                            'plays': item.get('statistics', {}).get('play_count', 0),
-                                            'shares': item.get('statistics', {}).get('share_count', 0)
-                                        }
-                                        
-                                        thumb = None
-                                        cover = item.get('video', {}).get('cover', {})
-                                        if 'url_list' in cover and cover['url_list']:
-                                            thumb = cover['url_list'][0]
-                                            
-                                        dynamic_cover = item.get('video', {}).get('dynamic_cover', {})
-                                        if not thumb and 'url_list' in dynamic_cover and dynamic_cover['url_list']:
-                                            thumb = dynamic_cover['url_list'][0]
-                                        
-                                        duration = item.get('video', {}).get('duration', 15) // 1000  # Convert from ms
-                                        
-                                        tiktok_url = f"https://www.tiktok.com/@{author}/video/{video_id}"
-                                        
-                                        processed_results.append({
-                                            'id': video_id,
-                                            'author': author,
-                                            'nickname': nickname,
-                                            'desc': desc,
-                                            'stats': stats,
-                                            'thumb': thumb,
-                                            'url': video_url or tiktok_url,  # Use direct video URL if available
-                                            'duration': duration
-                                        })
-                                    except Exception as e:
-                                        LOGGER.warning(f"Error processing TikTok aweme item: {str(e)}")
-                                        continue
-                                
-                                if processed_results:
-                                    return processed_results, None, page, total_pages
-                        except Exception as e:
-                            error_messages.append(f"Direct API URL {url} error: {str(e)}")
-                            LOGGER.warning(f"Error with TikTok direct API {url}: {str(e)}")
-                            continue
-            except Exception as e:
-                error_messages.append(f"Request to direct URL {url} failed: {str(e)}")
-                LOGGER.warning(f"Error with request to direct URL {url}: {str(e)}")
-                continue
-                
-        for endpoint in api_endpoints:
-            try:
-                async with httpx.AsyncClient() as client:
-                    headers = {
-                        "User-Agent": choice(user_agents),
-                        "Referer": "https://www.tiktok.com/search?q=" + keyword,
-                        "Origin": "https://www.tiktok.com"
-                    }
-                    
-                    response = await client.get(
-                        url=endpoint,
-                        params=params,
-                        cookies=cookies,
-                        headers=headers,
-                        timeout=15,
-                        follow_redirects=True
-                    )
-                    
-                    if response.status_code == 200 and response.text.strip():
-                        try:
-                            data = response.json()
-                            
-                            if 'item_list' in data and len(data['item_list']) > 0:
-                                video_items = [item for item in data['item_list'] if item.get('type') in [1, 'video', None]]
-                                
-                                if not video_items:
-                                    continue
-                                
-                                total_results = data.get('total', 0)
-                                total_pages = 0                                 
-                                processed_results = []
-                                for item in video_items[:count]:
-                                    try:                                     
-                                        video_id = item.get('id', '')
-                                        author = item.get('author', {}).get('uniqueId', 'Unknown')
-                                        nickname = item.get('author', {}).get('nickname', 'Unknown')
-                                        desc = item.get('desc', 'TikTok Video')
-                                        
-                                        video_url = ''
-                                        if 'video' in item and 'playAddr' in item['video']:
-                                            play_addr = item['video']['playAddr']
-                                            if isinstance(play_addr, str):
-                                                video_url = play_addr
-                                            elif isinstance(play_addr, dict) and 'url_list' in play_addr:
-                                                video_url = play_addr['url_list'][0]
-                                        
-                                        stats = {
-                                            'likes': item.get('stats', {}).get('diggCount', 0),
-                                            'comments': item.get('stats', {}).get('commentCount', 0),
-                                            'plays': item.get('stats', {}).get('playCount', 0),
-                                            'shares': item.get('stats', {}).get('shareCount', 0)
-                                        }
-                                        
-                                        thumb = None
-                                        if 'coverLarger' in item:
-                                            thumb = item['coverLarger']
-                                        elif 'cover' in item:
-                                            thumb = item['cover']
-                                        elif 'video' in item and 'cover' in item['video']:
-                                            thumb = item['video']['cover']
-                                            if isinstance(thumb, dict) and 'url_list' in thumb:
-                                                thumb = thumb['url_list'][0]
-                                        
-                                        duration = 15 
-                                        if 'video' in item and 'duration' in item['video']:
-                                            duration = item['video']['duration']
-                                        
-                                        tiktok_url = f"https://www.tiktok.com/@{author}/video/{video_id}"
-                                        
-                                        processed_results.append({
-                                            'id': video_id,
-                                            'author': author,
-                                            'nickname': nickname,
-                                            'desc': desc,
-                                            'stats': stats,
-                                            'thumb': thumb,
-                                            'url': video_url or tiktok_url,  # Use direct URL if available
-                                            'duration': duration
-                                        })
-                                    except Exception as e:
-                                        LOGGER.warning(f"Error processing TikTok item: {str(e)}")
-                                        continue
-                                
-                                if processed_results:
-                                    return processed_results, None, page, total_pages
-                        except Exception as e:
-                            error_messages.append(f"API {endpoint} error: {str(e)}")
-                            LOGGER.warning(f"Error with TikTok API {endpoint}: {str(e)}")
-                            continue
-            except Exception as e:
-                error_messages.append(f"Request to {endpoint} failed: {str(e)}")
-                LOGGER.warning(f"Error with request to {endpoint}: {str(e)}")
-                continue
-        
-        try:
-            search_url = f"https://www.tiktok.com/search/video?q={keyword}"
-            
-            async with httpx.AsyncClient() as client:
-                headers = {
-                    "User-Agent": choice(user_agents),
-                    "Accept": "text/html,application/xhtml+xml,application/xml",
-                    "Accept-Language": "en-US,en;q=0.9",
-                    "Referer": "https://www.tiktok.com/"
-                }
-                
-                response = await client.get(search_url, headers=headers, follow_redirects=True)
-                
-                html_content = response.text
-                
-                sigi_state_match = re.search(r'window\[\'SIGI_STATE\'\]=(.*?);\s*window\[\'SIGI_RETRY\'\]', html_content)
-                if sigi_state_match:
-                    json_data = sigi_state_match.group(1)
-                    data = loads(json_data)
-                    
-                    if 'ItemModule' in data:
-                        items = list(data['ItemModule'].values())
-                        
-                        total_results = len(items)
-                        if total_results > 0:
-                            total_pages = 0
-                            
-                            start_idx = (page - 1) * count
-                            if start_idx >= total_results:
-                                start_idx = start_idx % total_results
-                                
-                            end_idx = min(start_idx + count, total_results)
-                            page_items = items[start_idx:end_idx]
-                            if len(page_items) < count and end_idx == total_results:
-                                page_items.extend(items[0:count-len(page_items)])
-                            
-                            processed_results = []
-                            for item in page_items:
-                                try:
-                                    video_id = item.get('id', '')
-                                    author = item.get('author', 'Unknown')
-                                    nickname = item.get('nickname', author)
-                                    desc = item.get('desc', 'TikTok Video')
-                                    
-                                    video_url = ''
-                                    if 'video' in item:
-                                        if 'playAddr' in item['video']:
-                                            play_addr = item['video']['playAddr']
-                                            if isinstance(play_addr, str):
-                                                video_url = play_addr
-                                            elif isinstance(play_addr, dict) and 'url_list' in play_addr:
-                                                video_url = play_addr['url_list'][0]
-                                    
-                                    stats = {
-                                        'likes': item.get('stats', {}).get('diggCount', 0),
-                                        'comments': item.get('stats', {}).get('commentCount', 0),
-                                        'plays': item.get('stats', {}).get('playCount', 0),
-                                        'shares': item.get('stats', {}).get('shareCount', 0)
-                                    }
-                                    
-                                    thumb = None
-                                    if 'thumbnail_url' in item:
-                                        thumb = item['thumbnail_url']
-                                    elif 'video' in item and 'cover' in item['video']:
-                                        thumb = item['video']['cover']
-                                        if isinstance(thumb, dict) and 'url_list' in thumb:
-                                            thumb = thumb['url_list'][0]
-                                        
-                                    duration = item.get('video', {}).get('duration', 15)
-                                    
-                                    tiktok_url = f"https://www.tiktok.com/@{author}/video/{video_id}"
-                                    
-                                    processed_results.append({
-                                        'id': video_id,
-                                        'author': author,
-                                        'nickname': nickname,
-                                        'desc': desc,
-                                        'stats': stats,
-                                        'thumb': thumb,
-                                        'url': video_url or tiktok_url,  # Use direct URL if available
-                                        'duration': duration
-                                    })
-                                except Exception as e:
-                                    LOGGER.warning(f"Error processing TikTok HTML item: {str(e)}")
-                                    continue
-                            
-                            if processed_results:
-                                return processed_results, None, page, total_pages
+                r.raise_for_status()
+                data = r.text
+            data = loads(data)
         except Exception as e:
-            LOGGER.warning(f"Error with TikTok HTML scraping: {str(e)}")
-            error_messages.append(f"HTML scraping failed: {str(e)}")
-        
-        mock_results = []
-        for i in range(count):
-            idx = (page - 1) * count + i + 1
-            mock_results.append({
-                'id': f'mock{idx}',
-                'author': 'tiktok_user',
-                'nickname': 'TikTok User',
-                'desc': f'Mock TikTok video #{idx} for search "{keyword}"',
-                'stats': {
-                    'likes': randint(100, 1000000),
-                    'comments': randint(10, 50000),
-                    'plays': randint(1000, 10000000),
-                    'shares': randint(10, 5000)
-                },
-                'thumb': 'https://telegra.ph/file/9ac54179d1dbbdd3490d5.jpg',
-                'url': f'https://www.tiktok.com/@tiktok_user/video/mock{idx}',
-                'duration': randint(10, 60)
-            })
-        
-        LOGGER.warning(f"Using mock data for TikTok search '{keyword}' page {page}")
-        return mock_results, None, page, 0 
-        
-    except Exception as e:
-        LOGGER.error(f"Error in TikTok search: {str(e)}")
-        return None, f"<b>❌ Error:</b> {str(e)}", 0, 0
-    
-
-async def tiktok_paginated_search(_, message):
-    """Handle TikTok search with pagination"""
-    uid = message.from_user.id
-    
-    # Get search keyword
-    if len(message.command) > 1:
-        keyword = ' '.join(message.command[1:])
-        is_random = False
-    else:
-        # Random popular tags if no keyword provided
-        popular_tags = [
-            "fyp", "viral", "trending", "dance", "comedy", "music", "funny",
-            "challenge", "fashion", "food", "beauty", "foryou", "foryoupage", 
-            "tiktok", "indonesia", "anime", "gaming", "memes", "fitness"
-        ]
-        keyword = choice(popular_tags)
-        is_random = True
-    
-    # Show loading message
-    loading_text = "<b>⌛️ Sedang mencari video TikTok"
-    if is_random:
-        loading_text += " random"
-    loading_text += f"...</b>\n\n<code>🔎 {keyword}</code>"
-    
-    mess = await sendMessage(message, loading_text)
-    
-    try:
-        # Get first page of results
-        results, error_msg, page, total_pages = await get_tiktok_results(keyword)
-        
-        if error_msg:
-            await editMessage(mess, error_msg)
-            await asyncio.sleep(5)
+            await sendMessage(mess, f"Hai {uname}, Terjadi kesalahan saat mencoba mengambil data, silahkan coba kembali.\n\n<blockquote>{e}</blockquote>")
             await deleteMessage(mess)
-            return
-        
-        if not results or len(results) == 0:
-            await editMessage(mess, f"<b>❌ Tidak ditemukan hasil untuk:</b> <code>{keyword}</code>")
-            await asyncio.sleep(5)
-            await deleteMessage(mess)
-            return
-            
-        # Get the first video from results
-        video = results[0]
-        
-        # Format the message with detailed information
-        msg = f"<b>🔰 {config_dict.get('BOT_NAME', 'TikTok Search')}</b>\n\n"
-        msg += f"<b>🎬 Video:</b>\n<code>{video['desc']}</code>\n\n"
-        msg += f"<b>⏱️ Duration:</b> <code>{format_duration(video['duration'])}</code>\n"
-        msg += f"<b>💾 Size:</b> <code>{get_file_size(video['duration'])}</code> (720p)\n\n"
-        msg += f"<b>👤 Creator:</b> <code>{video['nickname']} (@{video['author']})</code>\n"
-        msg += f"<b>❤️ Likes:</b> <code>{format_count(video['stats']['likes'])}</code>\n"
-        msg += f"<b>👁️ Views:</b> <code>{format_count(video['stats']['plays'])}</code>\n"
-        msg += f"<b>💬 Comments:</b> <code>{format_count(video['stats']['comments'])}</code>\n\n"
-        
-        # Add thumbnail URL if available
-        if video.get('thumb'):
-            msg += f"<b>🖼️ Thumbnail:</b> <a href='{video['thumb']}'>Link</a>\n\n"
-            
-        msg += f"<b>🔗 Video URL:</b> <a href='{video['url']}'>Open in TikTok</a>\n\n"
-        msg += f"<b>Halaman {page}</b>"
-        
-        # Create navigation buttons
-        butt = ButtonMaker()
-        
-        # Navigation row
-        if page > 1:
-            butt.ibutton("◀️ Prev", f"ttsearch prev {uid} {page} {keyword}")
-        else:
-            butt.ibutton("◀️", f"ttsearch none {uid}")
-            
-        butt.ibutton("🔗 Join", f"ttsearch join {uid}")
-        
-        # Always show Next since we have unlimited pages
-        butt.ibutton("Next ▶️", f"ttsearch next {uid} {page} {keyword}")
-        
-        # Close button
-        butt.ibutton("⛔️ Close", f"ttsearch close {uid}")
-        
-        # Download buttons
-        butt.ibutton("🎞️ Download", f"ttsearch dl {uid}")
-        butt.ibutton("🔊 Audio", f"ttsearch audio {uid}")
-        
-        # Build the menu with specified layout
-        butts = butt.build_menu(3, 2)
-        
-        # Store data for callback handling
-        tiktok_searches[uid] = {
-            "keyword": keyword,
-            "page": page,
-            "total_pages": total_pages,
-            "results": results,
-            "message": message,
-            "current_video": video
-        }
-        
-        # Update the message with results
-        await editMessage(mess, msg, butts)
-        tiktok_searches[uid]["sent_message"] = mess
-        
-    except Exception as e:
-        LOGGER.error(f"TikTok search error: {str(e)}")
-        await editMessage(mess, f"<b>❌ Error:</b> {str(e)}")
-        await asyncio.sleep(5)
-        await deleteMessage(mess)
-
-async def tiktok_search_callback(_, query):
-    """Handle TikTok search pagination callbacks"""
-    message = query.message
-    user_id = query.from_user.id
-    data = query.data.split()
-    
-    action = data[1]
-    uid = int(data[2])
-    
-    # Check if task exists
-    if uid not in tiktok_searches:
-        return await query.answer("Tugas tidak ditemukan atau sudah selesai.", show_alert=True)
-    
-    search_data = tiktok_searches[uid]
-    keyword = search_data["keyword"]
-    video = search_data["current_video"]
-    
-    # Allow owners to use any buttons, but restrict regular users
-    is_owner = user_id in config_dict.get('OWNER_ID', [])
-    is_sudo = user_id in config_dict.get('SUDO_USERS', [])
-    
-    # Check if user is authorized
-    if not is_owner and not is_sudo and user_id != uid:
-        return await query.answer("Bukan tugas Anda!", show_alert=True)
-    
-    if action == "none":
-        await query.answer("Sudah mentok halaman nya.", show_alert=True)
-        return
-    
-    elif action == "close":
-        # Show cancellation message before deletion
-        await editMessage(message, "<b>Tugas pencarian dibatalkan.</b>")
-        await query.answer("Tugas Dibatalkan.", show_alert=True)
-        await asyncio.sleep(2)
-        
-        # Delete messages
+            return None
         try:
-            await message.delete()
-            
-            # Also try to delete the command message if possible
-            orig_msg = search_data.get("message")
-            if orig_msg:
-                try:
-                    await orig_msg.delete()
-                except:
-                    pass
-        except:
-            pass
-        
-        # Remove from dictionary
-        if uid in tiktok_searches:
-            del tiktok_searches[uid]
-        return
-    
-    elif action == "join":
-        # Join channel button
-        butt = ButtonMaker()
-        butt.ubutton("🔗 Join Dizzy Project", "https://t.me/DizzyStuffProject")
-        butts = butt.build_menu(1)
-        
-        await editMessage(
-            message,
-            caption=f"<b>📣 Join our channel for updates and more features!</b>\n\n<i>Click the button below to join, then return to your search.</i>",
-            buttons=butts
-        )
-        
-        # Add flag to know we need to return to search results
-        search_data["return_from_join"] = True
-        return
-        
-    elif action == "dl":
-        # Download the video
-        await query.answer("Mendownload video...")
-        
-        # Get video URL from current result
-        video_url = video.get('url', '')
-        if not video_url:
-            return await query.answer("URL Video tidak ditemukan", show_alert=True)
-        
-        # Pass to tiktokdl function
-        await tiktokdl(bot, search_data["message"], url=video_url, type="video")
-        return
-        
-    elif action == "audio":
-        # Download as audio
-        await query.answer("Mendownload audio...")
-        
-        # Get video URL from current result
-        video_url = video.get('url', '')
-        if not video_url:
-            return await query.answer("URL Video tidak ditemukan", show_alert=True)
-        
-        # Pass to tiktokdl function
-        await tiktokdl(bot, search_data["message"], url=video_url, audio=True)
-        return
-    
-    elif action in ["prev", "next"]:
-        # Show loading message
-        await editMessage(message, "<b>⌛️ Loading page...</b>")
-        
-        # Get current page from data
-        current_page = int(data[3])
-        
-        # Calculate target page
-        if action == "prev":
-            page = current_page - 1
-        else:
-            page = current_page + 1
-            
-        # Fetch new results
-        results, error_msg, page, total_pages = await get_tiktok_results(keyword, page=page)
-        
-        if error_msg:
-            await editMessage(message, error_msg)
-            await asyncio.sleep(5)
-            if uid in tiktok_searches:
-                del tiktok_searches[uid]
-            await message.delete()
-            return
-        
-        # Get the first video from new page
-        video = results[0]
-        
-        # Update stored data
-        search_data.update({
-            "page": page,
-            "total_pages": total_pages, 
-            "results": results,
-            "current_video": video
-        })
-        
-        # Format the message with detailed information
-        msg = f"<b>🔰 {config_dict.get('BOT_NAME', 'TikTok Search')}</b>\n\n"
-        msg += f"<b>🎬 Video:</b>\n<code>{video['desc']}</code>\n\n"
-        msg += f"<b>⏱️ Duration:</b> <code>{format_duration(video['duration'])}</code>\n"
-        msg += f"<b>💾 Size:</b> <code>{get_file_size(video['duration'])}</code> (720p)\n\n"
-        msg += f"<b>👤 Creator:</b> <code>{video['nickname']} (@{video['author']})</code>\n"
-        msg += f"<b>❤️ Likes:</b> <code>{format_count(video['stats']['likes'])}</code>\n"
-        msg += f"<b>👁️ Views:</b> <code>{format_count(video['stats']['plays'])}</code>\n"
-        msg += f"<b>💬 Comments:</b> <code>{format_count(video['stats']['comments'])}</code>\n\n"
-        
-        # Add thumbnail URL if available
-        if video.get('thumb'):
-            msg += f"<b>🖼️ Thumbnail:</b> <a href='{video['thumb']}'>Link</a>\n\n"
-            
-        msg += f"<b>🔗 Video URL:</b> <a href='{video['url']}'>Open in TikTok</a>\n\n"
-        msg += f"<b>Halaman {page}</b>"
-        
-        # Create navigation buttons
-        butt = ButtonMaker()
-        
-        # Navigation row
-        if page > 1:
-            butt.ibutton("◀️ Prev", f"ttsearch prev {uid} {page} {keyword}")
-        else:
-            butt.ibutton("◀️", f"ttsearch none {uid}")
-            
-        butt.ibutton("🔗 Join", f"ttsearch join {uid}")
-        
-        # Always show Next for unlimited pages
-        butt.ibutton("Next ▶️", f"ttsearch next {uid} {page} {keyword}")
-        
-        # Close button
-        butt.ibutton("⛔️ Close", f"ttsearch close {uid}")
-        
-        # Download buttons
-        butt.ibutton("🎞️ Download", f"ttsearch dl {uid}")
-        butt.ibutton("🔊 Audio", f"ttsearch audio {uid}")
-        
-        # Build the menu with specified layout
-        butts = butt.build_menu(3, 2)
-        
-        # Update message
-        await editMessage(message, msg, butts)
+            music = data["aweme_list"][0]["music"]["play_url"]["url_list"][-1]
+            m_capt = data["aweme_list"][0]["music"]["title"]
+            if content_type == "video":
+                link = data["aweme_list"][0]["video"]["play_addr"]["url_list"][-1]
+                filename = data["aweme_list"][0]["desc"]
+                capt = f"<code>{filename}</code> \n\n<b>Tugas Oleh:</b> {uname}"
+                if audio is False:                
+                    await customSendVideo(message, link, capt, None, None, None, None, None)
+                else:
+                    await customSendAudio(message, music, m_capt, None, None, None, None, None)
+            if content_type == "photo":
+                if audio is False:
+                    photo_urls = []
+                    for aweme in data["aweme_list"][0]["image_post_info"]["images"]:
+                        for link in aweme["display_image"]["url_list"][1:]:
+                            photo_urls.append(link)
+                    photo_groups = [photo_urls[i:i+10] for i in range(0, len(photo_urls), 10)]
+                    for photo_group in photo_groups:
+                        await message.reply_media_group([InputMediaPhoto(photo_url) for photo_url in photo_group])
+                else:
+                    await customSendAudio(message, music, m_capt, None, None, None, None, None)
+               
+        except Exception as e:
+                await sendMessage(message, f"ERROR: Gagal mengupload media {e}")
+        finally:
+            await deleteMessage(mess)
 
-
-####################
-## Auto TikTok Download
-####################
+################################################
+## Tiktok Auto Detection | Credit @aenulrofik ##
+################################################
 
 async def auto_tk(client, message):
     user_id = message.from_user.id
@@ -958,85 +141,171 @@ async def auto_tk(client, message):
     msg = f"<b>Link Tiktok terdeteksi, silahkan pilih untuk download Media atau Audio saja...</b>"
     user_id = message.from_user.id
     butt = ButtonMaker()
-    butt.ibutton("🎞 Media", f"tiktok media {user_id}")
-    butt.ibutton("🎞 No WM", f"tiktok nowm {user_id}")
-    butt.ibutton("🔈 Audio", f"tiktok audio {user_id}")
-    butt.ibutton("⛔️ Batal", f"tiktok cancel {user_id}", "footer")
+    butt.ibutton("🎞 Media", f"tk media {user_id}")
+    butt.ibutton("🔈 Audio", f"tk audio {user_id}")
+    butt.ibutton("⛔️ Batal", f"tk cancel {user_id}")
     butts = butt.build_menu(2)
     await sendMessage(message, msg, butts)
 
-####################
-
-async def tk_query(_, query):
+async def auto_tk_query(_, query):
     message = query.message
     user_id = query.from_user.id
     data = query.data.split()
     uid = int(data[2])
-    
-    tk_msg = None
     for isi in tiktok:
         if uid in isi:
-            tk_msg = isi
-            break
+            msgs = isi
+            msg = (msgs[uid])
+            text = msg.text
+            urls = re.findall(r"https?://[^\s]+", text)
+            if urls:
+                tkurl = urls[0]
+    if user_id != uid:
+        return await query.answer(text="Bukan Tugas Anda !", show_alert=True)
     
-    if not tk_msg or uid not in tk_msg:
-        return await query.answer(text="Tugas tidak ditemukan", show_alert=True)
-    
-    is_owner = user_id in config_dict['OWNER_ID']
-    is_sudo = user_id in config_dict.get('SUDO_USERS', [])
-    
-    if not is_owner and not is_sudo and user_id != uid:
-        return await query.answer(text="Bukan Tugas Anda!", show_alert=True)
-    
-    orig_msg = tk_msg[uid]
-    text = orig_msg.text
-    urls = re.findall(r"https?://[^\s]+", text)
-    
-    if not urls:
-        await editMessage(message, "<b>Tidak dapat menemukan URL TikTok</b>")
-        await query.answer(text="Tugas Dibatalkan.", show_alert=True)
-        await asyncio.sleep(2)
+    elif data[1] == "media":
         await deleteMessage(message)
-        del tk_msg[uid]
-        return
-        
-    tk_url = urls[0]
-    
-    if data[1] == "media":
-        await editMessage(message, "<b>Tugas pencarian dibatalkan.</b>")
-        await asyncio.sleep(2)
-        await deleteMessage(message)
-        del tk_msg[uid]
-        await tiktokdl(bot, orig_msg, url=tk_url, type="video")
-    
-    elif data[1] == "nowm":
-        await editMessage(message, "<b>Tugas pencarian dibatalkan.</b>")
-        await asyncio.sleep(2)
-        await deleteMessage(message)
-        del tk_msg[uid]
-        await tiktokdl(bot, orig_msg, url=tk_url, type="nowm")
-    
+        del msgs[uid]   
+        await tiktokdl(bot, msg, url=tkurl) 
     elif data[1] == "audio":
-        await editMessage(message, "<b>Tugas pencarian dibatalkan.</b>")
-        await asyncio.sleep(2)
         await deleteMessage(message)
-        del tk_msg[uid]
-        await tiktokdl(bot, orig_msg, url=tk_url, audio=True)
-    
-    elif data[1] == "cancel":
-        await editMessage(message, "<b>Tugas pencarian dibatalkan.</b>")
-        await query.answer(text="Tugas Dibatalkan.", show_alert=True)
-        await asyncio.sleep(2)
-        await deleteMessage(message)
-        del tk_msg[uid]
+        del msgs[uid]
+        await tiktokdl(bot, msg, url=tkurl, audio=True)
+    else:
+        await query.answer()
+        del msgs[uid]
+        await editMessage(message, "Tugas Dibatalkan.")
 
-#######################
-# Register Handlers
-#######################
+#######################################
+# TikTok Search | Credit @aenulrofik ##
+#######################################
+
+async def tiktok_search(_, message):
+    if message.from_user.username:
+            uname = f'@{message.from_user.username}'
+    else:
+            uname = f'<code>{message.from_user.first_name}</code>'
+    if len(message.command) > 1:
+        keyword = ' '.join(message.command[1:])
+    else:
+        await sendMessage(message, f"Silahkan masukkan keyword pencarian setelah perintah !")
+    mess = await sendMessage(message, f"<b>⌛️Sedang mencari video tiktok dengan keyword:</b>\n\n<code>🔎 {keyword}</code>")
+    #session = create_scraper()
+    try:
+        jar = MozillaCookieJar()
+        jar.load("tiktok.txt", ignore_discard=True, ignore_expires=True)
+    except Exception as e:
+        await editMessage(mess, f"ERROR: {e.__class__.__name__}")
+        return None
+    
+    cookies = {}
+    for cookie in jar:
+        cookies[cookie.name] = cookie.value
+    params = {
+                "aid": 1988,
+                "app_language": "en",
+                "app_name": "tiktok_web",
+                "browser_language": "en-US",
+                "browser_name": "Mozilla",
+                "browser_online": True,
+                "browser_platform": "Win32",
+                "browser_version": "5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36 Edg/123.0.0.0",
+                "channel": "tiktok_web",
+                "cookie_enabled": True,
+                "device_id": 7335161018286622210,
+                "device_platform": "web_pc",
+                "device_type": "web_h264",
+                "focus_state": True,
+                "from_page": "search",
+                "history_len": 3,
+                "is_fullscreen": False,
+                "is_page_visible": True,
+                "keyword": keyword,
+                "offset": 0,
+                "os": "windows",
+                "priority_region": "id",
+                "referer": "",
+                "region": "id",
+                "screen_height": 1080,
+                "screen_width": 1920,
+                "search_source": "normal_search",
+                "tz_name": "Asia/Jakarta",
+                "count": 10,
+                "web_search_code": {
+                    "tiktok": {
+                        "client_params_x": {
+                            "search_engine": {
+                                "ies_mt_user_live_video_card_use_libra": 1,
+                                "mt_search_general_user_live_card": 1
+                            }
+                        }, 
+                        "search_server": {}
+                    }
+                }
+            }
+    async with httpx.AsyncClient() as client:
+        try:
+            num = 0
+            search = ""
+            while len(search) == 0:
+                num += 1
+                r = await client.get(
+                    url="https://www.tiktok.com/api/search/item/full/",
+                    params=params,
+                    cookies=cookies
+                )
+
+                search += r.text
+
+            data = loads(search)
+        except httpx.HTTPStatusError as e:
+            await sendMessage(mess, f"Hai {uname}, Terjadi kesalahan saat mencoba mengakses url, silahkan coba kembali.\n\n<blockquote>{e}</blockquote>")
+            await deleteMessage(mess)
+            return None
+        except httpx.RequestError as e:
+            await sendMessage(mess, f"Hai {uname}, Respon dari url terlalu lama, silahkan coba kembali.\n\n<blockquote>{e}</blockquote>")
+            await deleteMessage(mess)
+            return None
+        #try:
+        #    id = (f"{data['item_list'][randint(0, len(data['item_list']) - 1)]['id']}")
+        #except Exception as e:
+        #    await editMessage(mess, f"ERROR: {e}")
+        #    return None
+        #await deleteMessage(mess)
+        #await tiktokdl(_, message, id=id)
+    async with niquests.AsyncSession() as client:
+        video = ""
+        try:
+            while len(video) == 0:
+                r = await client.get(
+                        url=f"https://api16-normal-useast5.us.tiktokv.com/aweme/v1/feed/?aweme_id={data['item_list'][randint(0, len(data['item_list']) - 1)]['id']}",
+                        headers={
+                            "User-Agent": user_agent,
+                        }
+                    )
+                r.raise_for_status()
+                video = r.text
+            data = loads(video)
+        except Exception as e:
+            await sendMessage(mess, f"Hai {uname}, Terjadi kesalahan saat mencoba mengakses url, silahkan coba kembali.\n\n<blockquote>{e}</blockquote>")
+            await deleteMessage(mess)
+            return None
+        try:
+            capt = (f'<code>{data["aweme_list"][0]["desc"]}</code>\n\n<b>Pencarian Oleh:</b> {uname}')
+            link = (data["aweme_list"][0]["video"]["play_addr"]["url_list"][-1])    
+            await customSendVideo(message, link, capt, None, None, None, None, None)
+        except Exception as e:
+            await sendMessage(message, f"<b>Hai {uname}, tugas pencarian gagal karena:\n\n{e}")
+        finally:
+            await deleteMessage(mess)
+
+############################################
+## Tiktok Handler And Command ##
+############################################
 
 bot.add_handler(
     MessageHandler(
-        tiktok_paginated_search, 
+        tiktok_search, 
         filters=command(
             BotCommands.TiktokCommand
         ) & CustomFilters.authorized
@@ -1054,18 +323,11 @@ bot.add_handler(
 
 bot.add_handler(
     CallbackQueryHandler(
-        tk_query,
+        auto_tk_query,
         filters=regex(
-            r'^tiktok\s'
+            r'^tk '
         )
     )
 )
 
-bot.add_handler(
-    CallbackQueryHandler(
-        tiktok_search_callback,
-        filters=regex(
-            r'^ttsearch\s'
-        )
-    )
-)
+## Thanks to @aenulrofik for this feature ##

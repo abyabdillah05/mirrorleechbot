@@ -16,6 +16,7 @@ from bot.helper.ext_utils.bot_utils import cmd_exec
 from bot.helper.ext_utils.telegraph_helper import telegraph
 from bot.helper.telegram_helper.button_build import ButtonMaker
 
+botnname = bot.me.first_name
 
 async def gen_mediainfo(message, link=None, media=None, mmsg=None):
     temp_send = await sendMessage(message, '<i>⏳ Membuat media info...</i>')
@@ -50,7 +51,7 @@ async def gen_mediainfo(message, link=None, media=None, mmsg=None):
         await editMessage(temp_send, f"MediaInfo Stopped due to {str(e)}")
     finally:
         await aioremove(des_path)
-    link_id = (await telegraph.create_page(title='𝚃𝚛𝚊𝚗𝚜𝚜𝚒𝚘𝚗 𝙲𝚘𝚛𝚎 𝙼𝚒𝚛𝚛𝚘𝚛 - 𝙱𝚘𝚝 MediaInfo', content=tc))["path"]
+    link_id = (await telegraph.create_page(title='{botnname} MediaInfo', content=tc))["path"]
     link_end = f"https://telegra.ph/{link_id}"
     buttons = ButtonMaker()
     buttons.ubutton("👁️ Lihat MediaInfo", f"{link_end}", "footer")

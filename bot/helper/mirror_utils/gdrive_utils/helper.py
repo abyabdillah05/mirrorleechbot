@@ -13,9 +13,10 @@ from tenacity import (
     retry_if_exception_type,
 )
 
-from bot import config_dict
+from bot import config_dict, bot
 from bot.helper.ext_utils.links_utils import is_gdrive_id
 
+botnname = bot.me.first_name
 LOGGER = getLogger(__name__)
 getLogger("googleapiclient.discovery").setLevel(ERROR)
 
@@ -192,7 +193,7 @@ class GoogleDriveHelper:
     def create_directory(self, directory_name, dest_id):
         file_metadata = {
             "name": directory_name,
-            "description": "Uploaded by 𝚃𝚛𝚊𝚗𝚜𝚜𝚒𝚘𝚗 𝙲𝚘𝚛𝚎 𝙼𝚒𝚛𝚛𝚘𝚛 - 𝙱𝚘𝚝",
+            "description": "Uploaded by {botnname}",
             "mimeType": self.G_DRIVE_DIR_MIME_TYPE,
         }
         if dest_id is not None:

@@ -29,15 +29,15 @@ from .helper.telegram_helper.bot_commands import BotCommands
 from .helper.telegram_helper.message_utils import sendMessage, editMessage, sendFile
 from .helper.telegram_helper.filters import CustomFilters
 from .helper.telegram_helper.button_build import ButtonMaker
+from .modules.waifu import download_anime_hd
 from bot.helper.listeners.aria2_listener import start_aria2_listener
-from bot.helper.ext_utils.pikachu_utils import token_verify
+from bot.helper.ext_utils.quota_utils import token_verify
 from bot import (
     bot, 
     botStartTime, 
     LOGGER, 
     Interval, 
     DATABASE_URL, 
-    OWNER_ID,
     QbInterval, 
     INCOMPLETE_TASK_NOTIFIER, 
     scheduler, 
@@ -69,58 +69,39 @@ from .modules import (
     pikachu_feature,
     auto_mirror,
     mirror_leech,
+    pickle_generator,
     tiktok,
+    waifu,
+    needrom,
+    youtube
 )
+
+
+botname = bot.me.first_name
+botusername = f"@{bot.me.username}"
 
 def get_quotes():
     try:
         quotez = str(Quote.print_series_quote())
-        parts = quotez.split(":", 1)
-        if len(parts) >= 2:
-            oleh, quote = parts[0], parts[1].strip()
-            return f"{quote}\n=> {oleh}"
-        return f"{quotez}"
-    except Exception as e:
-        # Log the error if needed: LOGGER.error(f"Error getting quote: {e}")
-        return "Ngga ada Quote bijak buatmu wahai Tuan yang bijaksana :D"
+        quote = quotez.split(": ")[1]
+        oleh = quotez.split(":")[0]
+        quotes = f"{quote}\n=> {oleh}"
+    except:
+        quotes = "Ngga ada Quote bijak buatmu wahai Tuan yang bijaksana :D"
+    return quotes
+
 
 def progress_bar(percentage):
     if isinstance(percentage, str):
         return "NaN"
     try:
         percentage = int(percentage)
-        percentage = max(0, min(100, percentage))
-        
-        if percentage < 30:
-            bar_color = "🔴"
-        elif percentage < 70:
-            bar_color = "🟡"
-        else:
-            bar_color = "🟢"
-        
-        filled = "■"
-        empty = "□"
-        
-        if hasattr(progress_bar, 'animation_frame') and progress_bar.animation_frame % 4 == 0:
-            filled = "█"
-        elif hasattr(progress_bar, 'animation_frame') and progress_bar.animation_frame % 4 == 1:
-            filled = "▓"
-        elif hasattr(progress_bar, 'animation_frame') and progress_bar.animation_frame % 4 == 2:
-            filled = "▒"
-        elif hasattr(progress_bar, 'animation_frame') and progress_bar.animation_frame % 4 == 3:
-            filled = "░"
-        
-        if hasattr(progress_bar, 'animation_frame'):
-            progress_bar.animation_frame += 1
-        else:
-            progress_bar.animation_frame = 0
-        
-        filled_length = percentage // 10
-        bar = bar_color + " " + "".join(filled if i <= filled_length else empty for i in range(1, 11))
-        
-        return bar
-    except (ValueError, TypeError):
-        return "□□□□□□□□□□"
+    except:
+        percentage = 0
+    return "".join(
+        "■" if i <= percentage // 10 else "□" for i in range(1, 11)
+    )
+
 
 async def stats(_, message):
     if await aiopath.exists(".git"):
@@ -188,7 +169,7 @@ async def stats(_, message):
     neofetch = check_output(
         ["neofetch --shell_version off --stdout"], shell=True).decode()
     stats = f'''
-<b>𝚃𝚛𝚊𝚗𝚜𝚜𝚒𝚘𝚗 𝙲𝚘𝚛𝚎 𝙼𝚒𝚛𝚛𝚘𝚛 𝙱𝚘𝚝 𝚂𝚝𝚊𝚝𝚜</b>
+<b>{botname}</b>
 <pre languange="python"><code>{neofetch}</code></pre>
 <b>┌┤🤖 Status Bot:</b>
 <b>├Username     :</b> <code>@{bot.me.username}</code>
@@ -234,150 +215,215 @@ async def stats(_, message):
         stats
     )
 
+##############################
+## start ##
+##############################
 
 async def start(client, message):
-    user = message.from_user
-    
-    if user.username:
-        uname = f'@{user.username}'
+    if message.from_user.username:
+        uname = f'@{message.from_user.username}'
     else:
-        uname = f'<a href="tg://user?id={user.id}">{user.first_name}</a>'
+        uname = f'<a href="tg://user?id={message.from_user.id}">{message.from_user.first_name}</a>'
     
     if len(message.text.split()) > 1:
         data = message.text.split()[1]
         if data.startswith("token_"):
-            token = data.removeprefix("token_")
-            msg = await token_verify(user.id, token)
-            await sendMessage(message, msg)
-            return
-        elif data == "donate":
-            return await donate(client, message)
-        elif data == "gettoken":
-            return await pikachu_feature.get_token(client, message)
+            token = data.split("_")[1]
+            user_id = message.from_user.id
+            result = await token_verify(user_id, token)
+            if isinstance(result, tuple):
+                response_text, markup = result
+                await sendMessage(message, response_text, markup)
+                return
         elif data == "gentoken":
-            return await pikachu_feature.gen_token(client, message)
+            return await pickle_generator.gen_token(client, message)
+        elif data == "gettoken":
+            return await pickle_generator.get_token(client, message)
+        elif data.startswith("anhdl_"):
+            file_id = data.replace("anhdl_", "")
+            return await waifu.download_anime_hd(client, message, None, file_id)
 
     buttons = ButtonMaker()
-    
-    buttons.ubutton("👨‍💻 Maintainer", "https://t.me/WzdDizzyFlasherr", "header")
+    buttons.ubutton("👤 Maintainer", "https://t.me/WzdDizzyFlasherr", "header")
     buttons.ubutton("📢 Channel", "https://t.me/DizzyStuffProject")
-    buttons.ubutton("💬 Group", "https://t.me/YourGroupLink")  # Replace with your actual group link
+    buttons.ubutton("👥 Group", "https://t.me/+QLqlp887uHFiOTVl")
+    buttons.ubutton("💰 Donate", "https://telegra.ph/Donate-and-Support-Us-03-21")
+    buttons.ubutton("➕ Add me to Group", f"https://t.me/{bot.me.username}?startgroup=true", "footer")
+    reply_markup = buttons.build_menu(2)
+
+    user_id = message.from_user.id
+    is_in_auth_group = message.chat.type.name != "PRIVATE" and await CustomFilters.authorized(client, message)
     
-    buttons.ubutton("💰 Donate", "https://telegra.ph/Donate-and-Support-Us-03-21", "footer")
-    
-    add_me_url = f"https://t.me/{bot.me.username}?startgroup=true"
-    buttons.ubutton("➕ Add Me To Your Group", add_me_url, "footer")
-    
-    reply_markup = buttons.build_menu(2, 1, 1)
-    
-    hour = datetime.now(timezone("Asia/Jakarta")).hour
-    if hour < 12:
-        greeting = "Selamat pagi"
-    elif hour < 15:
-        greeting = "Selamat siang"
-    elif hour < 18:
-        greeting = "Selamat sore"
-    else:
-        greeting = "Selamat malam"
-    
-    user_id = user.id
-    chat_id = message.chat.id
-    is_owner = user_id == OWNER_ID
-    is_sudo = user_id in user_data and user_data[user_id].get("is_sudo")
-    is_auth_user = user_id in user_data and user_data[user_id].get("is_auth")
-    is_auth_chat = chat_id in user_data and user_data[chat_id].get("is_auth")
-    
-    if is_owner:
-        user_type = "Owner"
-    elif is_sudo:
-        user_type = "Sudo User"
-    elif is_auth_user:
-        user_type = "Authorized User"
-    elif is_auth_chat:
-        user_type = "Member dari Authorized Group"
-    else:
-        user_type = "Guest"
-    
-    if is_owner or is_sudo:
+    ################################
+    ## Start For Authorized Group ##
+    ################################
+
+    if is_in_auth_group:
         start_string = f'''
-<b>{greeting} {uname}!</b>
+<b>Selamat Datang di {botname}! 🎉</b>
 
-<b>Status Anda:</b> <code>{user_type}</code>
+Halo {uname}, Senang melihat Anda di grup ini!
 
-Selamat datang di Bot Mirror/Leech! Sebagai {user_type}, Anda memiliki akses penuh ke semua fitur bot.
+Bot ini telah dikonfigurasi dan siap membantu Anda dengan berbagai kebutuhan mirror, leech, dan manajemen file. Nikmati semua fitur yang tersedia untuk anggota grup ini.
 
-Ketik <code>/{BotCommands.HelpCommand[0]}</code> untuk melihat daftar perintah yang tersedia.
-Ketik <code>/{BotCommands.StatsCommand[0]}</code> untuk melihat statistik bot.
+<b>Cara Menggunakan Bot:</b>
+• Gunakan <code>/{BotCommands.HelpCommand[0]}</code> untuk melihat daftar lengkap perintah
+• Balas ke file/link dengan perintah mirror/leech untuk memulai tugas
+• Pantau progres tugas dengan <code>/{BotCommands.StatusCommand[0]}</code>
 
-<i>Bot ini dikembangkan oleh @WzdDizzyFlasherr</i>
+<b>Fitur Utama:</b>
+• Mirror ke Google Drive
+• Leech ke Telegram
+• Unduh dari berbagai sumber (Direct Link, Torrent, Mega, dll)
+• Pengaturan upload custom
+• Fitur pencarian yang kuat
+
+<i>Jika membutuhkan bantuan lebih lanjut, jangan ragu untuk bertanya kepada admin grup!</i>
 '''
-    elif is_auth_user:
+        
+    ################################
+    ## Start For Owner ##
+    ################################
+
+    elif user_id == config_dict['OWNER_ID']:
         start_string = f'''
-<b>{greeting} {uname}!</b>
+<b>Halo Boss {uname}! 👑</b>
 
-<b>Status Anda:</b> <code>{user_type}</code>
+Selamat datang kembali di panel kontrol {botname}!
 
-Anda memiliki akses ke bot ini karena Anda adalah user yang diautorize secara individual.
+Sebagai pemilik bot, Anda memiliki akses penuh ke semua fitur dan pengaturan. Bot siap menerima perintah Anda dan berfungsi optimal.
 
-Ketik <code>/{BotCommands.HelpCommand[0]}</code> untuk melihat daftar perintah yang tersedia.
-Ketik <code>/{BotCommands.StatsCommand[0]}</code> untuk melihat statistik bot.
+<b>Status Bot:</b>
+• Bot aktif dan berjalan normal
+• Semua sistem dalam keadaan baik
+• Siap menerima tugas baru
 
-<i>💡 Tips: Gunakan auto-detect untuk mengunduh file dengan cepat!</i>
+<b>Pengaturan Cepat:</b>
+• <code>/{BotCommands.BotSetCommand[0]}</code> - Konfigurasi bot
+• <code>/{BotCommands.StatsCommand[0]}</code> - Cek statistik server
+• <code>/{BotCommands.RestartCommand[0]}</code> - Restart bot jika diperlukan
+
+<i>Untuk daftar lengkap perintah, gunakan <code>/{BotCommands.HelpCommand[0]}</code></i>
+
+<b>Semoga harimu menyenangkan, Boss! 🚀</b>
 '''
-    elif is_auth_chat:
+
+    ################################
+    ## Start For Sudo User ##
+    ################################
+
+    elif user_id in user_data and user_data[user_id].get('is_sudo', False):
         start_string = f'''
-<b>{greeting} {uname}!</b>
+<b>Halo Admin {uname}! ⭐</b>
 
-<b>Status Anda:</b> <code>{user_type}</code>
+Selamat datang di panel administrasi {botname}!
 
-Anda dapat menggunakan bot ini karena Anda berada di grup yang diautorize.
-Anda juga dapat menggunakan bot ini dalam chat pribadi.
+Sebagai SUDO user, Anda memiliki akses ke sebagian besar fitur dan pengaturan bot. Bot siap membantu Anda mengelola pengguna dan tugas.
 
-Ketik <code>/{BotCommands.HelpCommand[0]}</code> untuk melihat daftar perintah yang tersedia.
-Ketik <code>/{BotCommands.StatsCommand[0]}</code> untuk melihat statistik bot.
+<b>Tugas Admin:</b>
+• Mengelola pengguna dengan <code>/{BotCommands.AuthorizeCommand[0]}</code> dan <code>/{BotCommands.UnAuthorizeCommand[0]}</code>
+• Memantau kinerja bot dengan <code>/{BotCommands.StatsCommand[0]}</code>
+• Restart bot jika diperlukan dengan <code>/{BotCommands.RestartCommand[0]}</code>
 
-<i>💡 Tips: Anda dapat menggunakan perintah di dalam grup atau di PM!</i>
+<b>Fitur Tambahan:</b>
+• Akses ke semua fitur mirror dan leech
+• Kemampuan membatalkan tugas semua pengguna
+• Melihat dan mengelola status server
+
+<i>Gunakan kekuatan Anda dengan bijak! Untuk daftar lengkap perintah, ketik <code>/{BotCommands.HelpCommand[0]}</code></i>
+
+<b>Terima kasih atas bantuan Anda dalam mengelola bot ini! 👏</b>
 '''
+        
+    ################################
+    ## Start For Authorized User ##
+    ################################
+
+    elif await CustomFilters.authorized(client, message):
+        start_string = f'''
+<b>Halo {uname}! 🌟</b>
+
+Selamat datang di {botname}! Anda adalah pengguna yang diotorisasi dan memiliki akses ke fitur-fitur bot ini.
+
+<b>Apa yang dapat Anda lakukan:</b>
+• Mirror file ke Google Drive dengan <code>/{BotCommands.MirrorCommand[0]}</code>
+• Leech file ke Telegram dengan <code>/{BotCommands.LeechCommand[0]}</code>
+• Unduh video YouTube dan platform lain dengan <code>/{BotCommands.YtdlCommand[0]}</code>
+• Clone file Google Drive dengan <code>/{BotCommands.CloneCommand[0]}</code>
+• Cari file di Drive dengan <code>/{BotCommands.ListCommand[0]}</code>
+
+<b>Tips Penggunaan:</b>
+• Gunakan <code>/{BotCommands.HelpCommand[0]}</code> untuk panduan lengkap
+• Pantau progres dengan <code>/{BotCommands.StatusCommand[0]}</code>
+• Batalkan tugas dengan <code>/{BotCommands.CancelTaskCommand[0]}</code>
+
+<i>Jika Anda mengalami masalah atau memiliki pertanyaan, silakan hubungi admin!</i>
+
+<b>Selamat menggunakan! 🚀</b>
+'''
+
+    #################################
+    ## Start For Unauthorized User ##
+    #################################
+
     else:
         start_string = f'''
-<b>{greeting} {uname}!</b>
+<b>Halo {uname}! 👋</b>
 
-<b>Status Anda:</b> <code>{user_type}</code>
+Terima kasih telah menyapa {botname}. Saat ini, Anda belum memiliki akses untuk menggunakan bot ini secara pribadi.
 
-Sayang sekali Anda belum menjadi <code>authorized user</code>, sehingga belum bisa menggunakan bot ini di pesan pribadi.
+<b>Beberapa hal yang perlu Anda ketahui:</b>
 
-Silakan gunakan bot ini di grup resmi kami. Cek tombol "Group" di bawah untuk bergabung dengan grup kami.
+• Bot ini adalah alat premium untuk mirror dan leech file
+• Akses diberikan oleh admin kepada pengguna tertentu
+• Anda dapat menggunakan bot ini di grup resmi kami
+• Untuk mendapatkan akses, silakan hubungi admin atau berikan donasi
 
-<i>Ingin menggunakan bot ini secara pribadi? Pertimbangkan untuk donasi! Klik tombol "Donate" di bawah untuk informasi lebih lanjut.</i>
+<b>Cara mendapatkan akses:</b>
+• Bergabung dengan grup resmi kami melalui tombol di bawah
+• Hubungi maintainer untuk informasi lebih lanjut
+• Dukung pengembangan bot dengan donasi
+
+<i>Terima kasih atas pengertian Anda. Kami berharap dapat melayani Anda segera!</i>
 '''
     
     await sendMessage(message, start_string, reply_markup)
 
-async def donate(_, message):
-    path = 'https://ibb.co.com/whGV9tY2'
-    buttons = ButtonMaker()
-    
-    buttons.ubutton("👨‍💻 Maintainer", "https://t.me/WzdDizzyFlasherr", "header")
-    
-    buttons.ubutton("📢 Channel", "https://t.me/DizzyStuffProject")
-    buttons.ubutton("💬 Group", "https://t.me/YourGroupLink")
+##############################
+## Donasi ##
+##############################
 
-    buttons.ubutton("💰 Donate Here", "https://telegra.ph/Donate-and-Support-Us-03-21", "footer")
+async def donate(_, message):
+    buttons = ButtonMaker()
+    buttons.ubutton("👤 Maintainer", "https://t.me/WzdDizzyFlasherr", "header")
+    buttons.ubutton("📢 Channel", "https://t.me/DizzyStuffProject")
+    buttons.ubutton("💰 Donate", "https://telegra.ph/Donate-and-Support-Us-03-21", "footer")
     
     donate_message = '''
+<b>Donate and Support Us</b>
+
 <b>𝐈𝐠𝐧𝐨𝐫𝐞𝐝 𝐏𝐫𝐨𝐣𝐞𝐜𝐭 𝐗𝐜𝐥</b>
 
+★ <b>Donasi / Traktir Kopi</b>
 
-<b>★ Donasi / Traktir Kopi</b>
-
-👋 Halo! Jika kalian merasa terbantu dengan layanan dari Ignored Project Xcl atau ingin mendukung pengembangan lebih lanjut, kami sangat berterima kasih jika kalian bersedia memberikan sedikit donasi.
+ 👋 Halo! Jika kalian merasa terbantu dengan layanan dari Ignored Project Xcl atau ingin mendukung pengembangan lebih lanjut, kami sangat berterima kasih jika kalian bersedia memberikan sedikit donasi.
 
 ★ Semua donasi yang masuk akan digunakan 100% untuk kebutuhan bot — seperti biaya server, penyimpanan data, pengembangan fitur baru, dan pemeliharaan sistem. Kami tidak mengambil keuntungan pribadi dari donasi ini, sehingga kontribusi kalian benar-benar membantu keberlangsungan dan perkembangan proyek ini.
 
-<b>donasi klik tombol dibawah</b>
+📩 Jika sudah berdonasi, jangan ragu untuk menghubungi kami melalui PM sebagai konfirmasi. Sebagai bentuk apresiasi, kalian bisa mendapatkan beberapa keuntungan seperti:
+
+ ✅ Akses khusus untuk menambahkan bot ini ke grup pribadi kalian.
+
+ ✅ Bebas batasan saat menggunakan bot di PM.
+
+ ✅ Dukungan prioritas jika mengalami masalah atau membutuhkan bantuan lebih lanjut.
+
+❤️ Terima kasih banyak untuk semua yang telah mendukung! Dukungan kalian sangat berarti bagi keberlanjutan dan perkembangan Ignored Project Xcl.
+ 🙏 Jika belum bisa berdonasi, tidak masalah! Cukup gunakan bot ini dan bagikan informasinya kepada teman-teman, itu sudah sangat membantu. 😉
+
+<i>Jika sudah donate, silahkan PM owner di tombol Maintainer untuk konfirmasi</i>
 '''
-    await message.reply_photo(photo=path, reply_to_message_id=message.id,
-                             caption=donate_message, reply_markup=buttons.build_menu(2, 1), disable_notification=True)
+    await sendMessage(message, donate_message, buttons.build_menu(2))
 
 async def restart(_, message):
     restart_message = await sendMessage(
@@ -461,8 +507,8 @@ async def bot_help(client, message):
     buttons.ibutton('Leech', f'pika {user_id} guide leech')
     buttons.ibutton('Torrent', f'pika {user_id} guide torrent')
     buttons.ibutton('Ytdlp', f'pika {user_id} guide ytdlp')
-    buttons.ibutton('𝙻𝚊𝚒𝚗𝚗𝚢𝚊', f'pika {user_id} guide other')
-    buttons.ibutton('🔽 𝚃𝚞𝚝𝚞𝚙', f'pika {user_id} close', 'footer')
+    buttons.ibutton('Lainnya', f'pika {user_id} guide other')
+    buttons.ibutton('⬇️ Tutup', f'pika {user_id} close', 'footer')
     await sendMessage(message, f"Silahkan pilih jenis bantuan yang anda perlukan !", buttons.build_menu(2))
 
 
@@ -473,7 +519,6 @@ async def restart_notification():
     else:
         chat_id, msg_id = 0, 0
     
-    # Get thread_id from AUTHORIZED_CHATS
     if chat_id == 0:
         chat_id = None
         thread_id = None

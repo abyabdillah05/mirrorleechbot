@@ -10,7 +10,7 @@ from bot.helper.mirror_utils.status_utils.rclone_status import RcloneStatus
 from bot.helper.mirror_utils.status_utils.queue_status import QueueStatus
 from bot.helper.mirror_utils.rclone_utils.transfer import RcloneTransferHelper
 from bot.helper.ext_utils.task_manager import limit_checker
-from bot.helper.ext_utils.pikachu_utils import quota_check
+from bot.helper.ext_utils.quota_utils import quota_check
 
 
 async def add_rclone_download(listener, path):

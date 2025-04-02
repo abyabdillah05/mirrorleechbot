@@ -87,83 +87,33 @@ Ini adalah <a href='https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.
 """
 
 OTHER_HELP = f"""
-<b>Selain Mirror dan Leech, ini ada beberapa fitur tambahan dari bot ini:</b>
+<b>Selain Mirror dan leech, ini ada beberpa fitur tambahan dari bot ini:</b>
 
-<b>🌟 Perintah Umum - Semua Pengguna:</b>
-• <code>/{BotCommands.DirectCommand[0]}</code> | <code>/{BotCommands.DirectCommand[1]}</code> = Membypass shortlink atau mengambil direct link
-• <code>/{BotCommands.CloneCommand[0]}</code> | <code>/{BotCommands.CloneCommand[1]}</code> = Mengclone file dari link google drive lain
-• <code>/{BotCommands.CountCommand[0]}</code> | <code>/{BotCommands.CountCommand[1]}</code> = Menghitung jumlah file dan folder pada link google drive
-• <code>/{BotCommands.ListCommand[0]}</code> | <code>/{BotCommands.ListCommand[1]}</code> = Mencari file/folder didalam google drive
-• <code>/{BotCommands.StatusCommand[0]}</code> | <code>/{BotCommands.StatusCommand[1]}</code> = Melihat semua tugas yang sedang berjalan
-• <code>/{BotCommands.PingCommand[0]}</code> | <code>/{BotCommands.PingCommand[1]}</code> = Cek respon bot
-• <code>/{BotCommands.MediaInfoCommand[0]}</code> | <code>/{BotCommands.MediaInfoCommand[1]}</code> = Untuk melihat info dari file atau media
-• <code>/{BotCommands.UploadCommand[0]}</code> | <code>/{BotCommands.UploadCommand[1]}</code> = Upload gambar/short video ke telegraph
-• <code>/{BotCommands.AsupanCommand[0]}</code> | <code>/{BotCommands.AsupanCommand[1]}</code> = Video asupan dari bot
-• <code>/{BotCommands.TiktokCommand[0]}</code> | <code>/{BotCommands.TiktokCommand[1]}</code> = Mencari video random di tiktok
-• <code>/{BotCommands.AnimekCommand[0]}</code> | <code>/{BotCommands.AnimekCommand[1]}</code> = Kirim gambar anime random
-• <code>/{BotCommands.Yt_searchCommand[0]}</code> | <code>/{BotCommands.Yt_searchCommand[1]}</code> = Cari dan mirror/leech file di youtube
-• <code>/{BotCommands.CekQuotaCommand}</code> = Untuk cek kuota mirror/leech anda
-• <code>/{BotCommands.DonateCommand}</code> = Fitur unggulan untuk mendukung bot ini :)
-• <code>/{BotCommands.HelpCommand[0]}</code> | <code>/{BotCommands.HelpCommand[1]}</code> = Menampilkan bantuan penggunaan bot
-
-<b>💻 Perintah Khusus Pengguna Terotorisasi:</b>
-• <code>/{BotCommands.DeleteCommand[0]}</code> | <code>/{BotCommands.DeleteCommand[1]}</code> = Menghapus file/folder dari google drive hasil mirror
-• <code>/{BotCommands.RenameCommand[0]}</code> | <code>/{BotCommands.RenameCommand[1]}</code> = Mengganti nama file/folder yang sudah di mirror
-• <code>/{BotCommands.CancelTaskCommand[0]}</code> | <code>/{BotCommands.CancelTaskCommand[1]}</code> = Membatalkan tugas yang sedang berjalan
-• <code>/{BotCommands.CancelAllCommand[0]}</code> | <code>/{BotCommands.CancelAllCommand[1]}</code> = Membatalkan semua tugas yang sedang berjalan
-• <code>/{BotCommands.UserSetCommand[0]}</code> | <code>/{BotCommands.UserSetCommand[1]}</code> = Membuka pengaturan untuk pengguna
-• <code>/{BotCommands.BtSelectCommand[0]}</code> | <code>/{BotCommands.BtSelectCommand[1]}</code> = Memilih file yang akan diunduh dari torrent
-• <code>/{BotCommands.SearchCommand[0]}</code> | <code>/{BotCommands.SearchCommand[1]}</code> = Mencari link magnet/torrent dengan API dari bot
-• <code>/{BotCommands.GenTokenCommand[0]}</code> | <code>/{BotCommands.GenTokenCommand[1]}</code> = Generate token untuk mirror ke Gdrive Pribadi
-• <code>/{BotCommands.GetTokenCommand[0]}</code> | <code>/{BotCommands.GetTokenCommand[1]}</code> = Generate token.pickle dan refresh token untuk Gdrive Pribadi
-• <code>/{BotCommands.GallerydlCommand[0]}</code> | <code>/{BotCommands.GallerydlCommand[1]}</code> = Download dari galeri online
-• <code>/{BotCommands.Upload_gofileCommand[0]}</code> | <code>/{BotCommands.Upload_gofileCommand[1]}</code> = Upload ke GoFile
-• <code>/{BotCommands.Upload_buzzCommand[0]}</code> | <code>/{BotCommands.Upload_buzzCommand[1]}</code> = Upload ke BuzzHeavier
-• <code>/{BotCommands.Upload_pixelCommand[0]}</code> | <code>/{BotCommands.Upload_pixelCommand[1]}</code> = Upload ke PixelDrain
-
-<b>🔧 Perintah Admin - Hanya Sudo & Owner:</b>
-• <code>/{BotCommands.AuthorizeCommand[0]}</code> | <code>/{BotCommands.AuthorizeCommand[1]}</code> = Memberikan izin kepada pengguna untuk menggunakan bot
-• <code>/{BotCommands.UnAuthorizeCommand[0]}</code> | <code>/{BotCommands.UnAuthorizeCommand[1]}</code> = Mencabut izin pengguna dari bot
-• <code>/{BotCommands.UsersCommand[0]}</code> | <code>/{BotCommands.UsersCommand[1]}</code> = Menampilkan daftar pengguna yang berwenang
-• <code>/{BotCommands.AddSudoCommand[0]}</code> | <code>/{BotCommands.AddSudoCommand[1]}</code> = Menambahkan pengguna ke daftar sudo
-• <code>/{BotCommands.RmSudoCommand[0]}</code> | <code>/{BotCommands.RmSudoCommand[1]}</code> = Menghapus pengguna dari daftar sudo
-• <code>/{BotCommands.RestartCommand[0]}</code> | <code>/{BotCommands.RestartCommand[1]}</code> = Restart Bot
-• <code>/{BotCommands.BotSetCommand[0]}</code> | <code>/{BotCommands.BotSetCommand[1]}</code> = Membuka pengaturan BOT
-• <code>/{BotCommands.StatsCommand[0]}</code> | <code>/{BotCommands.StatsCommand[1]}</code> = Melihat spesifikasi server bot
-• <code>/{BotCommands.SpeedCommand[0]}</code> | <code>/{BotCommands.SpeedCommand[1]}</code> = Cek speed koneksi server bot
-• <code>/{BotCommands.LogCommand[0]}</code> | <code>/{BotCommands.LogCommand[1]}</code> = Mendapatkan log bot
-• <code>/{BotCommands.RssCommand}</code> = Mengelola RSS feeds
-
-<b>🛠️ Perintah Khusus Owner:</b>
-• <code>/{BotCommands.ShellCommand[0]}</code> | <code>/{BotCommands.ShellCommand[1]}</code> = Menjalankan perintah shell di server
-• <code>/{BotCommands.EvalCommand[0]}</code> | <code>/{BotCommands.EvalCommand[1]}</code> = Menjalankan kode Python di bot
-• <code>/{BotCommands.ExecCommand[0]}</code> | <code>/{BotCommands.ExecCommand[1]}</code> = Mengeksekusi kode Python di bot
-• <code>/{BotCommands.ClearLocalsCommand[0]}</code> | <code>/{BotCommands.ClearLocalsCommand[1]}</code> = Membersihkan variabel lokal dari eval/exec
-
-<b>📥 Perintah Mirror:</b>
-• <code>/{BotCommands.MirrorCommand[0]}</code> | <code>/{BotCommands.MirrorCommand[1]}</code> = Mirror file ke Google Drive
-• <code>/{BotCommands.QbMirrorCommand[0]}</code> | <code>/{BotCommands.QbMirrorCommand[1]}</code> = Mirror torrent via qBittorrent
-• <code>/{BotCommands.YtdlCommand[0]}</code> | <code>/{BotCommands.YtdlCommand[1]}</code> = Mirror video dari berbagai situs
-
-<b>📤 Perintah Leech:</b>
-• <code>/{BotCommands.LeechCommand[0]}</code> | <code>/{BotCommands.LeechCommand[1]}</code> = Leech file ke Telegram
-• <code>/{BotCommands.QbLeechCommand[0]}</code> | <code>/{BotCommands.QbLeechCommand[1]}</code> = Leech torrent via qBittorrent
-• <code>/{BotCommands.YtdlLeechCommand[0]}</code> | <code>/{BotCommands.YtdlLeechCommand[1]}</code> = Leech video dari berbagai situs
-
-<b>💲 Tentang Sistem Kuota:</b>
-• Perintah <code>/{BotCommands.CekQuotaCommand}</code> digunakan untuk memeriksa sisa kuota yang dimiliki
-• Tombol "TAMBAH KUOTA" hanya muncul untuk pengguna yang belum memiliki kuota atau kuota kurang dari 20GB
-• Ketika membalas pesan pengguna lain dengan <code>/{BotCommands.CekQuotaCommand}</code>, tombol "TAMBAH KUOTA" hanya bisa digunakan oleh pengguna yang direply
-• <code>/{BotCommands.CekQuotaCommand} <ID></code> akan menampilkan kuota pengguna dengan ID tersebut dan tombol hanya bisa digunakan oleh mereka
-
-<b>ℹ️ Catatan Penggunaan:</b>
-• Perintah umum dapat digunakan oleh semua pengguna terotorisasi
-• Perintah sudo hanya dapat digunakan oleh admin dan owner
-• Perintah owner hanya dapat digunakan oleh pemilik bot
-• Gunakan <code>/{BotCommands.HelpCommand[0]}</code> untuk bantuan rinci tentang perintah tertentu
-• Untuk menggunakan bot, Anda memerlukan kuota yang bisa ditambahkan melalui tombol "TAMBAH KUOTA"
-• Setiap klik pada tombol "TAMBAH KUOTA" akan menambahkan 25GB ke saldo kuota Anda
-• Kuota digunakan untuk mirror/leech file dan tidak akan hangus (tidak ada batas waktu)
+• /bypass = Membypass shortlink atau mengambil direct link
+• /clone = Mengclone file dari link google drive lain
+• /count = Menghitung jumelah file dan folder pada link google drive yang diberikan
+• /list = Mencari file/folder didalam google drive
+• /remove = Menghapus file/folder dari google drive hasil mirror
+• /rename = Mengganti nama file/folder yang sudah di mirror
+• /usetting = Membuka pengaturan untuk pengguna
+• /bsetting = Membuka pengaturan BOT
+• /restart = Restart Bot
+• /search = Mencari link magnet/torrent dengan API dari bot
+• /status = Melihat semua tugas yang sedang berjalan
+• /stats = Melihat spesifikasi server bot
+• /ping = Cek respon bot
+• /speedtest = Cek speed koneksi server bot
+• /mediainfo = Untuk melihat info dari file atau media
+• /telegraph = Upload gambar/short video ke telegraph
+• /asupan = Video asupan dari bot.
+• /tiktok = Mencari video random di tiktok
+• /waifu = Kirim gambar anime random
+• /subdl = Cari dan download subtitle dari Subdl
+• /youtube = Cari dan mirror/leech file di youtube
+• /gentoken = Generate token untuk mirror ke Gdrive Pribadi
+• /gettoken = Generate token.picke dan refresh token untuk mirror ke Gdrive Pribadi
+• /cek = Untuk cek kuota mirror/leech anda
+• /donate = Fitur unggulan hehe :)
 """
 
 CLONE_HELP_MESSAGE = f"""
@@ -192,6 +142,7 @@ QBLEECH_HELP_MESSAGE = """<b>Link tidak ditemukan, atau format perintah yang and
 YT_HELP_MESSAGE = """<b>Link tidak ditemukan, atau format perintah yang anda berikan salah, silahkan gunakan /help untuk melihat bantuan!</b>"""
 RSS_HELP_MESSAGE = """<b>Link tidak ditemukan, atau format perintah yang anda berikan salah, silahkan gunakan /help untuk melihat bantuan!</b>"""
 
+#ORIGINAL HELP MESSAGE
 
 mirror = """<b>Send link along with command line or </b>
 

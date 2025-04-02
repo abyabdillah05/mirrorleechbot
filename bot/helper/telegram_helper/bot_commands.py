@@ -16,7 +16,7 @@ class _BotCommands:
         self.CountCommand = [f"count{CMD_SUFFIX}", f"co{CMD_SUFFIX}"]
         self.DeleteCommand = [f"remove{CMD_SUFFIX}", f"rem{CMD_SUFFIX}"]
         self.RenameCommand = [f"rename{CMD_SUFFIX}", f"ren{CMD_SUFFIX}"]
-        self.CancelTaskCommand = [f"cancel{CMD_SUFFIX}", f"stop{CMD_SUFFIX}", f"c{CMD_SUFFIX}"]
+        self.CancelTaskCommand = [f"cancel{CMD_SUFFIX}", f"stop{CMD_SUFFIX}"]
         self.CancelAllCommand = [f"cancelall{CMD_SUFFIX}", f"ca{CMD_SUFFIX}"]
         self.ListCommand = [f"list{CMD_SUFFIX}", f"li{CMD_SUFFIX}"]
         self.SearchCommand = [f"search{CMD_SUFFIX}", f"se{CMD_SUFFIX}"]
@@ -33,11 +33,11 @@ class _BotCommands:
         self.HelpCommand = [f"help{CMD_SUFFIX}", f"h{CMD_SUFFIX}"]
         self.LogCommand = [f"log{CMD_SUFFIX}", f"lo{CMD_SUFFIX}"]
         self.ShellCommand = [f"shell{CMD_SUFFIX}", f"sh{CMD_SUFFIX}"]
-        self.SpeedCommand = [f"speedtest{CMD_SUFFIX}", f"spd{CMD_SUFFIX}"]
+        self.SpeedCommand = [f"speedtest{CMD_SUFFIX}", f"speed{CMD_SUFFIX}"]
         self.EvalCommand = [f"eval{CMD_SUFFIX}", f"ev{CMD_SUFFIX}"]
         self.ExecCommand = [f"exec{CMD_SUFFIX}", f"ex{CMD_SUFFIX}"]
         self.ClearLocalsCommand = [f"clearlocals{CMD_SUFFIX}", f"clo{CMD_SUFFIX}"]
-        self.BotSetCommand = [f"bsetting{CMD_SUFFIX}", f"bset{CMD_SUFFIX}", f"bs{CMD_SUFFIX}"]
+        self.BotSetCommand = [f"bsetting{CMD_SUFFIX}", f"bset{CMD_SUFFIX}"]
         self.UserSetCommand = [f"usetting{CMD_SUFFIX}", f"uset{CMD_SUFFIX}"]
         self.BtSelectCommand = [f"btsel{CMD_SUFFIX}", f"bts{CMD_SUFFIX}"]
         self.DirectCommand = [f"bypass{CMD_SUFFIX}", f"bp{CMD_SUFFIX}"]
@@ -54,7 +54,8 @@ class _BotCommands:
         self.Upload_buzzCommand = [f"buzzheavier{CMD_SUFFIX}", f"bh{CMD_SUFFIX}"]
         self.Upload_pixelCommand = [f"pixeldrain{CMD_SUFFIX}", f"pd{CMD_SUFFIX}"]
         self.CekQuotaCommand = f"cek{CMD_SUFFIX}"
-        self.GenTokenCommand = [f"gentoken{CMD_SUFFIX}", f"gtn{CMD_SUFFIX}"]
-        self.GetTokenCommand = [f"gettoken{CMD_SUFFIX}", f"gt{CMD_SUFFIX}"]
+        self.GenTokenCommand = f"gentoken{CMD_SUFFIX}"
+        self.GetTokenCommand = f"gettoken{CMD_SUFFIX}"
+        self.NeedromCommand = [f"needrom{CMD_SUFFIX}", f"nr{CMD_SUFFIX}", f"needromdl{CMD_SUFFIX}"]
 
 BotCommands = _BotCommands()

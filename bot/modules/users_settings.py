@@ -84,19 +84,19 @@ async def get_user_settings(from_user):
     elif "lprefix" not in user_dict and (LP := config_dict["LEECH_FILENAME_PREFIX"]):
         lprefix = LP
     else:
-        lprefix = "None"
+        lprefix = "Not Exist"
     
     if user_dict.get("lsuffix", False):
         lsuffix = user_dict["lsuffix"]
     else:
-        lsuffix = "None"
+        lsuffix = "Not Exist"
 
     if user_dict.get("leech_dest", False):
         leech_dest = user_dict["leech_dest"]
     elif "leech_dest" not in user_dict and (LD := config_dict["LEECH_CHAT_ID"]):
         leech_dest = LD
     else:
-        leech_dest = "None"
+        leech_dest = "Not Exist"
 
     if (
         IS_PREMIUM_USER
@@ -123,7 +123,7 @@ async def get_user_settings(from_user):
     elif RP := config_dict["RCLONE_PATH"]:
         rccpath = RP
     else:
-        rccpath = "None"
+        rccpath = "Not Exist"
 
     buttons.ibutton("Gdrive Tools", f"userset {user_id} gdrive")
     tokenmsg = "Exists" if await aiopath.exists(token_pickle) else "Not Exists"
@@ -132,8 +132,8 @@ async def get_user_settings(from_user):
     elif GI := config_dict["GDRIVE_ID"]:
         gdrive_id = GI
     else:
-        gdrive_id = "None"
-    index = user_dict["index_url"] if user_dict.get("index_url", False) else "None"
+        gdrive_id = "Not Exist"
+    index = user_dict["index_url"] if user_dict.get("index_url", False) else "Not Exist"
     if (
         user_dict.get("stop_duplicate", False)
         or "stop_duplicate" not in user_dict
@@ -142,13 +142,17 @@ async def get_user_settings(from_user):
         sd_msg = "Enabled"
     else:
         sd_msg = "Disabled"
-
+    du = {
+        "gd": "Google Drive",
+        "rc": "Rclone",
+        "pd": "Pixeldrain",
+        "gf": "Gofile",
+        "bh": "Buzzheavier",
+    }
     default_upload = (
         user_dict.get("default_upload", "") or config_dict["DEFAULT_UPLOAD"]
     )
-    du = "Gdrive API" if default_upload == "gd" else "Rclone"
-    dub = "Gdrive API" if default_upload != "gd" else "Rclone"
-    buttons.ibutton(f"Upload: {dub}", f"userset {user_id} {default_upload}")
+    buttons.ibutton(f"Upload: {default_upload}", f"userset {user_id} {default_upload}")
 
     buttons.ibutton("Excluded_Ext", f"userset {user_id} ex_ex")
     if user_dict.get("excluded_extensions", False):
@@ -156,7 +160,7 @@ async def get_user_settings(from_user):
     elif "excluded_extensions" not in user_dict and GLOBAL_EXTENSION_FILTER:
         ex_ex = GLOBAL_EXTENSION_FILTER
     else:
-        ex_ex = "None"
+        ex_ex = "Not Exist"
 
     buttons.ibutton("YT-DLP Opt", f"userset {user_id} yto")
     if user_dict.get("yt_opt", False):
@@ -164,51 +168,55 @@ async def get_user_settings(from_user):
     elif "yt_opt" not in user_dict and (YTO := config_dict["YT_DLP_OPTIONS"]):
         ytopt = YTO
     else:
-        ytopt = "None"
+        ytopt = "Not Exist"
 
     buttons.ibutton("PixelDrain_API", f"userset {user_id} pd_api")
     if user_dict.get("pixeldrain_apikey", None):
         pd_api = user_dict["pixeldrain_apikey"]
         pd_api = pd_api[:-8] + "X" * 8
     else:
-        pd_api = "None"
+        pd_api = "Not Exist"
 
     buttons.ibutton("Gofile_API", f"userset {user_id} gf_api")
     if user_dict.get("gofile_apitoken", None):
         gf_api = user_dict["gofile_apitoken"]
         gf_api = gf_api[:-8] + "X" * 8
     else:    
-        gf_api = "None"
+        gf_api = "Not Exist"
     
     buttons.ibutton("Gofile_FId", f"userset {user_id} gf_folder")
     if user_dict.get("gofile_folder_id", None):
         gf_folder = user_dict["gofile_folder_id"]
         gf_folder = gf_folder[:-8] + "X" * 8
     else:    
-        gf_folder = "None"
+        gf_folder = "Not Exist"
     
     buttons.ibutton("Buzzheavier_ID", f"userset {user_id} bh_id")
     if user_dict.get("buzzheavier_id", None):
         bhId = user_dict["buzzheavier_id"]
         bhId = bhId[:-8] + "X" * 8
     else:
-        bhId = "None"
+        bhId = "Not Exist"
     
     buttons.ibutton("String Session", f"userset {user_id} user_ss")
     if user_dict.get("string_session", None):
         string_session = "Exist"
     else:
-        string_session = "None"
+        string_session = "Not Exist"
     
     buttons.ibutton("User Cookies", f"userset {user_id} user_ck")
     if user_dict.get("user_cookies", None):
         user_cookies = "Exist"
     else:
-        user_cookies = "None"
-
+        user_cookies = "Not Exist"
+    buttons.ibutton("Metadata", f"userset {user_id} meta")
+    if user_dict.get("metadata", None):
+        metadata = user_dict["metadata"]
+    else:
+        metadata = "Not Exist"
     if user_dict:
         buttons.ibutton("Reset All", f"userset {user_id} reset")
-    buttons.ibutton("Close", f"userset {user_id} close")
+    buttons.ibutton("Close", f"userset {user_id} close", position="footer")
     if user_dict.get("caption", False):
         capt = user_dict["caption"]
     else:
@@ -232,7 +240,7 @@ async def get_user_settings(from_user):
 <b>Gdrive ID        :</b> <code>{gdrive_id}</code>
 <b>Index Link       :</b> <code>{index}</code>
 <b>Stop Duplicate   :</b> <code>{sd_msg}</code>
-<b>Default Upload   :</b> <code>{du}</code>
+<b>Default Upload   :</b> <code>{du[default_upload]}</code>
 <b>Excluded Ext     :</b> <code>{ex_ex}</code>
 <b>YT-DLP Options   :</b> <code>{escape(ytopt)}</code>
 <b>PixelDrain API   :</b> <code>{pd_api}</code>
@@ -241,6 +249,7 @@ async def get_user_settings(from_user):
 <b>Buzzheavier ID   :</b> <code>{bhId}</code>
 <b>String Session   :</b> <code>{string_session}</code>
 <b>User Cookies     :</b> <code>{user_cookies}</code>
+<b>Metadata         :</b> <code>{metadata}</code>
 </pre>
 """
     if not ospath.exists(thumbpath):
@@ -343,6 +352,8 @@ async def set_option(_, message, pre_event, option, value=""):
         for x in fx:
             x = x.lstrip(".")
             value.append(x.strip().lower())
+    elif option == "metadata":
+        value = value
     update_user_ldata(user_id, option, value)
     await deleteMessage(message)
     await update_user_settings(pre_event)
@@ -426,7 +437,7 @@ async def edit_user_settings(client, query):
         else:
             await query.answer("Old Settings", show_alert=True)
             await update_user_settings(query)
-    elif data[2] in ["yt_opt", "lprefix", "lsuffix", "index_url", "excluded_extensions", "pixeldrain_apikey", "gofile_apitoken", "gofile_folder_id", "buzzheavier_id", "string_session"]:
+    elif data[2] in ["yt_opt", "lprefix", "lsuffix", "index_url", "excluded_extensions", "pixeldrain_apikey", "gofile_apitoken", "gofile_folder_id", "buzzheavier_id", "string_session", "metadata"]:
         await query.answer()
         update_user_ldata(user_id, data[2], "")
         await update_user_settings(query)
@@ -462,7 +473,7 @@ async def edit_user_settings(client, query):
         elif "leech_dest" not in user_dict and (LD := config_dict["LEECH_CHAT_ID"]):
             leech_dest = LD
         else:
-            leech_dest = "None"
+            leech_dest = "Not Exist"
         buttons.ibutton("Leech Prefix", f"userset {user_id} leech_prefix")
         if user_dict.get("lprefix", False):
             lprefix = user_dict["lprefix"]
@@ -471,12 +482,12 @@ async def edit_user_settings(client, query):
         ):
             lprefix = LP
         else:
-            lprefix = "None"
+            lprefix = "Not Exist"
         buttons.ibutton("Leech Suffix", f"userset {user_id} leech_suffix")
         if user_dict.get("lsuffix", False):
             lsuffix = user_dict["lsuffix"]
         else:
-            lsuffix = "None"
+            lsuffix = "Not Exist"
         if (
             user_dict.get("as_doc", False)
             or "as_doc" not in user_dict
@@ -556,7 +567,7 @@ async def edit_user_settings(client, query):
         elif RP := config_dict["RCLONE_PATH"]:
             rccpath = RP
         else:
-            rccpath = "None"
+            rccpath = "Not Exist"
         text = f"""
 <b>Pengaturan Rclone untuk user</b> <code>{name}</code>
 <pre languange="bash"><b>Rclone Config    :</b> <code>{rccmsg}</code>
@@ -592,8 +603,8 @@ async def edit_user_settings(client, query):
         elif GDID := config_dict["GDRIVE_ID"]:
             gdrive_id = GDID
         else:
-            gdrive_id = "None"
-        index = user_dict["index_url"] if user_dict.get("index_url", False) else "None"
+            gdrive_id = "Not Exist"
+        index = user_dict["index_url"] if user_dict.get("index_url", False) else "Not Exist"
         text = f"""
 <b>Pengaturan Gdrive untuk user</b> <code>{name}</code>
 <pre languange="bash"><b>Gdrive Token     :</b> <code>{tokenmsg}</code>
@@ -831,6 +842,10 @@ Check all yt-dlp api options from this <a href='https://github.com/yt-dlp/yt-dlp
         buttons.ibutton(f"Italic {s}", f"userset {user_id} Italic")
         s = "✅" if format == "Monospace" or format is None else ""
         buttons.ibutton(f"Monospace {s}", f"userset {user_id} Monospace")
+        s = "" if format != "Quote" else "✅"
+        buttons.ibutton(f"Quote {s}", f"userset {user_id} Quote")
+        s = "" if format != "Spoiler" else "✅"
+        buttons.ibutton(f"Spoiler {s}", f"userset {user_id} Spoiler")
         s = "" if format != "Normal" else "✅"
         buttons.ibutton(f"Normal {s}", f"userset {user_id} Normal")
         buttons.ibutton(f"Back", f"userset {user_id} leech")
@@ -841,7 +856,7 @@ Check all yt-dlp api options from this <a href='https://github.com/yt-dlp/yt-dlp
             buttons.build_menu(2),
         )
 
-    elif data[2] in ["Bold", "Italic", "Monospace", "Normal"]:
+    elif data[2] in ["Bold", "Italic", "Monospace", "Normal", "Quote", "Spoiler"]:
             update_user_ldata(user_id, "caption", data[2])
             await update_user_settings(query)
             if DATABASE_URL:
@@ -885,9 +900,28 @@ Check all yt-dlp api options from this <a href='https://github.com/yt-dlp/yt-dlp
         )
         pfunc = partial(set_option, pre_event=query, option="excluded_extensions")
         await event_handler(client, query, pfunc)
-    elif data[2] in ["gd", "rc"]:
+    elif data[2] == "meta":
         await query.answer()
-        du = "rc" if data[2] == "gd" else "gd"
+        buttons = ButtonMaker()
+        if user_dict.get("metadata", None):
+            buttons.ibutton(
+                "Remove Metadata", f"userset {user_id} metadata"
+            )
+        buttons.ibutton("Back", f"userset {user_id} back")
+        buttons.ibutton("Close", f"userset {user_id} close")
+        await editMessage(
+            message,
+            "Send metadata (Title Stream). Timeout: 60 sec",
+            buttons.build_menu(1),
+        )
+        pfunc = partial(set_option, pre_event=query, option="metadata")
+        await event_handler(client, query, pfunc)
+    elif data[2] in ["gd", "rc", "gf", "bh", "pd"]:
+        await query.answer()
+        toggle_order = ["gd", "rc", "gf", "bh", "pd"]
+        current_index = toggle_order.index(data[2])
+        next_index = (current_index + 1) % len(toggle_order)
+        du = toggle_order[next_index]
         update_user_ldata(user_id, "default_upload", du)
         await update_user_settings(query)
         if DATABASE_URL:
@@ -982,6 +1016,8 @@ async def generate_caption_message(user_dict, user_id):
         "Italic": "Italic",
         "Monospace": "Monospace",
         "Normal": "Normal",
+        "Quote": "Quote",
+        "Spoiler": "Spoiler",
     }
     
     for key, value in format_buttons.items():
@@ -1005,4 +1041,9 @@ bot.add_handler(
         filters=command(BotCommands.UserSetCommand) & CustomFilters.authorized,
     )
 )
-bot.add_handler(CallbackQueryHandler(edit_user_settings, filters=regex("^userset")))
+bot.add_handler(
+    CallbackQueryHandler(
+        edit_user_settings,
+        filters=regex("^userset")
+    )
+)

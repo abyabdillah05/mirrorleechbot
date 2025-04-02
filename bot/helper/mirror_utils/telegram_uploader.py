@@ -183,6 +183,10 @@ class TgUploader:
             capt = f"<b>{file_}</b>"
         elif self._caption == "Italic":
             capt = f"<i>{file_}</i>"
+        elif self._caption == "Quote":
+            capt = f"<blockquote>{file_}</blockquote>"
+        elif self._caption == "Spoiler":
+            capt = f"<spoiler>{file_}</spoiler>"
         elif self._caption == "Normal":
             capt = f"{file_}"
         else:

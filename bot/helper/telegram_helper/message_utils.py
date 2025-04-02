@@ -179,7 +179,7 @@ async def edit_status():
         for key, data in list(status_dict.items()):
             try:
                 del status_dict[key]
-                await editMessage(data["message"], f"Status message telah di, silahkan buka kembali dengan perintah /{BotCommands.StatusCommand[0]}")
+                await editMessage(data["message"], f"Status message telah ditutup, silahkan buka kembali dengan perintah /{BotCommands.StatusCommand[0]}")
             except Exception as e:
                 LOGGER.error(str(e))
 
@@ -266,26 +266,37 @@ async def update_status_message(sid, force=False):
                 obj.cancel()
                 del Intervals["status"][sid]
             return
+            
         if not force and time() - status_dict[sid]["time"] < 3:
             return
+            
         status_dict[sid]["time"] = time()
+        
         page_no = status_dict[sid]["page_no"]
         status = status_dict[sid]["status"]
         is_user = status_dict[sid]["is_user"]
         page_step = status_dict[sid]["page_step"]
+        is_all = status_dict[sid].get("is_all", False)
+        
+        chat_id = sid if sid < 0 else None
+        cmd_user_id = status_dict[sid].get("cmd_user_id") or (sid if is_user else None)
+        
         text, buttons = await sync_to_async(
-            get_readable_message, sid, is_user, page_no, status, page_step
+            get_readable_message, sid, is_user, page_no, status, page_step, chat_id, is_all, cmd_user_id
         )
+        
         if text is None:
             del status_dict[sid]
             if obj := Intervals["status"].get(sid):
                 obj.cancel()
                 del Intervals["status"][sid]
             return
+            
         if text != status_dict[sid]["message"].text:
             message = await editMessage(
                 status_dict[sid]["message"], text, buttons, block=False
             )
+            
             if isinstance(message, str):
                 if message.startswith("Telegram says: [400"):
                     del status_dict[sid]
@@ -293,61 +304,79 @@ async def update_status_message(sid, force=False):
                         obj.cancel()
                         del Intervals["status"][sid]
                 else:
-                    LOGGER.error(
-                        f"Status with id: {sid} haven't been updated. Error: {message}"
-                    )
+                    LOGGER.error(f"Status dengan ID: {sid} tidak dapat diperbarui. Error: {message}")
                 return
+                
             status_dict[sid]["message"].text = text
             status_dict[sid]["time"] = time()
 
 
-async def sendStatusMessage(msg, user_id=0):
+async def sendStatusMessage(message, user_id=0, is_user=False, chat_id=None, is_all=False, cmd_user_id=None):
     async with task_dict_lock:
-        sid = user_id or msg.chat.id
-        is_user = bool(user_id)
+        sid = user_id or message.chat.id
+        requester_id = cmd_user_id or message.from_user.id
+        
         if sid in list(status_dict.keys()):
             page_no = status_dict[sid]["page_no"]
             status = status_dict[sid]["status"]
             page_step = status_dict[sid]["page_step"]
+            
             text, buttons = await sync_to_async(
-                get_readable_message, sid, is_user, page_no, status, page_step
+                get_readable_message, sid, is_user, page_no, status, page_step, chat_id, is_all, requester_id
             )
+            
             if text is None:
                 del status_dict[sid]
                 if obj := Intervals["status"].get(sid):
                     obj.cancel()
                     del Intervals["status"][sid]
                 return
-            message = status_dict[sid]["message"]
-            await deleteMessage(message)
-            message = await sendMessage(msg, text, buttons, block=False)
-            if isinstance(message, str):
-                LOGGER.error(
-                    f"Status with id: {sid} haven't been sent. Error: {message}"
-                )
+                
+            message_obj = status_dict[sid]["message"]
+            await deleteMessage(message_obj)
+            message_obj = await sendMessage(message, text, buttons, block=False)
+            
+            if isinstance(message_obj, str):
+                LOGGER.error(f"Status dengan ID: {sid} tidak dapat dikirim. Error: {message_obj}")
                 return
-            message.text = text
-            status_dict[sid].update({"message": message, "time": time()})
+                
+            message_obj.text = text
+            status_dict[sid].update({
+                "message": message_obj, 
+                "time": time(),
+                "cmd_user_id": requester_id,
+                "is_all": is_all,
+                "is_user": is_user,
+                "chat_id": chat_id
+            })
         else:
-            text, buttons = await sync_to_async(get_readable_message, sid, is_user)
+            text, buttons = await sync_to_async(
+                get_readable_message, sid, is_user, 1, "All", 1, chat_id, is_all, requester_id
+            )
+            
             if text is None:
                 return
-            message = await sendMessage(msg, text, buttons, block=False)
-            if isinstance(message, str):
-                LOGGER.error(
-                    f"Status with id: {sid} haven't been sent. Error: {message}"
-                )
+                
+            message_obj = await sendMessage(message, text, buttons, block=False)
+            
+            if isinstance(message_obj, str):
+                LOGGER.error(f"Status dengan ID: {sid} tidak dapat dikirim. Error: {message_obj}")
                 return
-            message.text = text
+                
+            message_obj.text = text
             status_dict[sid] = {
-                "message": message,
+                "message": message_obj,
                 "time": time(),
                 "page_no": 1,
                 "page_step": 1,
                 "status": "All",
                 "is_user": is_user,
+                "cmd_user_id": requester_id,
+                "is_all": is_all,
+                "chat_id": chat_id
             }
-    if not Intervals["status"].get(sid) and not is_user:
+            
+    if not Intervals["status"].get(sid) and not is_user and not is_all:
         Intervals["status"][sid] = setInterval(
             config_dict["STATUS_UPDATE_INTERVAL"], update_status_message, sid
         )

@@ -17,7 +17,7 @@ from bot.helper.telegram_helper.message_utils import (
 )
 from bot.helper.ext_utils.status_utils import getTaskByGid
 from bot.helper.ext_utils.task_manager import stop_duplicate_check, limit_checker
-from bot.helper.ext_utils.pikachu_utils import quota_check
+from bot.helper.ext_utils.quota_utils import quota_check
 
 
 @new_thread

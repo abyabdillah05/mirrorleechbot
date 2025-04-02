@@ -9,7 +9,7 @@ from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.ext_utils.db_handler import DbManger
 from bot.helper.ext_utils.bot_utils import update_user_ldata
 from bot.helper.ext_utils.status_utils import get_readable_file_size
-from bot.helper.ext_utils.pikachu_utils import create_token
+from bot.helper.ext_utils.quota_utils import create_token
 
 
 async def authorize(_, message):
@@ -98,7 +98,9 @@ async def check_quota(_, message):
             user_id = int(msg[1].strip())
             self = False
         except ValueError:
-            await sendMessage(message, "❌ <b>Format ID tidak valid.</b>")
+            mess = await sendMessage(message, "❌ <b>Format ID tidak valid.</b>")
+            await asleep(60)
+            await deleteMessage(mess)
             return
     elif is_reply:
         user_id = replied_user_id
@@ -113,164 +115,246 @@ async def check_quota(_, message):
         quota = user_data[user_id].get("quota", 0)
     else:
         quota = 0
-        
-    header = "📊 <b>INFORMASI KUOTA PENGGUNA</b>"
-    divider = "\n─────────────────────────\n"
     
-    standard_quota = 25 * 1024 * 1024 * 1024
-    quota_multiples = quota / standard_quota if quota > 0 else 0
-    quota_rounded = round(quota_multiples, 2)
-    
-    base_msg = f"{header}{divider}"
-    base_msg += f"<b>Status:</b> <code>{'Guest' if quota == 0 else 'Authorized User'}</code>\n"
-    base_msg += f"<b>ID Pengguna:</b> <code>{user_id}</code>\n"
-    base_msg += f"<b>Sisa Kuota:</b> <code>{get_readable_file_size(quota)}</code>\n"
-    
-    if quota > 0:
-        base_msg += f"<b>Setara Dengan:</b> <code>{quota_rounded}x</code> paket kuota standard\n"
-    
-    base_msg += divider
+    try:
+        user_info = await bot.get_users(user_id)
+        user_name = user_info.first_name
+        username = user_info.username if user_info.username else None
+    except Exception as e:
+        LOGGER.error(f"Error getting user info: {str(e)}")
+        user_name = None
+        username = None
     
     GB_20 = 20 * 1024 * 1024 * 1024
     GB_15 = 15 * 1024 * 1024 * 1024
     GB_10 = 10 * 1024 * 1024 * 1024
     GB_5 = 5 * 1024 * 1024 * 1024
     
+    header = "📊 <b>INFORMASI KUOTA PENGGUNA</b>"
+    divider = "\n━━━━━━━━━━━━━━━━━━━━━━━━\n"
+    
+    standard_quota = 20 * 1024 * 1024 * 1024
+    quota_multiples = quota / standard_quota if quota > 0 else 0
+    quota_rounded = round(quota_multiples, 2)
+    
+    base_msg = f"{header}{divider}"
+    
+    if user_name:
+        base_msg += f"<b>👤 Nama:</b> <code>{user_name}</code>\n"
+    if username:
+        base_msg += f"<b>🔖 Username:</b> <code>@{username}</code>\n"
+    
+    if sudo:
+        base_msg += f"<b>🔰 Status:</b> <code>Sudo User</code>\n"
+    elif user_id == OWNER_ID:
+        base_msg += f"<b>👑 Status:</b> <code>Owner</code>\n"
+    else:
+        base_msg += f"<b>🔰 Status:</b> <code>{'Guest' if quota == 0 else 'Premium User'}</code>\n"
+    
+    base_msg += f"<b>🆔 ID Pengguna:</b> <code>{user_id}</code>\n"
+    
+    if sudo or user_id == OWNER_ID:
+        base_msg += f"<b>💾 Kuota:</b> <code>Unlimited</code>\n"
+    else:
+        if quota >= GB_20:
+            quota_indicator = "🔵"  
+        elif quota >= GB_15:
+            quota_indicator = "🟢"  
+        elif quota >= GB_10:
+            quota_indicator = "🟡"  
+        elif quota >= GB_5:
+            quota_indicator = "🟠"  
+        elif quota > 0:
+            quota_indicator = "🔴"  
+        else:
+            quota_indicator = "⚠️"  
+        
+        base_msg += f"<b>💾 Kuota:</b> <code>{get_readable_file_size(quota)}</code> {quota_indicator}\n"
+        
+        if quota > 0:
+            base_msg += f"<b>📈 Setara:</b> <code>{quota_rounded}x</code> paket standard (20GB)\n"
+    
+    base_msg += divider
+    
     if sudo:
         if self:
             msg = (
                 f"{base_msg}"
-                f"<b>✅ Hak Istimewa Sudo User:</b>\n"
-                f"• Akses tanpa batas ke semua fitur\n"
-                f"• Dapat menggunakan bot tanpa batasan kuota\n"
-                f"• Kemampuan mengelola pengguna lain\n"
-                f"• Akses ke perintah administratif\n\n"
-                f"<i>Gunakan hak istimewa ini dengan bijak!</i>"
+                f"<b>✨ HAK ISTIMEWA SUDO USER</b>\n\n"
+                f"<i>Sebagai Sudo User, Anda memiliki akses premium:</i>\n\n"
+                f"• 🚀 Akses tanpa batas ke semua fitur bot\n"
+                f"• 💯 Penggunaan bot tanpa batasan kuota\n"
+                f"• 👥 Kemampuan mengelola pengguna lain\n"
+                f"• ⚙️ Akses ke semua perintah administratif\n"
+                f"• 📊 Monitoring aktivitas dan penggunaan\n\n"
+                f"<i>🔍 Gunakan hak istimewa ini dengan bijak dan bertanggung jawab!</i>"
             )
         else:
             msg = (
                 f"{base_msg}"
-                f"<b>⚠️ Informasi:</b> Pengguna ini memiliki hak istimewa Sudo dengan akses kuota tanpa batas."
+                f"<b>ℹ️ INFORMASI PENGGUNA</b>\n\n"
+                f"<i>Pengguna ini adalah Sudo User dengan hak istimewa khusus:</i>\n\n"
+                f"• Memiliki akses premium ke seluruh fitur bot\n"
+                f"• Dapat menggunakan bot tanpa batasan kuota\n"
+                f"• Memiliki kemampuan administratif dalam sistem\n\n"
+                f"<i>Status Sudo User memberikan prioritas dan fitur eksklusif.</i>"
             )
         
         mess = await sendMessage(message, msg)
+        await asleep(120)
+        await deleteMessage(mess)
+        return
         
     elif user_id == OWNER_ID:
         if self:
             msg = (
                 f"{base_msg}"
-                f"<b>✅ Hak Istimewa Owner:</b>\n"
-                f"• Akses penuh ke semua fitur dan pengaturan\n"
-                f"• Kuota tak terbatas untuk semua operasi\n"
-                f"• Kemampuan mengelola pengguna dan sudo\n"
-                f"• Akses ke semua perintah administratif\n\n"
-                f"<i>Anda memiliki kontrol penuh atas bot ini!</i>"
+                f"<b>👑 HAK ISTIMEWA OWNER</b>\n\n"
+                f"<i>Sebagai Owner, Anda memiliki kontrol penuh atas sistem:</i>\n\n"
+                f"• 🔐 Akses penuh ke semua fitur dan pengaturan\n"
+                f"• ♾️ Kuota tak terbatas untuk semua operasi\n"
+                f"• 👨‍💼 Kemampuan mengelola pengguna dan sudo\n"
+                f"• 🛠️ Kontrol penuh atas infrastruktur bot\n"
+                f"• 📈 Akses ke statistik dan analitik sistem\n\n"
+                f"<i>🌟 Anda memiliki kontrol penuh atas seluruh sistem!</i>"
             )
         else:
             msg = (
                 f"{base_msg}"
-                f"<b>⚠️ Informasi:</b> Pengguna ini adalah Owner bot dengan akses penuh dan kuota tak terbatas."
+                f"<b>ℹ️ INFORMASI PENGGUNA</b>\n\n"
+                f"<i>Pengguna ini adalah Owner bot dengan kendali penuh atas sistem:</i>\n\n"
+                f"• Memiliki akses tak terbatas ke seluruh fitur\n"
+                f"• Dapat mengoperasikan bot tanpa batasan kuota\n"
+                f"• Memiliki kontrol penuh atas konfigurasi dan pengaturan\n\n"
+                f"<i>Status Owner memberikan hak administratif tertinggi dalam sistem.</i>"
             )
         
         mess = await sendMessage(message, msg)
-        
+        await asleep(120)
+        await deleteMessage(mess)
+        return
+    
+    if quota == 0:
+        detail_msg = (
+            "<b>⚠️ BELUM MEMILIKI KUOTA!</b>\n\n"
+            "<i>Untuk menggunakan layanan bot ini, Anda memerlukan kuota. "
+            "Kuota adalah 'kredit' yang diperlukan untuk mengunduh dan mengunggah file.</i>\n\n"
+            "<b>📝 CARA MENDAPATKAN KUOTA:</b>\n"
+            "• Klik tombol \"TAMBAH KUOTA\" di bawah ini\n"
+            "• Lewati shortlink yang muncul (100% gratis)\n"
+            "• Kuota 20GB akan otomatis ditambahkan\n"
+            "• Kuota tidak akan pernah kadaluarsa\n\n"
+            "<b>🌟 KEUNTUNGAN MEMILIKI KUOTA:</b>\n"
+            "• Akses penuh ke semua fitur bot premium\n"
+            "• Kemampuan mengunduh file tanpa batasan format\n"
+            "• Dukungan prioritas dari admin\n"
+            "• Kemampuan menjalankan tugas berukuran besar\n\n"
+        )
+    elif quota >= GB_20:
+        detail_msg = (
+            "<b>🔵 KUOTA ANDA BERLIMPAH!</b>\n\n"
+            "<i>Selamat! Anda memiliki kuota yang sangat banyak. "
+            "Anda dapat mengunduh file-file berukuran besar dengan leluasa.</i>\n\n"
+            "<b>💡 TIPS PENGGUNAAN OPTIMAL:</b>\n"
+            "• Manfaatkan fitur batch download untuk efisiensi\n"
+            "• Gunakan fitur pencarian untuk menemukan file berkualitas\n"
+            "• Jelajahi fitur kompresi untuk mengoptimalkan ruang\n"
+            "• Hindari mengunduh file yang sama berulang kali\n\n"
+            "<b>📊 ESTIMASI PENGGUNAAN:</b>\n"
+            "• Kuota Anda cukup untuk mengunduh banyak film 4K\n"
+            "• Ideal untuk penggunaan intensif jangka panjang\n"
+            "• Cocok untuk transfer data dalam jumlah besar\n\n"
+        )
+    elif quota >= GB_15:
+        detail_msg = (
+            "<b>🟢 KUOTA ANDA SANGAT BAIK!</b>\n\n"
+            "<i>Anda memiliki kuota yang cukup banyak. "
+            "Bot dapat digunakan dengan optimal untuk berbagai kebutuhan.</i>\n\n"
+            "<b>💡 TIPS MENGOPTIMALKAN KUOTA:</b>\n"
+            "• Prioritaskan file penting terlebih dahulu\n"
+            "• Manfaatkan fitur kompresi untuk file besar\n"
+            "• Hindari mengunduh file berkualitas rendah\n"
+            "• Periksa ukuran file sebelum mengunduh\n\n"
+            "<b>📊 PERKIRAAN KAPASITAS:</b>\n"
+            "• Kuota Anda cukup untuk 7-10 film HD\n"
+            "• Ideal untuk penggunaan reguler mingguan\n"
+            "• Pertimbangkan menambah kuota jika akan mengunduh file sangat besar\n\n"
+        )
+    elif quota >= GB_10:
+        detail_msg = (
+            "<b>🟡 KUOTA ANDA CUKUP!</b>\n\n"
+            "<i>Dengan kuota sekitar 10-15GB, Anda masih memiliki ruang yang memadai. "
+            "Namun, perlu berhati-hati dengan file berukuran besar.</i>\n\n"
+            "<b>💡 SARAN PENGGUNAAN:</b>\n"
+            "• Perhatikan ukuran file sebelum mengunduh\n"
+            "• Gunakan fitur pemilihan file untuk torrent\n"
+            "• Prioritaskan konten yang benar-benar Anda butuhkan\n"
+            "• Pertimbangkan untuk menambah kuota dalam waktu dekat\n\n"
+            "<b>⚙️ MANAJEMEN KUOTA:</b>\n"
+            "• Hindari mengunduh beberapa file besar sekaligus\n"
+            "• Gunakan fitur preview untuk mengecek file\n"
+            "• Pantau penggunaan kuota dengan perintah /cek\n\n"
+        )
+    elif quota >= GB_5:
+        detail_msg = (
+            "<b>🟠 PERHATIAN! KUOTA TERBATAS!</b>\n\n"
+            "<i>Kuota Anda sudah mulai terbatas. Dengan sisa 5-10GB, "
+            "Anda perlu berhati-hati dalam menggunakan bot.</i>\n\n"
+            "<b>⚠️ PERINGATAN PENGGUNAAN:</b>\n"
+            "• File berukuran besar (>3GB) berisiko gagal diunduh\n"
+            "• Gunakan fitur preview untuk memastikan kualitas\n"
+            "• Hindari mengunduh file dalam jumlah banyak\n"
+            "• Pertimbangkan opsi mirror daripada leech\n\n"
+            "<b>🔄 REKOMENDASI TINDAKAN:</b>\n"
+            "• Tambahkan kuota segera untuk menghindari gangguan\n"
+            "• Selesaikan unduhan yang sudah berjalan\n"
+            "• Gunakan fitur kompresi untuk file penting\n\n"
+        )
     else:
-        if quota == 0:
-            detail_msg = (
-                "<b>⚠️ Belum memiliki kuota!</b>\n\n"
-                "<i>Untuk menggunakan bot ini, diperlukan kuota yang bisa ditambahkan melalui tombol di bawah. "
-                "Kuota digunakan untuk mengunduh dan mengunggah file.</i>\n\n"
-                "<b>✅ Keuntungan Memiliki Kuota:</b>\n"
-                "• Akses penuh ke semua fitur bot\n"
-                "• Dapat mengunduh file tanpa batasan\n"
-                "• Kuota tidak akan hangus/expired\n"
-                "• Support langsung dari admin\n\n"
-            )
-        elif quota >= GB_20:
-            detail_msg = (
-                "<b>✅ Kuota masih banyak!</b>\n\n"
-                "<i>Kuota yang tersedia cukup untuk mengunduh banyak file. "
-                "Bot dapat digunakan dengan optimal tanpa khawatir kehabisan kuota.</i>\n\n"
-                "<b>💡 Tips Menggunakan Kuota:</b>\n"
-                "• Hindari mengunduh file yang sama berulang kali\n"
-                "• Gunakan fungsi mirror untuk efisiensi kuota\n"
-                "• Pastikan link yang diunduh valid\n\n"
-            )
-        elif quota >= GB_15:
-            detail_msg = (
-                "<b>✅ Kuota masih mencukupi!</b>\n\n"
-                "<i>Dengan kuota saat ini, masih dapat mengunduh banyak file. "
-                "Tetapi jika berencana mengunduh file berukuran besar, pertimbangkan untuk menambah kuota.</i>\n\n"
-                "<b>💡 Tips Mengoptimalkan Kuota:</b>\n"
-                "• Prioritaskan file penting untuk diunduh terlebih dahulu\n"
-                "• Gunakan fitur kompresi untuk file besar\n"
-                "• Pertimbangkan untuk menambah kuota sebelum habis\n\n"
-            )
-        elif quota >= GB_10:
-            detail_msg = (
-                "<b>⚠️ Kuota mulai berkurang!</b>\n\n"
-                "<i>Dengan kuota sekitar 10-15GB, masih memiliki ruang yang cukup untuk beberapa file. "
-                "Namun, jika berencana mengunduh file besar, sebaiknya tambahkan kuota segera.</i>\n\n"
-                "<b>💡 Saran Penggunaan:</b>\n"
-                "• Perhatikan ukuran file sebelum mengunduh\n"
-                "• Gunakan fitur leech untuk file yang benar-benar penting\n"
-                "• Pertimbangkan untuk menambah kuota segera\n\n"
-            )
-        elif quota >= GB_5:
-            detail_msg = (
-                "<b>⚠️ Perhatian! Kuota hampir habis!</b>\n\n"
-                "<i>Dengan kuota tersisa hanya 5-10GB, perlu berhati-hati dalam menggunakan bot. "
-                "File berukuran besar mungkin tidak dapat diunduh tanpa menambah kuota.</i>\n\n"
-                "<b>⚡ Tindakan yang Disarankan:</b>\n"
-                "• Prioritaskan pengunduhan file penting saja\n"
-                "• Cek ukuran file sebelum mengunduh\n"
-                "• Tambahkan kuota segera untuk penggunaan lancar\n\n"
-            )
+        detail_msg = (
+            "<b>🔴 PERINGATAN! KUOTA SANGAT RENDAH!</b>\n\n"
+            "<i>Kuota Anda hampir habis! Dengan kuota kurang dari 5GB, "
+            "kemampuan mengunduh file sangat terbatas.</i>\n\n"
+            "<b>🚨 STATUS KRITIS:</b>\n"
+            "• Kuota hampir habis dan sangat terbatas\n"
+            "• Hanya file kecil (<2GB) yang dapat diunduh\n"
+            "• Risiko tinggi kegagalan unduhan\n"
+            "• Beberapa fitur mungkin tidak berfungsi optimal\n\n"
+            "<b>⚡ TINDAKAN SEGERA:</b>\n"
+            "• Tambahkan kuota SEKARANG melalui tombol di bawah\n"
+            "• Hentikan semua unduhan yang tidak penting\n"
+            "• Hindari memulai tugas baru hingga kuota ditambah\n\n"
+        )
+    
+    if quota >= GB_20:
+        status_indicator = "🔵 Status Kuota: Berlimpah"
+    elif quota >= GB_15:
+        status_indicator = "🟢 Status Kuota: Sangat Baik"
+    elif quota >= GB_10:
+        status_indicator = "🟡 Status Kuota: Cukup"
+    elif quota >= GB_5:
+        status_indicator = "🟠 Status Kuota: Terbatas"
+    elif quota > 0:
+        status_indicator = "🔴 Status Kuota: Kritis"
+    else:
+        status_indicator = "⚠️ Status Kuota: Tidak Ada"
+    
+    detail_msg += f"<b>{status_indicator}</b>\n\n"
+    
+    if quota < GB_20 or quota == 0:
+        if is_reply and user_id != from_user_id:
+            detail_msg += f"<i>ℹ️ Tombol tambah kuota hanya dapat digunakan oleh <a href='tg://user?id={user_id}'>pengguna ini</a>.</i>"
+        elif not self and not is_reply:
+            detail_msg += f"<i>ℹ️ Tombol tambah kuota hanya dapat digunakan oleh pengguna dengan ID: {user_id}.</i>"
         else:
-            detail_msg = (
-                "<b>🚨 PERINGATAN! KUOTA SANGAT RENDAH!</b>\n\n"
-                "<i>Kuota kurang dari 5GB dan akan segera habis! "
-                "Tidak akan dapat mengunduh sebagian besar file tanpa menambah kuota.</i>\n\n"
-                "<b>🔴 Status Kritis:</b>\n"
-                "• Kuota hampir habis\n"
-                "• Hanya file kecil yang dapat diunduh\n"
-                "• Resiko kegagalan unduhan tinggi\n"
-                "• Tambah kuota SEKARANG untuk menghindari gangguan\n\n"
-            )
+            detail_msg += "<i>✨ Klik tombol di bawah untuk menambah kuota secara GRATIS:</i>"
         
-        if quota >= GB_20:
-            status_indicator = "✅ Status Kuota: Sangat Baik"
-        elif quota >= GB_15:
-            status_indicator = "✅ Status Kuota: Baik"
-        elif quota >= GB_10:
-            status_indicator = "⚠️ Status Kuota: Menengah"
-        elif quota >= GB_5:
-            status_indicator = "⚠️ Status Kuota: Rendah"
-        elif quota > 0:
-            status_indicator = "🚨 Status Kuota: Kritis"
-        else:
-            status_indicator = "❌ Status Kuota: Tidak Ada"
-            
-        detail_msg += f"<b>{status_indicator}</b>\n\n"
-        
-        if quota < GB_20 or quota == 0:
-            if is_reply and user_id != from_user_id:
-                detail_msg += f"<i>Tombol tambah kuota hanya dapat digunakan oleh <a href='tg://user?id={user_id}'>pengguna ini</a>.</i>"
-            elif not self and not is_reply:
-                detail_msg += f"<i>Tombol tambah kuota hanya dapat digunakan oleh pengguna dengan ID: {user_id}.</i>"
-            else:
-                detail_msg += "<i>Klik tombol di bawah untuk menambah kuota:</i>"
-            
-            try:
-                butt = await create_token(user_id)
-                final_msg = base_msg + detail_msg
-                mess = await sendMessage(message, final_msg, butt)
-            except Exception as e:
-                LOGGER.error(f"Error creating token: {str(e)}")
-                final_msg = base_msg + detail_msg
-                mess = await sendMessage(message, final_msg)
-        else:
-            detail_msg += "<i>Selamat menggunakan bot! Jika ada pertanyaan, hubungi admin.</i>"
+        try:
+            butt = await create_token(user_id)
+            final_msg = base_msg + detail_msg
+            mess = await sendMessage(message, final_msg, butt.build_menu(2))  # Build menu here
+        except Exception as e:
+            LOGGER.error(f"Error creating token: {str(e)}")
             final_msg = base_msg + detail_msg
             mess = await sendMessage(message, final_msg)
     
