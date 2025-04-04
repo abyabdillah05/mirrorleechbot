@@ -6,6 +6,7 @@ from time import time
 from sys import executable
 from pyrogram.handlers import MessageHandler
 from pyrogram.filters import command
+from pyrogram.types import BotCommand, BotCommandScopeDefault
 from asyncio import create_subprocess_exec, gather
 from psutil import (
     disk_usage, 
@@ -23,6 +24,7 @@ from datetime import datetime
 
 from .helper.ext_utils.files_utils import clean_all, exit_clean_up
 from .helper.ext_utils.bot_utils import cmd_exec, sync_to_async, create_help_buttons
+from asyncio import create_subprocess_exec, gather, sleep as asleep
 from .helper.ext_utils.status_utils import get_readable_file_size, get_readable_time
 from .helper.ext_utils.db_handler import DbManger
 from .helper.telegram_helper.bot_commands import BotCommands
@@ -246,7 +248,7 @@ async def start(client, message):
     buttons = ButtonMaker()
     buttons.ubutton("👤 Maintainer", "https://t.me/WzdDizzyFlasherr", "header")
     buttons.ubutton("📢 Channel", "https://t.me/DizzyStuffProject")
-    buttons.ubutton("👥 Group", "https://t.me/TranssionCore5")
+    buttons.ubutton("👥 Group", "https://t.me/+QLqlp887uHFiOTVl")
     buttons.ubutton("💰 Donate", "https://telegra.ph/Donate-and-Support-Us-03-21")
     buttons.ubutton("➕ Add me to Group", f"https://t.me/{bot.me.username}?startgroup=true", "footer")
     reply_markup = buttons.build_menu(2)
@@ -494,11 +496,45 @@ help_string = f"""
 <code>/{BotCommands.EvalCommand[0]}</code> atau <code>/{BotCommands.EvalCommand[1]}</code> : Menjalankan perintah Kode Python (Hanya Owner).
 <code>/{BotCommands.ExecCommand[0]}</code> atau <code>/{BotCommands.ExecCommand[1]}</code> : Menjalankan perintah Exec (Hanya Owner).
 <code>/{BotCommands.ClearLocalsCommand[0]}</code> atau <code>/{BotCommands.ClearLocalsCommand[1]}</code> : Menghapus penyimpanan lokal (Hanya Owner)
-<code>/{BotCommands.RssCommand}</code> : Menu RSS.
 
 <b>NOTE :</b> Kirim perintah tanpa argument untuk melihat perintah secara detail!
 """
 
+bot.set_bot_commands([
+    BotCommand(f"{BotCommands.StartCommand}", "Mulai bot"),
+    BotCommand(f"{BotCommands.HelpCommand[0]}", "Tampilkan daftar perintah"),
+    BotCommand(f"{BotCommands.MirrorCommand[0]}", "Mirror ke Cloud"),
+    BotCommand(f"{BotCommands.QbMirrorCommand[0]}", "Mirror ke Cloud menggunakan qBittorrent"),
+    BotCommand(f"{BotCommands.YtdlCommand[0]}", "Mirror link yang disupport YT-DLP"),
+    BotCommand(f"{BotCommands.LeechCommand[0]}", "Leech ke Telegram"),
+    BotCommand(f"{BotCommands.QbLeechCommand[0]}", "Leech ke Telegram menggunakan qBittorrent"),
+    BotCommand(f"{BotCommands.YtdlLeechCommand[0]}", "Leech link yang disupport YT-DLP"),
+    BotCommand(f"{BotCommands.CloneCommand[0]}", "Menggandakan file/folder Google Drive"),
+    BotCommand(f"{BotCommands.CountCommand[0]}", "Menghitung file/folder Google Drive"),
+    BotCommand(f"{BotCommands.DeleteCommand[0]}", "Menghapus file/folder Google Drive"),
+    BotCommand(f"{BotCommands.UserSetCommand[0]}", "Pengaturan User"),
+    BotCommand(f"{BotCommands.BotSetCommand[0]}", "Pengaturan Bot"),
+    BotCommand(f"{BotCommands.RenameCommand[0]}", "Mengganti nama file/folder Google Drive"),
+    BotCommand(f"{BotCommands.ListCommand[0]}", "Mencari file/folder di Google Drive"),
+    BotCommand(f"{BotCommands.SearchCommand[0]}", "Mencari torrent menggunakan API"),
+    BotCommand(f"{BotCommands.GenTokenCommand}", "Authorize Google Drive"),
+    BotCommand(f"{BotCommands.GetTokenCommand}", "Get Google Drive Token"),
+    BotCommand(f"{BotCommands.StatusCommand[0]}", "Menampilkan status dari semua tugas yang sedang berjalan"),
+    BotCommand(f"{BotCommands.StatsCommand[0]}", "Menampilan statistik dari mesin bot"),
+    BotCommand(f"{BotCommands.PingCommand[0]}", "Mengetes respon bot"),
+    BotCommand(f"{BotCommands.CekQuotaCommand}", "Cek Quota Mirror atau Leech"),
+    BotCommand(f"{BotCommands.Upload_gofileCommand[0]}", "Upload ke Gofile"),
+    BotCommand(f"{BotCommands.Upload_buzzCommand[0]}", "Upload ke BuzzHeavier"),
+    BotCommand(f"{BotCommands.Upload_pixelCommand[0]}", "Upload ke PixelDrain"),
+    BotCommand(f"{BotCommands.GallerydlCommand[0]}", "Download dengan Gallery-DL"),
+    BotCommand(f"{BotCommands.Yt_searchCommand[0]}", "Cari dan download Video Youtube"),
+    BotCommand(f"{BotCommands.TiktokCommand[0]}", "Cari video random di Tiktok"),
+    BotCommand(f"{BotCommands.AsupanCommand[0]}", "Dapatkan asupan random"),
+    BotCommand(f"{BotCommands.AnimekCommand[0]}", "Dapatkan waifu random"),
+    BotCommand(f"{BotCommands.MediaInfoCommand[0]}", "Cek mediainfo dari file"),
+    BotCommand(f"{BotCommands.DirectCommand[0]}", "Bypass Shortlink"),
+    BotCommand(f"{BotCommands.DonateCommand}", "Donasi untuk bot ini"),
+], scope=BotCommandScopeDefault())
 
 async def bot_help(client, message):
     buttons = ButtonMaker()

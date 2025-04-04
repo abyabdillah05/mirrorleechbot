@@ -367,11 +367,11 @@ class TaskListener(TaskConfig):
         else:
             msg += f"\n<b>🏷️ Tipe :</b> <code>{mime_type}</code>"
             msg += f'\n<b>⏱ Waktu:</b> {get_readable_time(time() - self.extra_details["startTime"])}'
-            if mime_type != "Folder" and not self.isClone:
-                if self.md5:
-                    msg += f"\n<b>🛡️ MD5 Checksum:</b> <code>{self.md5}</code>"
-                else:
-                    msg += f"\n<b>🛡️ MD5 Checksum:</b> <code>{self.md5}</code>"
+            #if mime_type != "Folder" and not self.isClone:
+                #if self.md5:
+                #    msg += f"\n<b>🛡️ MD5 Checksum:</b> <code>{self.md5}</code>"
+                #else:
+                #    msg += f"\n<b>🛡️ MD5 Checksum:</b> <code>{self.md5}</code>"
             if mime_type == "Folder":
                 msg += f"\n<b>📂 Jumlah Folder :</b> <code>{folders}</code>"
                 msg += f"\n<b>📄 Jumlah File :</b> <code>{files}</code>"

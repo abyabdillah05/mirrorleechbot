@@ -226,6 +226,7 @@ def direct_link_generator(link: str):
             "lbx.to", 
             "teltobx.net", 
             "telbx.net",
+            "linkbox.cloud",
         ]
     ):
         return linkBox(link)
