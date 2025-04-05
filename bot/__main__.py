@@ -74,7 +74,6 @@ from .modules import (
     pickle_generator,
     tiktok,
     waifu,
-    needrom,
     youtube
 )
 
@@ -248,7 +247,7 @@ async def start(client, message):
     buttons = ButtonMaker()
     buttons.ubutton("👤 Maintainer", "https://t.me/WzdDizzyFlasherr", "header")
     buttons.ubutton("📢 Channel", "https://t.me/DizzyStuffProject")
-    buttons.ubutton("👥 Group", "https://t.me/+QLqlp887uHFiOTVl")
+    buttons.ubutton("👥 Group", "https://t.me/TranssionCore5")
     buttons.ubutton("💰 Donate", "https://telegra.ph/Donate-and-Support-Us-03-21")
     buttons.ubutton("➕ Add me to Group", f"https://t.me/{bot.me.username}?startgroup=true", "footer")
     reply_markup = buttons.build_menu(2)

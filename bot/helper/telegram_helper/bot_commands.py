@@ -56,6 +56,5 @@ class _BotCommands:
         self.CekQuotaCommand = f"cek{CMD_SUFFIX}"
         self.GenTokenCommand = f"gentoken{CMD_SUFFIX}"
         self.GetTokenCommand = f"gettoken{CMD_SUFFIX}"
-        self.NeedromCommand = [f"needrom{CMD_SUFFIX}", f"nr{CMD_SUFFIX}", f"needromdl{CMD_SUFFIX}"]
 
 BotCommands = _BotCommands()
