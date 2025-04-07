@@ -971,8 +971,8 @@ async def send_users_settings(bot, message):
     if user_data:
         no = 0
         msg = "<b>Pengaturan Users/Groups</b>"
-        for item, value in (user_data or {}).items(): 
-            if (value.get("is_auth") or value.get("is_sudo") or value.get("quota", 0) > 0):
+        for item, value in (user_data or {}).items():
+            if value.get("is_auth") or value.get("is_sudo"):
                 no += 1
                 try:
                     user = await bot.get_users(item)

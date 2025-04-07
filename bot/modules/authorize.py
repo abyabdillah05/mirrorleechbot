@@ -42,7 +42,11 @@ async def unauthorize(_, message):
     if id_ not in user_data:
         msg = "🙃 <b>Sudah diunautorisasi!</b>"
     else:
-        user_data.pop(id_, None)
+        if id_ in user_data:
+            if "quota" in user_data[id_]:
+                del user_data[id_]["quota"]
+            user_data.pop(id_, None)
+        
         msg = "😉 <b>Berhasil diunautorisasi dan dihapus dari database!</b>"
              
         if DATABASE_URL:

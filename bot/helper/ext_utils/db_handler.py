@@ -244,6 +244,7 @@ class DbManger:
     async def delete_user_data(self, user_id):
         if self._err:
             return
+        LOGGER.info(f"Menghapus user {user_id} dari database")
         await self._db.users.delete_one({"_id": user_id})
         self._conn.close
 

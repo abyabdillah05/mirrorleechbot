@@ -118,7 +118,7 @@ class sourceforgeExtract:
         
         if isinstance(self._servers, list) and self._servers:
             for i in self._servers:
-                butt.ibutton(f"🌐 {i}", f"sourceforge start {i}")
+                butt.ibutton(f"🌐{i}", f"sourceforge start {i}")
                 
             butt.ibutton("❌ Batal", f"sourceforge cancel", position="footer")
             butts = butt.build_menu(3)
