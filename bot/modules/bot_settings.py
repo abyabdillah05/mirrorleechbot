@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 from time import time
 from io import BytesIO
 from aioshutil import rmtree as aiormtree
+import asyncio
 
 from bot import (
     config_dict,
@@ -600,22 +601,35 @@ async def edit_bot_settings(client, query):
     elif data[1] == "push":
         await query.answer()
         filename = data[2].rsplit(".zip", 1)[0]
-        if await aiopath.exists(filename):
-            await (
-                await create_subprocess_shell(
-                    f"git add -f {filename} \
-                                                    && git commit -sm botsettings -q \
-                                                    && git push origin {config_dict['UPSTREAM_BRANCH']} -qf"
-                )
-            ).wait()
-        else:
-            await (
-                await create_subprocess_shell(
-                    f"git rm -r --cached {filename} \
-                                                    && git commit -sm botsettings -q \
-                                                    && git push origin {config_dict['UPSTREAM_BRANCH']} -qf"
-                )
-            ).wait()
+        
+        branch_cmd = await create_subprocess_shell("git rev-parse --abbrev-ref HEAD", stdout=asyncio.subprocess.PIPE)
+        branch, _ = await branch_cmd.communicate()
+        current_branch = branch.decode().strip()
+        
+        push_branch = current_branch if current_branch else config_dict['UPSTREAM_BRANCH']
+        
+        try:
+            if await aiopath.exists(filename):
+                await (
+                    await create_subprocess_shell(
+                        f"git add -f {filename} && "
+                        f"git commit -sm 'Added {filename}' -q && "
+                        f"git push origin {push_branch} -q"
+                    )
+                ).wait()
+            else:
+                await (
+                    await create_subprocess_shell(
+                        f"git rm -r --cached {filename} && "
+                        f"git commit -sm 'Removed {filename}' -q && "
+                        f"git push origin {push_branch} -q"
+                    )
+                ).wait()
+            await query.answer("✅ File berhasil di-push ke repository!", show_alert=True)
+        except Exception as e:
+            LOGGER.error(f"Error pushing to repo: {str(e)}")
+            await query.answer(f"❌ Error: {str(e)}", show_alert=True)
+        
         await deleteMessage(message.reply_to_message)
         await deleteMessage(message)
 

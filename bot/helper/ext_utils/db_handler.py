@@ -56,7 +56,7 @@ class DbManger:
         # User Data
         if await self._db.users.find_one():
             rows = self._db.users.find({})
-            # return a dict ==> {_id, is_sudo, is_auth, as_doc, thumb, yt_opt, media_group, equal_splits, split_size, rclone, rclone_path, token_pickle, gdrive_id, leech_dest, lperfix, lprefix, excluded_extensions, user_transmission, index_url, default_upload}
+            #return a dict ==> {_id, is_sudo, is_auth, as_doc, thumb, yt_opt, media_group, equal_splits, split_size, rclone, rclone_path, token_pickle, gdrive_id, leech_dest, lperfix, lprefix, excluded_extensions, user_transmission, index_url, default_upload}
             async for row in rows:
                 uid = row["_id"]
                 del row["_id"]
@@ -85,7 +85,7 @@ class DbManger:
             LOGGER.info("Users data has been imported from Database")
         # Rss Data
         if await self._db.rss[bot_id].find_one():
-            # return a dict ==> {_id, title: {link, last_feed, last_name, inf, exf, command, paused}
+            #return a dict ==> {_id, title: {link, last_feed, last_name, inf, exf, command, paused}
             rows = self._db.rss[bot_id].find({})
             async for row in rows:
                 user_id = row["_id"]
@@ -168,9 +168,10 @@ class DbManger:
             
         self._conn.close
 
-    async def update_user_doc(self, user_id, key, path=""):
-        if self._err:
-            return
+async def update_user_doc(self, user_id, key, path=""):
+    if self._err:
+        return
+    try:
         if path:
             async with aiopen(path, "rb+") as doc:
                 doc_bin = await doc.read()
@@ -179,7 +180,10 @@ class DbManger:
         await self._db.users.update_one(
             {"_id": user_id}, {"$set": {key: doc_bin}}, upsert=True
         )
-        self._conn.close
+    except Exception as e:
+        LOGGER.error(f"Error updating user doc: {str(e)}")
+    finally:    
+        self._conn.close()  
 
     async def rss_update_all(self):
         if self._err:
