@@ -115,7 +115,7 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1, cha
 
     if is_all:
         tasks = list(task_dict.values())
-        header_msg = "<b>🌐 STATUS SEMUA TUGAS</b>\n\n"
+        header_msg = "<b>🌐 STATUS SEMUA TUGAS (GLOBAL)</b>\n\n"
         LOGGER.info(f"Get ALL tasks: {len(tasks)}")
     elif is_user:
         tasks = [tk for tk in task_dict.values() if tk.listener.user_id == sid]
@@ -163,48 +163,79 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1, cha
         tasks[start_position : STATUS_LIMIT + start_position], start=1
     ):
         tstatus = task.status()
-        if task.listener.isPrivateChat: 
-            msg += f"<blockquote><b>🔐 Nama :</b> <code>Private Task</code></b></blockquote>"
-        else: 
-            msg += f"<blockquote>📄 <b>Nama :</b> <code>{escape(f'{task.name()}')}</code></blockquote>"
-        if tstatus not in [
-            MirrorStatus.STATUS_DUMPING,
-            MirrorStatus.STATUS_VIDEDIT,
-        ]:
-            msg += f"\n<b>┌ Status : <a href='{task.listener.message.link}'>{tstatus}</a></b> <code>({task.progress()})</code>"
-        else:
-            msg += f"\n<b>┌ Status : <a href='{task.listener.message.link}'>{tstatus}</a></b>"
-        if tstatus not in [
-            MirrorStatus.STATUS_DUMPING,
-            MirrorStatus.STATUS_VIDEDIT,
-        ]:
-            msg += f"\n<b>├ </b>{get_progress_bar_string(task.progress())}"
-        user = f'<a href="tg://user?id={task.listener.user.id}">{task.listener.user.first_name}</a>'
-        msg += f"\n<b>├ Oleh :</b> <code>@{task.listener.user.username or task.listener.user.first_name}</code>"
-        msg += f"\n<b>├ UserID :</b> [<code>{task.listener.user.id}</code>]"
-        msg += f"\n<b>├ Waktu :</b> <code>{get_readable_time(time() - task.listener.extra_details['startTime'])}</code>"
-        msg += f"\n<b>├ Ukuran :</b> {task.size()}"
-        if tstatus not in [
-            MirrorStatus.STATUS_SPLITTING,
-            MirrorStatus.STATUS_SEEDING,
-            MirrorStatus.STATUS_SAMVID,
-            MirrorStatus.STATUS_DUMPING,
-            MirrorStatus.STATUS_VIDEDIT,
-        ]:
-            msg += f"\n<b>├ Diproses :</b> <code>{task.processed_bytes()}</code>"
-            msg += f"\n<b>├ Estimasi :</b> <code>{task.eta()}</code>"
-            msg += f"\n<b>├ Kecepatan :</b> <code>{task.speed()}</code>"
-            if hasattr(task, "seeders_num"):
-                try:
-                    msg += f"\n<b>├ Seeders :</b> <code>{task.seeders_num()}</code>"
-                    msg += f"\n<b>├ Leechers :</b> <code>{task.leechers_num()}</code>"
-                except:
-                    pass
-        elif tstatus == MirrorStatus.STATUS_SEEDING:
+        
+        if is_user:
+            if task.listener.isPrivateChat: 
+                msg += f"<blockquote><b>🔐 Nama :</b> <code>Private Task</code></b></blockquote>"
+            else:
+                msg += f"<blockquote>📄 <b>Nama :</b> <code>{escape(f'{task.name()}')}</code></blockquote>"
+            
+            if tstatus not in [MirrorStatus.STATUS_DUMPING, MirrorStatus.STATUS_VIDEDIT]:
+                msg += f"\n<b>┌ Status :</b> <code>{tstatus}</code> <code>({task.progress()})</code>"
+                msg += f"\n<b>├ </b>{get_progress_bar_string(task.progress())}"
+            else:
+                msg += f"\n<b>┌ Status :</b> <code>{tstatus}</code>"
+                
+            msg += f"\n<b>├ Waktu :</b> <code>{get_readable_time(time() - task.listener.extra_details['startTime'])}</code>"
+            msg += f"\n<b>├ Ukuran :</b> {task.size()}"
+            
+            if tstatus not in [
+                MirrorStatus.STATUS_SPLITTING,
+                MirrorStatus.STATUS_SEEDING,
+                MirrorStatus.STATUS_SAMVID,
+                MirrorStatus.STATUS_DUMPING,
+                MirrorStatus.STATUS_VIDEDIT,
+            ]:
+                msg += f"\n<b>├ Diproses :</b> <code>{task.processed_bytes()}</code>"
+                msg += f"\n<b>├ Estimasi :</b> <code>{task.eta()}</code>"
+                msg += f"\n<b>├ Kecepatan :</b> <code>{task.speed()}</code>"
+            
+        elif chat_id or is_all:
+            if task.listener.isPrivateChat: 
+                msg += f"<blockquote><b>🔐 Nama :</b> <code>Private Task</code></b></blockquote>"
+            else: 
+                msg += f"<blockquote>📄 <b>Nama :</b> <code>{escape(f'{task.name()}')}</code></blockquote>"
+                
+            if tstatus not in [
+                MirrorStatus.STATUS_DUMPING,
+                MirrorStatus.STATUS_VIDEDIT,
+            ]:
+                msg += f"\n<b>┌ Status : <a href='{task.listener.message.link}'>{tstatus}</a></b> <code>({task.progress()})</code>"
+                msg += f"\n<b>├ </b>{get_progress_bar_string(task.progress())}"
+            else:
+                msg += f"\n<b>┌ Status : <a href='{task.listener.message.link}'>{tstatus}</a></b>"
+                
+            user_mention = f'<a href="tg://user?id={task.listener.user.id}">{task.listener.user.first_name}</a>'
+            msg += f"\n<b>├ Oleh :</b> <code>@{task.listener.user.username or task.listener.user.first_name}</code>"
+            msg += f"\n<b>├ UserID :</b> [<code>{task.listener.user.id}</code>]"
+            
+            msg += f"\n<b>├ Waktu :</b> <code>{get_readable_time(time() - task.listener.extra_details['startTime'])}</code>"
+            msg += f"\n<b>├ Ukuran :</b> {task.size()}"
+            
+            if tstatus not in [
+                MirrorStatus.STATUS_SPLITTING,
+                MirrorStatus.STATUS_SEEDING,
+                MirrorStatus.STATUS_SAMVID,
+                MirrorStatus.STATUS_DUMPING,
+                MirrorStatus.STATUS_VIDEDIT,
+            ]:
+                msg += f"\n<b>├ Diproses :</b> <code>{task.processed_bytes()}</code>"
+                msg += f"\n<b>├ Estimasi :</b> <code>{task.eta()}</code>"
+                msg += f"\n<b>├ Kecepatan :</b> <code>{task.speed()}</code>"
+                
+                if hasattr(task, "seeders_num"):
+                    try:
+                        msg += f"\n<b>├ Seeders :</b> <code>{task.seeders_num()}</code>"
+                        msg += f"\n<b>├ Leechers :</b> <code>{task.leechers_num()}</code>"
+                    except:
+                        pass
+                        
+        if tstatus == MirrorStatus.STATUS_SEEDING:
             msg += f"\n<b>├ Ratio :</b> <code>{task.ratio()}</code>"
             msg += f"\n<b>├ Waktu :</b> <code>{task.seeding_time()}</code>"
-            msg += f"\n<b>├ Ukuran :</b> <code>{task.size()}</code>"
-            msg += f"\n<b>├ Diupload :</b> <code>{task.uploaded_bytes()}</code>"
+            if not is_user:
+                msg += f"\n<b>├ Ukuran :</b> <code>{task.size()}</code>"
+                msg += f"\n<b>├ Diupload :</b> <code>{task.uploaded_bytes()}</code>"
             msg += f"\n<b>├ Kecepatan :</b> <code>{task.seed_speed()}</code>"
         
         engine = ""

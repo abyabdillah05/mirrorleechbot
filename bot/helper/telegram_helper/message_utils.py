@@ -277,6 +277,7 @@ async def update_status_message(sid, force=False):
         is_user = status_dict[sid]["is_user"]
         page_step = status_dict[sid]["page_step"]
         is_all = status_dict[sid].get("is_all", False)
+        status_type = status_dict[sid].get("status_type", "group")
         
         chat_id = status_dict[sid].get("chat_id")
         cmd_user_id = status_dict[sid].get("cmd_user_id") or (sid if is_user else None)
@@ -316,6 +317,24 @@ async def sendStatusMessage(message, user_id=0, is_user=False, chat_id=None, is_
         sid = user_id or message.chat.id
         requester_id = cmd_user_id or message.from_user.id
         
+        if is_all and not is_user and not chat_id:
+            status_type = "all"
+        elif is_user:
+            status_type = "personal"
+            sid = user_id 
+        elif chat_id:
+            status_type = "group"
+            sid = chat_id
+        else:
+            if message.chat.type in ["private", "bot"]:
+                status_type = "personal"
+                sid = message.from_user.id
+                is_user = True
+            else:
+                status_type = "group"
+                sid = message.chat.id
+                chat_id = message.chat.id
+        
         if sid in list(status_dict.keys()):
             page_no = status_dict[sid]["page_no"]
             status = status_dict[sid]["status"]
@@ -347,7 +366,8 @@ async def sendStatusMessage(message, user_id=0, is_user=False, chat_id=None, is_
                 "cmd_user_id": requester_id,
                 "is_all": is_all,
                 "is_user": is_user,
-                "chat_id": chat_id
+                "chat_id": chat_id,
+                "status_type": status_type
             })
         else:
             text, buttons = await sync_to_async(
@@ -373,10 +393,11 @@ async def sendStatusMessage(message, user_id=0, is_user=False, chat_id=None, is_
                 "is_user": is_user,
                 "cmd_user_id": requester_id,
                 "is_all": is_all,
-                "chat_id": chat_id
+                "chat_id": chat_id,
+                "status_type": status_type
             }
             
-    if not Intervals["status"].get(sid) and not is_user and not is_all:
+    if not Intervals["status"].get(sid) and status_type == "group" and not is_user:
         Intervals["status"][sid] = setInterval(
             config_dict["STATUS_UPDATE_INTERVAL"], update_status_message, sid
         )

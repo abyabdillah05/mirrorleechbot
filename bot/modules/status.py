@@ -163,8 +163,26 @@ async def status_pages(_, query):
     user_id = query.from_user.id
     is_owner = user_id == OWNER_ID
     
-    if cmd_user_id and user_id != cmd_user_id and not is_owner:
-        await query.answer("⚠️ Tombol ini hanya dapat digunakan oleh pengguna yang meminta status atau Owner!", show_alert=True)
+    async with task_dict_lock:
+        if sid not in status_dict:
+            await query.answer("⚠️ Status message tidak ditemukan atau sudah ditutup!", show_alert=True)
+            return
+            
+        status_type = status_dict[sid].get("status_type", "group")
+        status_owner_id = status_dict[sid].get("cmd_user_id")
+        is_all = status_dict[sid].get("is_all", False)
+        
+    has_permission = False
+    
+    if is_owner:
+        has_permission = True
+    elif status_owner_id and user_id == status_owner_id:
+        has_permission = True
+    elif status_type == "group" and not is_all:
+        has_permission = True
+        
+    if not has_permission:
+        await query.answer("⚠️ Anda tidak memiliki izin untuk mengakses status ini!", show_alert=True)
         return
     
     if action == "ref":
@@ -204,14 +222,7 @@ async def status_pages(_, query):
     
     elif action == "st":
         new_status = data[3]
-        cmd_user_id = int(data[4]) if len(data) > 4 else None
-        
-        if cmd_user_id and user_id != cmd_user_id and not is_owner:
-            await query.answer("⚠️ Tombol ini hanya dapat digunakan oleh pengguna yang meminta status atau Owner!", show_alert=True)
-            return
-            
-        status_name = next((name for label, name in STATUS_VALUES if name == new_status), new_status)
-        await query.answer(f"🔍 Filter: {status_name}")
+        await query.answer(f"🔍 Filter: {new_status}")
         async with task_dict_lock:
             if sid in status_dict:
                 status_dict[sid]["status"] = new_status
@@ -226,7 +237,14 @@ async def status_pages(_, query):
         is_user = status_dict.get(sid, {}).get('is_user', False)
         chat_id = status_dict.get(sid, {}).get('chat_id')
         
-        view_type = "Semua Tugas (Global)" if is_all else "Tugas Pribadi" if is_user else "Tugas Grup"
+        if is_all:
+            view_type = "Semua Tugas (Global)"
+        elif is_user:
+            view_type = "Tugas Pribadi" 
+        elif chat_id:
+            view_type = "Tugas Grup"
+        else:
+            view_type = "Unknown"
         
         async with task_dict_lock:
             tasks = {
@@ -249,10 +267,15 @@ async def status_pages(_, query):
             
             for download in task_dict.values():
                 tstatus = download.status()
-                if (is_all or
-                    (is_user and download.listener.user_id == sid) or
-                    (chat_id and download.listener.message.chat.id == chat_id)):
-                    
+                task_matches = False
+                if is_all:
+                    task_matches = True
+                elif is_user and download.listener.user_id == sid:
+                    task_matches = True
+                elif chat_id and hasattr(download.listener, 'message') and hasattr(download.listener.message, 'chat') and download.listener.message.chat.id == chat_id:
+                    task_matches = True
+                
+                if task_matches:
                     if tstatus == MirrorStatus.STATUS_DOWNLOADING:
                         tasks["Download"] += 1
                         dl_speed += speed_string_to_bytes(download.speed())
