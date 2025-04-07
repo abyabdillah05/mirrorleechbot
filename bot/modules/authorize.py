@@ -84,6 +84,10 @@ async def removeSudo(_, message):
         msg = "<b>Berikan ID atau balas pesan dari User yang ingin diturunkan dari Sudo User!</b>"
     await sendMessage(message, msg)
 
+#########################
+## Check QUota Command ##
+#########################
+
 async def check_quota(_, message):
     self = False
     sudo = False
@@ -352,7 +356,7 @@ async def check_quota(_, message):
         try:
             butt = await create_token(user_id)
             final_msg = base_msg + detail_msg
-            mess = await sendMessage(message, final_msg, butt.build_menu(2))
+            mess = await sendMessage(message, final_msg, butt.build_menu(2))  # Build menu here
         except Exception as e:
             LOGGER.error(f"Error creating token: {str(e)}")
             final_msg = base_msg + detail_msg
@@ -360,6 +364,10 @@ async def check_quota(_, message):
     
     await asleep(120)
     await deleteMessage(mess)
+
+#######################
+## Commands Handlers ##
+#######################
 
 bot.add_handler(
     MessageHandler(

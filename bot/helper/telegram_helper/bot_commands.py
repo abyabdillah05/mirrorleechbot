@@ -56,5 +56,6 @@ class _BotCommands:
         self.CekQuotaCommand = f"cek{CMD_SUFFIX}"
         self.GenTokenCommand = f"gentoken{CMD_SUFFIX}"
         self.GetTokenCommand = f"gettoken{CMD_SUFFIX}"
+        self.BroadcastCommand = [f"broadcast{CMD_SUFFIX}", f"bc{CMD_SUFFIX}"]
 
 BotCommands = _BotCommands()

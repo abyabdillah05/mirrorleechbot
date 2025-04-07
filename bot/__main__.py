@@ -49,7 +49,8 @@ from bot import (
 )
 from .modules import (
     authorize, 
-    bot_settings, 
+    bot_settings,
+    broadcast, 
     cancel_task, 
     clone, 
     eval, 
@@ -495,6 +496,7 @@ help_string = f"""
 <code>/{BotCommands.EvalCommand[0]}</code> atau <code>/{BotCommands.EvalCommand[1]}</code> : Menjalankan perintah Kode Python (Hanya Owner).
 <code>/{BotCommands.ExecCommand[0]}</code> atau <code>/{BotCommands.ExecCommand[1]}</code> : Menjalankan perintah Exec (Hanya Owner).
 <code>/{BotCommands.ClearLocalsCommand[0]}</code> atau <code>/{BotCommands.ClearLocalsCommand[1]}</code> : Menghapus penyimpanan lokal (Hanya Owner)
+<code>/{BotCommands.RssCommand}</code> : Menu RSS.
 
 <b>NOTE :</b> Kirim perintah tanpa argument untuk melihat perintah secara detail!
 """
