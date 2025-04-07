@@ -180,6 +180,7 @@ async def check_quota(_, message):
     
     base_msg += divider
     
+    # Initialize mess to None
     mess = None
     
     if sudo:
@@ -347,23 +348,21 @@ async def check_quota(_, message):
     
     detail_msg += f"<b>{status_indicator}</b>\n\n"
     
-    if quota < GB_20 or quota == 0:
-        if is_reply and user_id != from_user_id:
-            detail_msg += f"<i>ℹ️ Tombol tambah kuota hanya dapat digunakan oleh <a href='tg://user?id={user_id}'>pengguna ini</a>.</i>"
-        elif not self and not is_reply:
-            detail_msg += f"<i>ℹ️ Tombol tambah kuota hanya dapat digunakan oleh pengguna dengan ID: {user_id}.</i>"
+    try:
+        butt = await create_token(user_id)
+        
+        if user_id != from_user_id:
+            if is_reply:
+                detail_msg += f"<i>ℹ️ Tombol tambah kuota hanya dapat digunakan oleh <a href='tg://user?id={user_id}'>pengguna ini</a>.</i>"
+            else:
+                detail_msg += f"<i>ℹ️ Tombol tambah kuota hanya dapat digunakan oleh pengguna dengan ID: {user_id}.</i>"
         else:
             detail_msg += "<i>✨ Klik tombol di bawah untuk menambah kuota secara GRATIS:</i>"
         
-        try:
-            butt = await create_token(user_id)
-            final_msg = base_msg + detail_msg
-            mess = await sendMessage(message, final_msg, butt.build_menu(2))  # Build menu here
-        except Exception as e:
-            LOGGER.error(f"Error creating token: {str(e)}")
-            final_msg = base_msg + detail_msg
-            mess = await sendMessage(message, final_msg)
-    else:
+        final_msg = base_msg + detail_msg
+        mess = await sendMessage(message, final_msg, butt.build_menu(2))
+    except Exception as e:
+        LOGGER.error(f"Error creating token: {str(e)}")
         final_msg = base_msg + detail_msg
         mess = await sendMessage(message, final_msg)
     
