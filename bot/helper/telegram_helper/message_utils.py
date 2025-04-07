@@ -278,7 +278,7 @@ async def update_status_message(sid, force=False):
         page_step = status_dict[sid]["page_step"]
         is_all = status_dict[sid].get("is_all", False)
         
-        chat_id = sid if sid < 0 else None
+        chat_id = status_dict[sid].get("chat_id")
         cmd_user_id = status_dict[sid].get("cmd_user_id") or (sid if is_user else None)
         
         text, buttons = await sync_to_async(

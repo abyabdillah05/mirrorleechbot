@@ -114,32 +114,31 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1, cha
     if is_all:
         tasks = list(task_dict.values())
         header_msg = "<b>🌐 STATUS SEMUA TUGAS</b>\n\n"
-    elif status == "All":
-        if is_user:
-            tasks = [tk for tk in task_dict.values() if tk.listener.user_id == sid]
-            header_msg = "<b>🔹 STATUS TUGAS PRIBADI ANDA</b>\n\n"
-        elif chat_id:
-            tasks = [tk for tk in task_dict.values() if tk.listener.message.chat.id == chat_id]
-            header_msg = "<b>📊 STATUS TUGAS GRUP INI</b>\n\n"
-        else:
-            tasks = list(task_dict.values())
-            header_msg = "<b>📋 STATUS TUGAS DEFAULT</b>\n\n"
+    elif is_user:
+        tasks = [tk for tk in task_dict.values() if tk.listener.user_id == sid]
+        header_msg = "<b>🔹 STATUS TUGAS PRIBADI ANDA</b>\n\n"
+    elif chat_id:
+        tasks = [tk for tk in task_dict.values() if tk.listener.message.chat.id == chat_id]
+        header_msg = "<b>📊 STATUS TUGAS GRUP INI</b>\n\n"
     else:
+        return None, None
+    
+    if status != "All":
         if is_user:
             tasks = [
-                tk for tk in task_dict.values()
-                if tk.status() == status and tk.listener.user_id == sid
+                tk for tk in tasks
+                if tk.status() == status
             ]
             header_msg = f"<b>🔹 STATUS TUGAS PRIBADI ({status})</b>\n\n"
         elif chat_id:
             tasks = [
-                tk for tk in task_dict.values()
-                if tk.status() == status and tk.listener.message.chat.id == chat_id
+                tk for tk in tasks
+                if tk.status() == status
             ]
             header_msg = f"<b>📊 STATUS TUGAS GRUP ({status})</b>\n\n"
-        else:
-            tasks = [tk for tk in task_dict.values() if tk.status() == status]
-            header_msg = f"<b>📋 STATUS TUGAS ({status})</b>\n\n"
+        elif is_all:
+            tasks = [tk for tk in tasks if tk.status() == status]
+            header_msg = f"<b>🌐 STATUS SEMUA TUGAS ({status})</b>\n\n"
     
     msg += header_msg
 
@@ -216,7 +215,7 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1, cha
         msg += f"\n<b>└⛔️ /{BotCommands.CancelTaskCommand[0]}_{task.gid()}</b>\n\n"
 
     if len(msg) == 0 or tasks_no == 0:
-        view_type = "pribadi Anda" if is_user else "grup ini" if chat_id else "global" if is_all else "default"
+        view_type = "pribadi Anda" if is_user else "grup ini" if chat_id else "global"
         if status == "All":
             msg = f"{header_msg}<b>📭 Tidak ada tugas aktif untuk tampilan {view_type}!</b>\n\n"
         else:
@@ -253,7 +252,7 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1, cha
     
     button = buttons.build_menu(3)
     
-    view_type = "Pribadi" if is_user else "Grup" if chat_id else "Global" if is_all else "Default"
+    view_type = "Pribadi" if is_user else "Grup" if chat_id else "Global"
     msg += f"<b>──────────────────</b>"
     msg += f"\n<b>Mode Tampilan:</b> <code>{view_type}</code>"
     msg += f"\n<b>CPU :</b> <code>{cpu_percent()}%</code> | <b>RAM :</b> <code>{virtual_memory().percent}%</code>"

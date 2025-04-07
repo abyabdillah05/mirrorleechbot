@@ -175,6 +175,8 @@ async def status_pages(_, query):
         help_text = (
             "📋 BANTUAN STATUS\n\n"
             "• /status - Status konteks\n"
+            "   - Di PM: tugas pribadi\n"
+            "   - Di grup: tugas grup\n"
             "• /status me - Status pribadi\n"
             "• /status all - Semua tugas (Owner)\n\n"
             "TIPS:\n"
@@ -203,6 +205,12 @@ async def status_pages(_, query):
     
     elif action == "st":
         new_status = data[3]
+        cmd_user_id = int(data[4]) if len(data) > 4 else None
+        
+        if cmd_user_id and user_id != cmd_user_id and not is_owner:
+            await query.answer("⚠️ Tombol ini hanya dapat digunakan oleh pengguna yang meminta status atau Owner!", show_alert=True)
+            return
+            
         status_name = next((name for label, name in STATUS_VALUES if name == new_status), new_status)
         await query.answer(f"🔍 Filter: {status_name}")
         async with task_dict_lock:
@@ -219,7 +227,7 @@ async def status_pages(_, query):
         is_user = status_dict.get(sid, {}).get('is_user', False)
         chat_id = status_dict.get(sid, {}).get('chat_id')
         
-        view_type = "Semua Tugas (Global)" if is_all else "Tugas Pribadi" if is_user else "Tugas Grup" if chat_id else "Default"
+        view_type = "Semua Tugas (Global)" if is_all else "Tugas Pribadi" if is_user else "Tugas Grup"
         
         async with task_dict_lock:
             tasks = {
@@ -244,8 +252,7 @@ async def status_pages(_, query):
                 tstatus = download.status()
                 if (is_all or
                     (is_user and download.listener.user_id == sid) or
-                    (chat_id and download.listener.message.chat.id == chat_id) or
-                    (not is_all and not is_user and not chat_id)):
+                    (chat_id and download.listener.message.chat.id == chat_id)):
                     
                     if tstatus == MirrorStatus.STATUS_DOWNLOADING:
                         tasks["Download"] += 1
@@ -311,5 +318,3 @@ bot.add_handler(
         )
     )
 )
-
-## Improved by Tg @WzdDizzyFlasherr | /status & /status help & /status all & status me ##
