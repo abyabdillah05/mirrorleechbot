@@ -314,15 +314,16 @@ async def update_status_message(sid, force=False):
 
 async def sendStatusMessage(message, user_id=0, is_user=False, chat_id=None, is_all=False, cmd_user_id=None):
     async with task_dict_lock:
-        sid = user_id or message.chat.id
         requester_id = cmd_user_id or message.from_user.id
         
-        if is_all and not is_user and not chat_id:
+        if is_all:
             status_type = "all"
-        elif is_user:
+            sid = 0 
+        elif is_user or (user_id > 0 and not chat_id):
             status_type = "personal"
-            sid = user_id 
-        elif chat_id:
+            sid = user_id or message.from_user.id
+            is_user = True
+        elif chat_id and chat_id < 0:
             status_type = "group"
             sid = chat_id
         else:

@@ -111,22 +111,18 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1, cha
     msg = ""
     button = None
 
-    LOGGER.info(f"get_readable_message: sid={sid}, is_user={is_user}, chat_id={chat_id}, is_all={is_all}")
-
     if is_all:
         tasks = list(task_dict.values())
         header_msg = "<b>🌐 STATUS SEMUA TUGAS (GLOBAL)</b>\n\n"
-        LOGGER.info(f"Get ALL tasks: {len(tasks)}")
-    elif is_user:
+    elif is_user or (sid > 0 and not chat_id):
         tasks = [tk for tk in task_dict.values() if tk.listener.user_id == sid]
         header_msg = "<b>🔹 STATUS TUGAS PRIBADI ANDA</b>\n\n"
-        LOGGER.info(f"Get USER tasks for {sid}: {len(tasks)}")
-    elif chat_id:
-        tasks = [tk for tk in task_dict.values() if hasattr(tk.listener, 'message') and hasattr(tk.listener.message, 'chat') and tk.listener.message.chat.id == chat_id]
+    elif chat_id and chat_id < 0:
+        tasks = [tk for tk in task_dict.values() if hasattr(tk.listener, 'message') and 
+                hasattr(tk.listener.message, 'chat') and tk.listener.message.chat.id == chat_id]
         header_msg = "<b>📊 STATUS TUGAS GRUP INI</b>\n\n"
-        LOGGER.info(f"Get GROUP tasks for {chat_id}: {len(tasks)}")
     else:
-        LOGGER.warning("No context matched in get_readable_message!")
+        LOGGER.warning(f"Invalid status context: sid={sid}, is_user={is_user}, chat_id={chat_id}")
         return None, None
     
     if status != "All":
