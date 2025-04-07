@@ -234,8 +234,8 @@ async def status_pages(_, query):
     elif action == 'close':
         await query.answer(f"✅ Status ditutup! Ketik /{BotCommands.StatusCommand[0]} untuk melihat status lagi.")
         success = await edit_single_status(sid)
-    if not success:
-        LOGGER.error(f"Gagal menutup status dengan ID: {sid}")
+        if not success:
+            LOGGER.error(f"Gagal menutup status dengan ID: {sid}")
     
     elif action == 'info':
         is_all = status_dict.get(sid, {}).get('is_all', False)

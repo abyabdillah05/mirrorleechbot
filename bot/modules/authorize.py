@@ -38,13 +38,21 @@ async def unauthorize(_, message):
         id_ = reply_to.from_user.id if reply_to.from_user else reply_to.sender_chat.id
     else:
         id_ = message.chat.id
-    if id_ not in user_data or user_data[id_].get("is_auth"):
+    
+    if id_ not in user_data:
+        msg = "🙃 <b>Sudah diunautorisasi!</b>"
+    else:
         update_user_ldata(id_, "is_auth", False)
+        
+        if id_ in user_data and not (user_data[id_].get("is_sudo") or user_data[id_].get("quota", 0) > 0):
+            user_data.pop(id_, None)
+            msg = "😉 <b>Berhasil diunautorisasi dan dihapus dari database!</b>"
+        else:
+            msg = "😉 <b>Berhasil diunautorisasi!</b>"
+             
         if DATABASE_URL:
             await DbManger().update_user_data(id_)
-        msg = "😉 <b>Berhasil diunautorisasi!</b>"
-    else:
-        msg = "🙃 <b>Sudah diunautorisasi!</b>"
+            
     await sendMessage(message, msg)
 
 
@@ -75,13 +83,25 @@ async def removeSudo(_, message):
         id_ = int(msg[1].strip())
     elif reply_to := message.reply_to_message:
         id_ = reply_to.from_user.id if reply_to.from_user else reply_to.sender_chat.id
-    if id_ and id_ not in user_data or user_data[id_].get("is_sudo"):
+    
+    if id_ == "":
+        msg = "<b>Berikan ID atau balas pesan dari User yang ingin diturunkan dari Sudo User!</b>"
+    elif id_ not in user_data:
+        msg = "🙃 <b>Pengguna tidak ditemukan dalam database!</b>"
+    elif not user_data[id_].get("is_sudo"):
+        msg = "🙃 <b>Pengguna bukan sudo user!</b>"
+    else:
         update_user_ldata(id_, "is_sudo", False)
+        
+        if id_ in user_data and not (user_data[id_].get("is_auth") or user_data[id_].get("quota", 0) > 0):
+            user_data.pop(id_, None)
+            msg = "😉 <b>Berhasil diturunkan dari Sudo User dan dihapus dari database!</b>"
+        else:
+            msg = "😉 <b>Berhasil diturunkan dari Sudo User!</b>"
+            
         if DATABASE_URL:
             await DbManger().update_user_data(id_)
-        msg = "😉 <b>Berhasil diturunkan dari Sudo User!</b>"
-    else:
-        msg = "<b>Berikan ID atau balas pesan dari User yang ingin diturunkan dari Sudo User!</b>"
+            
     await sendMessage(message, msg)
 
 #########################

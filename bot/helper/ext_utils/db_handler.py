@@ -148,14 +148,25 @@ class DbManger:
     async def update_user_data(self, user_id):
         if self._err:
             return
+        
+        if user_id not in user_data:
+            await self._db.users.delete_one({"_id": user_id})
+            self._conn.close
+            return
+            
         data = user_data.get(user_id, {})
-        if data.get("thumb"):
-            del data["thumb"]
-        if data.get("rclone_config"):
-            del data["rclone_config"]
-        if data.get("token_pickle"):
-            del data["token_pickle"]
-        await self._db.users.replace_one({"_id": user_id}, data, upsert=True)
+        
+        if not (data.get("is_auth") or data.get("is_sudo") or data.get("quota", 0) > 0):
+            await self._db.users.delete_one({"_id": user_id})
+        else:
+            if data.get("thumb"):
+                del data["thumb"]
+            if data.get("rclone_config"):
+                del data["rclone_config"]
+            if data.get("token_pickle"):
+                del data["token_pickle"]
+            await self._db.users.replace_one({"_id": user_id}, data, upsert=True)
+            
         self._conn.close
 
     async def update_user_doc(self, user_id, key, path=""):
@@ -229,6 +240,12 @@ class DbManger:
         if self._err:
             return
         await self._db[name][bot_id].drop()
+        self._conn.close
+
+    async def delete_user_data(self, user_id):
+        if self._err:
+            return
+        await self._db.users.delete_one({"_id": user_id})
         self._conn.close
 
 
