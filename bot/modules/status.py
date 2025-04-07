@@ -179,7 +179,6 @@ async def status_pages(_, query):
             "   - Di grup: tugas grup\n"
             "• /status me - Status pribadi\n"
             "• /status all - Semua tugas (Owner)\n\n"
-            "TIPS:\n"
             "• Gunakan filter untuk melihat status\n"
             "• Batalkan tugas lambat (<20KB/s)"
         )
