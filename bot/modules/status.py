@@ -37,6 +37,7 @@ from bot.helper.telegram_helper.message_utils import (
     sendStatusMessage,
     update_status_message,
     edit_status,
+    editMessage,
 )
 from bot.helper.ext_utils.bot_utils import new_task
 from bot.helper.ext_utils.status_utils import (
@@ -46,6 +47,7 @@ from bot.helper.ext_utils.status_utils import (
     speed_string_to_bytes,
     STATUS_VALUES
 )
+from bot.helper.ext_utils.logger import LOGGER
 
 #############################
 ## Status Task Manager Bot ##
@@ -158,6 +160,7 @@ async def status_pages(_, query):
     cmd_user_id = int(data[3]) if len(data) > 3 else None
     
     user_id = query.from_user.id
+    chat_id = query.message.chat.id
     is_owner = user_id == OWNER_ID
     
     async with task_dict_lock:
@@ -168,22 +171,28 @@ async def status_pages(_, query):
         status_type = status_dict[sid].get("status_type", "group")
         status_owner_id = status_dict[sid].get("cmd_user_id")
         is_all = status_dict[sid].get("is_all", False)
+        status_chat_id = status_dict[sid].get("chat_id")
         
+    # Validasi lebih ketat untuk button lock
     has_permission = False
     
     if is_owner:
         has_permission = True
+        LOGGER.info(f"Owner {user_id} mengakses tombol status {sid}")
     elif status_owner_id and user_id == status_owner_id:
         has_permission = True
-    elif status_type == "group" and not is_all:
+        LOGGER.info(f"Pembuat status {status_owner_id} mengakses tombol statusnya sendiri")
+    elif status_type == "group" and not is_all and status_chat_id and status_chat_id == chat_id:
         has_permission = True
-        
+        LOGGER.info(f"User {user_id} mengakses tombol status grup {chat_id}")
+    
     if not has_permission:
-        await query.answer("⚠️ Anda tidak memiliki izin untuk mengakses status ini!", show_alert=True)
+        await query.answer("⚠️ Anda tidak memiliki izin untuk mengakses tombol status ini!", show_alert=True)
         return
     
     if action == "ref":
         await query.answer("🔄 Menyegarkan status...")
+        LOGGER.info(f"Refreshing status {sid}")
         await update_status_message(sid, force=True)
     
     elif action == "help":
@@ -225,7 +234,22 @@ async def status_pages(_, query):
     
     elif action == 'close':
         await query.answer(f"✅ Status ditutup! Ketik /{BotCommands.StatusCommand[0]} untuk melihat status lagi.")
-        await edit_status()
+        
+        async with task_dict_lock:
+            if sid in status_dict:
+                try:
+                    message_obj = status_dict[sid]["message"]
+                    await editMessage(message_obj, f"Status telah ditutup. Gunakan /{BotCommands.StatusCommand[0]} untuk melihat status baru.")
+                    
+                    del status_dict[sid]
+                    
+                    if obj := Intervals["status"].get(sid):
+                        obj.cancel()
+                        del Intervals["status"][sid]
+                        
+                    LOGGER.info(f"Status {sid} berhasil ditutup oleh {user_id}")
+                except Exception as e:
+                    LOGGER.error(f"Error saat menutup status {sid}: {str(e)}")
     
     elif action == 'info':
         is_all = status_dict.get(sid, {}).get('is_all', False)
@@ -239,7 +263,7 @@ async def status_pages(_, query):
         elif chat_id:
             view_type = "Tugas Grup"
         else:
-            view_type = "Unknown"
+            return is_all, is_user, chat_id
         
         async with task_dict_lock:
             tasks = {

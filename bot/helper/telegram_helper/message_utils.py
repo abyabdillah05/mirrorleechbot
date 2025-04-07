@@ -183,6 +183,19 @@ async def edit_status():
             except Exception as e:
                 LOGGER.error(str(e))
 
+async def edit_single_status(sid):
+    async with task_dict_lock:
+        if sid in status_dict:
+            try:
+                await editMessage(status_dict[sid]["message"], f"Status telah ditutup. Gunakan /{BotCommands.StatusCommand[0]} untuk melihat status baru.")
+                del status_dict[sid]
+                if obj := Intervals["status"].get(sid):
+                    obj.cancel()
+                    del Intervals["status"][sid]
+                return True
+            except Exception as e:
+                LOGGER.error(f"Error saat menutup status {sid}: {str(e)}")
+        return False
 
 async def get_tg_link_message(link, uid=None):
     user_dict = user_data.get(uid, {})
