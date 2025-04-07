@@ -35,7 +35,6 @@ class DbManger:
     async def db_load(self):
         if self._err:
             return
-        # Save bot settings
         try:
             await self._db.settings.config.update_one(
                 {"_id": bot_id}, {"$set": config_dict}, upsert=True

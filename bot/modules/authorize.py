@@ -42,16 +42,11 @@ async def unauthorize(_, message):
     if id_ not in user_data:
         msg = "🙃 <b>Sudah diunautorisasi!</b>"
     else:
-        update_user_ldata(id_, "is_auth", False)
-        
-        if id_ in user_data and not (user_data[id_].get("is_sudo") or user_data[id_].get("quota", 0) > 0):
-            user_data.pop(id_, None)
-            msg = "😉 <b>Berhasil diunautorisasi dan dihapus dari database!</b>"
-        else:
-            msg = "😉 <b>Berhasil diunautorisasi!</b>"
+        user_data.pop(id_, None)
+        msg = "😉 <b>Berhasil diunautorisasi dan dihapus dari database!</b>"
              
         if DATABASE_URL:
-            await DbManger().update_user_data(id_)
+            await DbManger().delete_user_data(id_)
             
     await sendMessage(message, msg)
 
@@ -91,16 +86,11 @@ async def removeSudo(_, message):
     elif not user_data[id_].get("is_sudo"):
         msg = "🙃 <b>Pengguna bukan sudo user!</b>"
     else:
-        update_user_ldata(id_, "is_sudo", False)
-        
-        if id_ in user_data and not (user_data[id_].get("is_auth") or user_data[id_].get("quota", 0) > 0):
-            user_data.pop(id_, None)
-            msg = "😉 <b>Berhasil diturunkan dari Sudo User dan dihapus dari database!</b>"
-        else:
-            msg = "😉 <b>Berhasil diturunkan dari Sudo User!</b>"
+        user_data.pop(id_, None)
+        msg = "😉 <b>Berhasil diturunkan dari Sudo User dan dihapus dari database!</b>"
             
         if DATABASE_URL:
-            await DbManger().update_user_data(id_)
+            await DbManger().delete_user_data(id_)
             
     await sendMessage(message, msg)
 
