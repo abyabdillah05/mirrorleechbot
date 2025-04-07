@@ -180,6 +180,8 @@ async def check_quota(_, message):
     
     base_msg += divider
     
+    mess = None
+    
     if sudo:
         if self:
             msg = (
@@ -361,9 +363,13 @@ async def check_quota(_, message):
             LOGGER.error(f"Error creating token: {str(e)}")
             final_msg = base_msg + detail_msg
             mess = await sendMessage(message, final_msg)
+    else:
+        final_msg = base_msg + detail_msg
+        mess = await sendMessage(message, final_msg)
     
-    await asleep(120)
-    await deleteMessage(mess)
+    if mess:
+        await asleep(120)
+        await deleteMessage(mess)
 
 #######################
 ## Commands Handlers ##
