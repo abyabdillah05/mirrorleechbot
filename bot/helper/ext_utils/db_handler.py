@@ -168,22 +168,22 @@ class DbManger:
             
         self._conn.close
 
-async def update_user_doc(self, user_id, key, path=""):
-    if self._err:
-        return
-    try:
-        if path:
-            async with aiopen(path, "rb+") as doc:
-                doc_bin = await doc.read()
-        else:
-            doc_bin = ""
-        await self._db.users.update_one(
-            {"_id": user_id}, {"$set": {key: doc_bin}}, upsert=True
-        )
-    except Exception as e:
-        LOGGER.error(f"Error updating user doc: {str(e)}")
-    finally:    
-        self._conn.close()  
+    async def update_user_doc(self, user_id, key, path=""):
+        if self._err:
+            return
+        try:
+            if path:
+                async with aiopen(path, "rb+") as doc:
+                    doc_bin = await doc.read()
+            else:
+                doc_bin = ""
+            await self._db.users.update_one(
+                {"_id": user_id}, {"$set": {key: doc_bin}}, upsert=True
+            )
+        except Exception as e:
+            LOGGER.error(f"Error updating user doc: {str(e)}")
+        finally:    
+            self._conn.close()  
 
     async def rss_update_all(self):
         if self._err:
