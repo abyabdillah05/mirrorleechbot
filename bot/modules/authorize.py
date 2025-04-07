@@ -352,7 +352,7 @@ async def check_quota(_, message):
         try:
             butt = await create_token(user_id)
             final_msg = base_msg + detail_msg
-            mess = await sendMessage(message, final_msg, butt.build_menu(2))  # Build menu here
+            mess = await sendMessage(message, final_msg, butt.build_menu(2))
         except Exception as e:
             LOGGER.error(f"Error creating token: {str(e)}")
             final_msg = base_msg + detail_msg
@@ -366,7 +366,7 @@ bot.add_handler(
         authorize, 
         filters=command(
             BotCommands.AuthorizeCommand
-        ) & CustomFilters.sudo
+        ) & CustomFilters.owner
     )
 )
 bot.add_handler(
@@ -374,7 +374,7 @@ bot.add_handler(
         unauthorize,
         filters=command(
             BotCommands.UnAuthorizeCommand
-        ) & CustomFilters.sudo,
+        ) & CustomFilters.owner,
     )
 )
 bot.add_handler(
@@ -382,7 +382,7 @@ bot.add_handler(
         addSudo, 
         filters=command(
             BotCommands.AddSudoCommand
-        ) & CustomFilters.sudo
+        ) & CustomFilters.owner
     )
 )
 bot.add_handler(
@@ -390,7 +390,7 @@ bot.add_handler(
         removeSudo, 
         filters=command(
             BotCommands.RmSudoCommand
-        ) & CustomFilters.sudo
+        ) & CustomFilters.owner
     )
 )
 bot.add_handler(
