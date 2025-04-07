@@ -188,12 +188,12 @@ async def status_pages(_, query):
     
     elif action == "help":
         help_text = (
-            "📋 BANTUAN STATUS\n\n"
+            "📋BANTUAN STATUS\n\n"
             "• /status - Status konteks\n"
             "   - Di PM: tugas pribadi\n"
             "   - Di grup: tugas grup\n"
             "• /status me - Status pribadi\n"
-            "• /status all - Semua tugas (Owner)\n\n"
+            "• /status all - Semua tugas (Owner)\n"
             "• Gunakan filter untuk melihat status\n"
             "• Batalkan tugas lambat (<20KB/s)"
         )
