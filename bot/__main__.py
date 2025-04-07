@@ -50,7 +50,6 @@ from bot import (
 from .modules import (
     authorize, 
     bot_settings,
-    broadcast, 
     cancel_task, 
     clone, 
     eval, 
