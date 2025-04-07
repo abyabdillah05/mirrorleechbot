@@ -318,23 +318,30 @@ async def sendStatusMessage(message, user_id=0, is_user=False, chat_id=None, is_
         
         if is_all:
             status_type = "all"
-            sid = 0 
-        elif is_user or (user_id > 0 and not chat_id):
+            sid = 0
+        elif is_user:
             status_type = "personal"
             sid = user_id or message.from_user.id
             is_user = True
-        elif chat_id and chat_id < 0:
-            status_type = "group"
-            sid = chat_id
+        elif chat_id:
+            if chat_id > 0:
+                status_type = "personal"
+                sid = chat_id
+                is_user = True
+            else:
+                status_type = "group"
+                sid = chat_id
         else:
             if message.chat.type in ["private", "bot"]:
-                status_type = "personal"
+                status_type = "personal" 
                 sid = message.from_user.id
                 is_user = True
             else:
                 status_type = "group"
                 sid = message.chat.id
                 chat_id = message.chat.id
+
+        LOGGER.info(f"Creating status: type={status_type}, sid={sid}, is_user={is_user}, chat_id={chat_id}")
         
         if sid in list(status_dict.keys()):
             page_no = status_dict[sid]["page_no"]

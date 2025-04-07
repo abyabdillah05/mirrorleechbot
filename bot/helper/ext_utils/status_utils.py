@@ -108,23 +108,38 @@ def get_progress_bar_string(pct):
     return f"[{p_str}]"
 
 def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1, chat_id=None, is_all=False, cmd_user_id=None):
-    msg = ""
-    button = None
 
     if is_all:
         tasks = list(task_dict.values())
         header_msg = "<b>🌐 STATUS SEMUA TUGAS (GLOBAL)</b>\n\n"
-    elif is_user or (sid > 0 and not chat_id):
+        LOGGER.info(f"Get ALL tasks: {len(tasks)}")
+    elif is_user:
         tasks = [tk for tk in task_dict.values() if tk.listener.user_id == sid]
         header_msg = "<b>🔹 STATUS TUGAS PRIBADI ANDA</b>\n\n"
+        LOGGER.info(f"Get USER tasks for {sid}: {len(tasks)}")
     elif chat_id and chat_id < 0:
         tasks = [tk for tk in task_dict.values() if hasattr(tk.listener, 'message') and 
                 hasattr(tk.listener.message, 'chat') and tk.listener.message.chat.id == chat_id]
         header_msg = "<b>📊 STATUS TUGAS GRUP INI</b>\n\n"
+        LOGGER.info(f"Get GROUP tasks for {chat_id}: {len(tasks)}")
     else:
-        LOGGER.warning(f"Invalid status context: sid={sid}, is_user={is_user}, chat_id={chat_id}")
-        return None, None
-    
+        if sid > 0:
+            tasks = [tk for tk in task_dict.values() if tk.listener.user_id == sid]
+            header_msg = "<b>🔹 STATUS TUGAS PRIBADI ANDA</b>\n\n"
+            LOGGER.info(f"Auto-detected USER tasks for {sid}: {len(tasks)}")
+            is_user = True
+        elif sid < 0:
+            tasks = [tk for tk in task_dict.values() if hasattr(tk.listener, 'message') and 
+                    hasattr(tk.listener.message, 'chat') and tk.listener.message.chat.id == sid]
+            header_msg = "<b>📊 STATUS TUGAS GRUP INI</b>\n\n"
+            LOGGER.info(f"Auto-detected GROUP tasks for {sid}: {len(tasks)}")
+        else:
+            LOGGER.warning(f"Invalid status context: sid={sid}, is_user={is_user}, chat_id={chat_id}")
+            return None, None
+
+    msg = ""
+    button = None
+
     if status != "All":
         if is_user:
             tasks = [
