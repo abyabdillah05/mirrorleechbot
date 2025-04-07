@@ -26,7 +26,8 @@ from bot import (
     Intervals,
     bot,
     OWNER_ID,
-    user_data
+    user_data,
+    LOGGER
 )
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.bot_commands import BotCommands
@@ -36,7 +37,7 @@ from bot.helper.telegram_helper.message_utils import (
     auto_delete_message,
     sendStatusMessage,
     update_status_message,
-    edit_status,
+    edit_single_status,
     editMessage,
 )
 from bot.helper.ext_utils.bot_utils import new_task
@@ -46,8 +47,7 @@ from bot.helper.ext_utils.status_utils import (
     get_readable_time,
     speed_string_to_bytes,
     STATUS_VALUES
-)
-from bot.helper.ext_utils.logger import LOGGER
+) 
 
 #############################
 ## Status Task Manager Bot ##
@@ -173,7 +173,6 @@ async def status_pages(_, query):
         is_all = status_dict[sid].get("is_all", False)
         status_chat_id = status_dict[sid].get("chat_id")
         
-    # Validasi lebih ketat untuk button lock
     has_permission = False
     
     if is_owner:
@@ -234,22 +233,7 @@ async def status_pages(_, query):
     
     elif action == 'close':
         await query.answer(f"✅ Status ditutup! Ketik /{BotCommands.StatusCommand[0]} untuk melihat status lagi.")
-        
-        async with task_dict_lock:
-            if sid in status_dict:
-                try:
-                    message_obj = status_dict[sid]["message"]
-                    await editMessage(message_obj, f"Status telah ditutup. Gunakan /{BotCommands.StatusCommand[0]} untuk melihat status baru.")
-                    
-                    del status_dict[sid]
-                    
-                    if obj := Intervals["status"].get(sid):
-                        obj.cancel()
-                        del Intervals["status"][sid]
-                        
-                    LOGGER.info(f"Status {sid} berhasil ditutup oleh {user_id}")
-                except Exception as e:
-                    LOGGER.error(f"Error saat menutup status {sid}: {str(e)}")
+        await edit_single_status
     
     elif action == 'info':
         is_all = status_dict.get(sid, {}).get('is_all', False)
