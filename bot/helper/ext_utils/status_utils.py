@@ -252,7 +252,13 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1, cha
         msg += f"\n<b>└⛔️ /{BotCommands.CancelTaskCommand[0]}_{task.gid()}</b>\n\n"
 
     if len(msg) == 0 or tasks_no == 0:
-        view_type = "pribadi Anda" if is_user else "grup ini" if chat_id else "global"
+        if is_user:
+            view_type = "pribadi Anda"
+        elif chat_id:
+            view_type = "grup ini"
+        else:
+            view_type = "global"
+            
         if status == "All":
             msg = f"{header_msg}<b>📭 Tidak ada tugas aktif untuk tampilan {view_type}!</b>\n\n"
         else:
