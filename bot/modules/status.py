@@ -35,7 +35,7 @@ from bot.helper.telegram_helper.message_utils import (
     auto_delete_message,
     sendStatusMessage,
     update_status_message,
-    edit_single_status,
+    edit_single_status
 )
 from bot.helper.ext_utils.bot_utils import new_task
 from bot.helper.ext_utils.status_utils import (

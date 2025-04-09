@@ -201,6 +201,24 @@ async def edit_status():
             except Exception as e:
                 LOGGER.error(str(e))
 
+## Edit Status Message ##
+## This Function Replaces The Function Above, The Difference Is That It Only Edits One Status In Global | Private | Group ##
+# Noted By: Tg @IgnoredProjectXcl #
+
+async def edit_single_status(sid):
+    async with task_dict_lock:
+        if sid in status_dict:
+            try:
+                await editMessage(status_dict[sid]["message"], f"Status telah ditutup. Gunakan /{BotCommands.StatusCommand[0]} jika anda melihat status lagi.")
+                del status_dict[sid]
+                if obj := Intervals["status"].get(sid):
+                    obj.cancel()
+                    del Intervals["status"][sid]
+                return True
+            except Exception as e:
+                LOGGER.error(f"Error saat menutup status {sid}: {str(e)}")
+        return False
+
 ## Get Telegram Link Message ##
 
 async def get_tg_link_message(link, uid=None):
@@ -447,6 +465,72 @@ async def customSendMessage(client, chat_id:int, text:str, message_thread_id=Non
     except Exception as e:
         LOGGER.error(str(e))
         raise Exception(e)
+
+## Custom Send Rss Message ##
+## This Function Is No Longer Used, But You Can Use It If Needed ##
+# Noted By: Tg @IgnoredProjectXcl #
+
+async def customSendRss(text, image=None, image_caption=None, reply_markup=None):
+    chat_id = None
+    message_thread_id = None
+    if chat_id := config_dict.get("RSS_CHAT_ID"):
+        if not isinstance(chat_id, int):
+            if ":" in chat_id:
+                message_thread_id = chat_id.split(":")[1]
+                chat_id = chat_id.split(":")[0]
+        
+        if chat_id.isdigit():
+            chat_id = int(chat_id)
+        
+        if message_thread_id.isdigit():
+            message_thread_id = int(message_thread_id)
+    else:
+        return "RSS_CHAT_ID tidak ditemukan!"
+        
+    try:
+        if image:
+            if len(text) > 1024:
+                reply_photo = await bot.send_photo(
+                    chat_id=chat_id,
+                    photo=image,
+                    caption=f"<code>{image_caption}</code>",
+                    disable_notification=True,
+                    message_thread_id=message_thread_id
+                )
+                return await bot.send_message(
+                    chat_id=chat_id,
+                    text=text,
+                    disable_web_page_preview=True,
+                    disable_notification=True,
+                    message_thread_id=message_thread_id,
+                    reply_to_message_id=reply_photo.id,
+                    reply_markup=reply_markup
+                )
+            else:
+                return await bot.send_photo(
+                    chat_id=chat_id,
+                    photo=image,
+                    caption=text,
+                    disable_notification=True,
+                    message_thread_id=message_thread_id,
+                    reply_markup=reply_markup
+                )
+        else:
+            return await bot.send_message(
+                chat_id=chat_id,
+                text=text,
+                disable_web_page_preview=True,
+                disable_notification=True,
+                message_thread_id=message_thread_id,
+                reply_markup=reply_markup
+            )
+    except FloodWait as f:
+        LOGGER.warning(str(f))
+        await sleep(f.value * 1.2)
+        return await customSendRss(text)
+    except Exception as e:
+        LOGGER.error(str(e))
+        return str(e)
 
 ## Custom Send Document ##
 
