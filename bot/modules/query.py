@@ -3,7 +3,6 @@ from pyrogram.filters import regex
 from aiofiles import open as aiopen
 from bot import bot
 
-from bot.__main__ import help_string
 from bot.helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.telegram_helper.message_utils import editMessage, deleteMessage
 from bot.helper.ext_utils.help_messages import MIRROR_HELP, LEECH_HELP, TORRENT_HELP, YTDLP_HELP, OTHER_HELP
@@ -37,7 +36,7 @@ async def pikaquery(_, query):
             buttons.ibutton('Ytdlp', f'pika {user_id} guide ytdlp')
             buttons.ibutton('Lainnya', f'pika {user_id} guide other')
             buttons.ibutton('⬇️ Tutup', f'pika {user_id} close', 'footer')
-            await editMessage(message, help_string + f"\n\nAtau pilih jenis bantuan yang anda perlukan !", buttons.build_menu(2))
+            await editMessage(message, f"Silahkan pilih jenis bantuan yang anda perlukan !", buttons.build_menu(2))
         await query.answer()
     else:
         await query.answer()

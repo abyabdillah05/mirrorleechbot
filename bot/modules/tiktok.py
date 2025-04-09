@@ -60,9 +60,9 @@ async def tiktokdl(client, message, url, audio=False):
     else:
         uname = f'<code>{message.from_user.first_name}</code>'
     if audio:
-        mess = await sendMessage(message, f"<b>🎵 Sedang mengunduh audio TikTok... Mohon tunggu sebentar</b>")
+        mess = await sendMessage(message, f"<b>⌛️Mendownload audio dari tiktok, silahkan tunggu sebentar...</b>")
     else:
-        mess = await sendMessage(message, f"<b>📥 Sedang mengunduh video TikTok... Harap bersabar</b>")
+        mess = await sendMessage(message, f"<b>⌛️Mendownload video dari tiktok, silahkan tunggu sebentar...</b>")
     async with niquests.AsyncSession() as client:
         try:
             r = await client.get(url, allow_redirects=False)
@@ -73,7 +73,7 @@ async def tiktokdl(client, message, url, audio=False):
             else:
                 hasil = r.url
         except Exception as e:
-            await sendMessage(mess, f"Oops! Gagal mengakses tautan. Silakan coba lagi.\n\n<blockquote>{e}</blockquote>")
+            await sendMessage(mess, f"Terjadi kesalahan saat mencoba mengakses url, silahkan coba kembali.\n\n<blockquote>{e}</blockquote>")
             await deleteMessage(mess)
             return None
         
@@ -83,7 +83,7 @@ async def tiktokdl(client, message, url, audio=False):
             content_type = match.group("content_type")
             id = match.group('id')
         else:
-            await editMessage(message, f"Hmm, sepertinya tautan tidak valid atau belum didukung. Coba dengan tautan TikTok lainnya!")
+            await editMessage(message, f"Link yang anda berikan sepertinya salah atau belum support, silahkan coba dengan link yang lain !")
             return None
         
     async with niquests.AsyncSession() as client:
@@ -100,7 +100,7 @@ async def tiktokdl(client, message, url, audio=False):
                 data = r.text
             data = loads(data)
         except Exception as e:
-            await sendMessage(mess, f"Hai {uname}, Gagal mengambil data dari TikTok. Silakan coba lagi nanti.\n\n<blockquote>{e}</blockquote>")
+            await sendMessage(mess, f"Hai {uname}, Terjadi kesalahan saat mencoba mengambil data, silahkan coba kembali.\n\n<blockquote>{e}</blockquote>")
             await deleteMessage(mess)
             return None
         try:
@@ -109,7 +109,7 @@ async def tiktokdl(client, message, url, audio=False):
             if content_type == "video":
                 link = data["aweme_list"][0]["video"]["play_addr"]["url_list"][-1]
                 filename = data["aweme_list"][0]["desc"]
-                capt = f"<code>{filename}</code> \n\n<b>Diunduh oleh:</b> {uname}"
+                capt = f"<code>{filename}</code> \n\n<b>Tugas Oleh:</b> {uname}"
                 if audio is False:                
                     await customSendVideo(message, link, capt, None, None, None, None, None)
                 else:
@@ -127,7 +127,7 @@ async def tiktokdl(client, message, url, audio=False):
                     await customSendAudio(message, music, m_capt, None, None, None, None, None)
                
         except Exception as e:
-                await sendMessage(message, f"ERROR: Tidak dapat mengunggah media: {e}")
+                await sendMessage(message, f"ERROR: Gagal mengupload media {e}")
         finally:
             await deleteMessage(mess)
 
@@ -139,12 +139,12 @@ async def auto_tk(client, message):
     user_id = message.from_user.id
     isi = {user_id: message}
     tiktok.append(isi)
-    msg = f"<b>🔎 Tautan TikTok terdeteksi! Pilih opsi unduhan:</b>"
+    msg = f"<b>Link Tiktok terdeteksi, silahkan pilih untuk download Media atau Audio saja...</b>"
     user_id = message.from_user.id
     butt = ButtonMaker()
-    butt.ibutton("📹 Video/Foto", f"tk media {user_id}")
-    butt.ibutton("🎵 Audio", f"tk audio {user_id}")
-    butt.ibutton("❌ Batal", f"tk cancel {user_id}")
+    butt.ibutton("🎞 Media", f"tk media {user_id}")
+    butt.ibutton("🔈 Audio", f"tk audio {user_id}")
+    butt.ibutton("⛔️ Batal", f"tk cancel {user_id}")
     butts = butt.build_menu(2)
     await sendMessage(message, msg, butts)
 
@@ -162,7 +162,7 @@ async def auto_tk_query(_, query):
             if urls:
                 tkurl = urls[0]
     if user_id != uid:
-        return await query.answer(text="Maaf, ini bukan permintaan Anda!", show_alert=True)
+        return await query.answer(text="Bukan Tugas Anda !", show_alert=True)
     
     elif data[1] == "media":
         await deleteMessage(message)
@@ -175,7 +175,7 @@ async def auto_tk_query(_, query):
     else:
         await query.answer()
         del msgs[uid]
-        await editMessage(message, "Download Tiktok dibatalkan.")
+        await editMessage(message, "Tugas Dibatalkan.")
 
 #######################################
 # TikTok Search | Credit @aenulrofik ##
@@ -189,8 +189,8 @@ async def tiktok_search(_, message):
     if len(message.command) > 1:
         keyword = ' '.join(message.command[1:])
     else:
-        await sendMessage(message, f"Oops! Masukkan kata kunci pencarian setelah perintah!")
-    mess = await sendMessage(message, f"<b>🔍 Mencari video TikTok dengan kata kunci:</b>\n\n<code>{keyword}</code>")
+        await sendMessage(message, f"Silahkan masukkan keyword pencarian setelah perintah !")
+    mess = await sendMessage(message, f"<b>⌛️Sedang mencari video tiktok dengan keyword:</b>\n\n<code>🔎 {keyword}</code>")
     #session = create_scraper()
     try:
         jar = MozillaCookieJar()
@@ -231,7 +231,7 @@ async def tiktok_search(_, message):
                 "screen_width": 1920,
                 "search_source": "normal_search",
                 "tz_name": "Asia/Jakarta",
-                "count": 25,
+                "count": 10,
                 "web_search_code": {
                     "tiktok": {
                         "client_params_x": {
@@ -260,11 +260,11 @@ async def tiktok_search(_, message):
 
             data = loads(search)
         except httpx.HTTPStatusError as e:
-            await sendMessage(mess, f"Hai {uname}, Gagal mengakses server TikTok. Coba lagi nanti.\n\n<blockquote>{e}</blockquote>")
+            await sendMessage(mess, f"Hai {uname}, Terjadi kesalahan saat mencoba mengakses url, silahkan coba kembali.\n\n<blockquote>{e}</blockquote>")
             await deleteMessage(mess)
             return None
         except httpx.RequestError as e:
-            await sendMessage(mess, f"Hai {uname}, Server TikTok merespons terlalu lambat. Silakan coba lagi.\n\n<blockquote>{e}</blockquote>")
+            await sendMessage(mess, f"Hai {uname}, Respon dari url terlalu lama, silahkan coba kembali.\n\n<blockquote>{e}</blockquote>")
             await deleteMessage(mess)
             return None
         #try:
@@ -292,11 +292,11 @@ async def tiktok_search(_, message):
             await deleteMessage(mess)
             return None
         try:
-            capt = (f'<code>{data["aweme_list"][0]["desc"]}</code>\n\n<b>Ditemukan untuk:</b> {uname}')
+            capt = (f'<code>{data["aweme_list"][0]["desc"]}</code>\n\n<b>Pencarian Oleh:</b> {uname}')
             link = (data["aweme_list"][0]["video"]["play_addr"]["url_list"][-1])    
             await customSendVideo(message, link, capt, None, None, None, None, None)
         except Exception as e:
-            await sendMessage(message, f"<b>Hai {uname}, pencarian gagal karena:\n\n{e}")
+            await sendMessage(message, f"<b>Hai {uname}, tugas pencarian gagal karena:\n\n{e}")
         finally:
             await deleteMessage(mess)
 
@@ -316,7 +316,7 @@ bot.add_handler(
 bot.add_handler(
     MessageHandler(
         auto_tk,
-        filters=CustomFilters.authorized & filters.regex(
+        filters=filters.regex(
             f"{tiktokregex}"
         )
     )
@@ -325,7 +325,7 @@ bot.add_handler(
 bot.add_handler(
     CallbackQueryHandler(
         auto_tk_query,
-        filters=CustomFilters.authorized & filters.regex(
+        filters=regex(
             r'^tk '
         )
     )

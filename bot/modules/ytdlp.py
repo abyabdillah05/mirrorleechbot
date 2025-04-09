@@ -10,7 +10,7 @@ import re
 import os
 from secrets import token_hex
 
-from bot import DOWNLOAD_DIR, bot, config_dict, LOGGER
+from bot import DOWNLOAD_DIR, bot, config_dict, LOGGER, OWNER_ID
 from bot.helper.telegram_helper.message_utils import (
     sendMessage,
     editMessage,
@@ -176,8 +176,6 @@ class YtSelection:
             info_text += f"<b>Duration:</b> <code>{duration}</code>\n"
         if result.get('view_count'):
             info_text += f"<b>Views:</b> <code>{result['view_count']:,}</code>\n"
-        
-        thumb_url = result.get('thumbnail')
 
         ## End Code | @WzdDizzyFlasherr ##
 
@@ -645,11 +643,12 @@ async def auto_yt(client, message):
     if text_before_url:
             return None
     
-    msg = f"<b>Link YT-Dlp terdeteksi, silahkan pilih untuk mirror atau leech...</b>"
+    msg = f"<b>📥 Link media ytdlp terdeteksi!</b>\n<b>Silahkan pilih tindakan yang Anda diinginkan:</b>"
     butt = ButtonMaker()
     butt.ibutton("☁️ Mirror", f"pikayt mirror {user_id}")
     butt.ibutton("☀️ Leech", f"pikayt leech {user_id}")
-    butt.ibutton("⛔️ Batal", f"pikayt cancel {user_id}")
+    butt.ibutton("📱 Kirim Disini", f"pikayt sendhere {user_id}")
+    butt.ibutton("⛔️ Batal", f"pikayt cancel {user_id}", "footer")
     butts = butt.build_menu(2)
     await sendMessage(message, msg, butts)
 
@@ -666,8 +665,8 @@ async def yt_query(_, query):
             urls = re.findall(r"https?://[^\s]+", text)
             if urls:
                 yturl = urls[0]
-    if user_id != uid:
-        return await query.answer(text="Bukan Tugas Anda !", show_alert=True)
+    if user_id != uid or OWNER_ID:
+        return await query.answer(text="Anda tidak diizinkan mengklik tombol ini", show_alert=True)
     elif data[1] == "mirror":
         await deleteMessage(message)
         del msgs[uid]     
@@ -676,12 +675,41 @@ async def yt_query(_, query):
         await deleteMessage(message)
         del msgs[uid]
         YtDlp(bot, msg, yturl=yturl, isLeech=True).newEvent()
+    elif data[1] == "sendhere":
+        await editMessage(message, "<b>⏳ Memproses video untuk dikirim langsung...</b>")
+        try:
+            ydl_opts = {
+                "format": "best[height<=720]",
+                "outtmpl": f"{DOWNLOAD_DIR}/direct_{token_hex(5)}.%(ext)s",
+                "noplaylist": True,
+                "quiet": True,
+            }
+            
+            with YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(yturl, download=True)
+                filename = ydl.prepare_filename(info)
+            
+            await editMessage(message, "<b>📤 Sedang Proses Mengirim...</b>")
+            
+            title = info.get('title', 'Video')
+            uploader = info.get('uploader', 'Unknown')
+            caption = f"<b>{title}</b>\n\n<b>Channel:</b> {uploader}"
+            
+            await customSendVideo(message, filename, caption=caption)
+            await deleteMessage(message)
+            
+            os.remove(filename)
+            
+        except Exception as e:
+            await editMessage(message, f"<b>❌ Gagal mengirim video:</b>\n<code>{str(e)}</code>")
+        finally:
+            del msgs[uid]
     else:
         await query.answer()
         del msgs[uid]
-        await editMessage(message, "Tugas Dibatalkan.")
+        await editMessage(message, "✅ Tugas dibatalkan.")
 
-ytregex = r"(https?://(?:www\.)?(?:instagram\.com/(?:tv/|reel/)|youtu\.be/|youtube\.com/(?:shorts/|watch\?|playlist\?)|m\.youtube\.com/(?:shorts/|watch\?)|twitter\.com/|music\.youtube\.com/|facebook\.com/|x\.com/|www\.facebook\.com/|fb\.me/|m\.facebook\.com/)[^\s]+)"
+ytdlpregex = r"(https?://(?:www\.|m\.|)(?:(?:youtube\.com/(?:shorts/|watch\?|playlist\?|embed/))|(?:youtu\.be/)|(?:tiktok\.com/(?:@[^/]+/video/))|(?:instagram\.com/(?:p/|reel/|tv/))|(?:twitter\.com|x\.com)/[^/]+/status/|(?:facebook\.com|fb\.watch|fb\.me)/(?:watch/\?v=|videos/|story\.php\?story_fbid=)|(?:vimeo\.com/)|(?:reddit\.com/r/[^/]+/comments/)|(?:t\.me/[^/]+/\d+)|(?:soundcloud\.com/)|(?:linkedin\.com/posts/)|(?:pinterest\.com/pin/)|(?:dailymotion\.com/video/)|(?:twitch\.tv/videos/)|(?:vm\.tiktok\.com/)|(?:threads\.net/(?:@[^/]+/post/))|(?:snapchat\.com/(?:stories/)))[^\s]+)"
 
 bot.add_handler(
     MessageHandler(
@@ -702,8 +730,8 @@ bot.add_handler(
 bot.add_handler(
     MessageHandler(
         auto_yt,
-        filters=CustomFilters.authorized & filters.regex(
-            f"{ytregex}"
+        filters=filters.regex(
+            f"{ytdlpregex}"
         )
     )
 )
@@ -711,7 +739,7 @@ bot.add_handler(
 bot.add_handler(
     CallbackQueryHandler(
         yt_query,
-        filters=CustomFilters.authorized & filters.regex(
+        filters=regex(
             r'^pikayt'
         )
     )
