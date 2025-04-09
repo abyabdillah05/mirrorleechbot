@@ -246,7 +246,7 @@ async def start(client, message):
 
     buttons = ButtonMaker()
     buttons.ubutton("👤 Maintainer", "https://t.me/WzdDizzyFlasherr", "header")
-    buttons.ubutton("📢 Channel", "https://t.me/DizzyStuffProject")
+    buttons.ubutton("📢 Channel", "https://t.me/IgnoredProjectXcl")
     buttons.ubutton("👥 Group", "https://t.me/TranssionCore5")
     buttons.ubutton("💰 Donate", "https://telegra.ph/Donate-and-Support-Us-03-21")
     buttons.ubutton("➕ Add me to Group", f"https://t.me/{bot.me.username}?startgroup=true", "footer")
@@ -257,7 +257,7 @@ async def start(client, message):
     
     ################################
     ## Start For Authorized Group ##
-    ################################
+    ################################hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh
 
     if is_in_auth_group:
         start_string = f'''

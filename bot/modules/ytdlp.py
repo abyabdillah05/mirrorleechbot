@@ -711,7 +711,7 @@ bot.add_handler(
 bot.add_handler(
     CallbackQueryHandler(
         yt_query,
-        filters=regex(
+        filters=CustomFilters.authorized & filters.regex(
             r'^pikayt'
         )
     )

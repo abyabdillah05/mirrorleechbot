@@ -23,12 +23,12 @@ from bot.helper.ext_utils.bot_utils import sync_to_async
 from bot.modules.ytdlp import YtDlp
 from bot.helper.ext_utils.bot_utils import new_task
 
-
 user_agent  = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0"
 
 ################################################
 #Upload Telegraph
 ################################################
+
 @new_task
 async def upload_media(_, message):
     rply = message.reply_to_message
@@ -72,7 +72,6 @@ async def upload_media(_, message):
             await sendMessage(message, "Jenis file tidak didukung, upload telegraph hanya support Photo, Video, dan Animation.")   
     else:
         await sendMessage(message, f"Silahkan balas photo atau video pendek yang mau anda upload ke Telegraph")
-
 
 ##############################################
 #SUBDL by Pikachu
@@ -130,7 +129,6 @@ async def subdl_butt(uid):
         butt.ibutton("⛔️ Batal", f"sub x {uid}", position="footer")
         butts = butt.build_menu(1)
         return f"Gagal mendapatkan subtitle dari film \n<code>{keyword}</code>\n\n{r}", butts
-
 
 async def subdl(client, message):
     if len(message.command) > 1:
@@ -210,10 +208,10 @@ async def subdl_query(_, query):
         await editMessage(message, "Tugas Dibatalkan.")
         del keyword[uid]
 
-
 #####################################
 #GALLERY-DL
 #####################################
+
 async def downloader(url):
     output_dir = "gallery_dl/"
     if not os.path.exists(output_dir):
@@ -287,7 +285,6 @@ async def gallery_dl_auto(client, message):
 ########################################################################################
 
 gallery_dl_regex = r'https?:\/\/(www\.)?(instagram\.com\/[a-zA-Z0-9._-]+|twitter\.com\/[a-zA-Z0-9_]+|x\.com\/[a-zA-Z0-9_]+)'
-
 
 bot.add_handler(
     MessageHandler(

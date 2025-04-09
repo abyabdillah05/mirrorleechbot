@@ -52,6 +52,7 @@ tiktokregex = r"(https?://(?:www\.)?[a-zA-Z0-9.-]*tiktok\.com/)"
 ############################################
 ## Tiktok Downloader | Credit @aenulrofik ##
 ############################################
+
 async def tiktokdl(client, message, url, audio=False):
     url = url
     if message.from_user.username:
@@ -315,7 +316,7 @@ bot.add_handler(
 bot.add_handler(
     MessageHandler(
         auto_tk,
-        filters=filters.regex(
+        filters=CustomFilters.authorized & filters.regex(
             f"{tiktokregex}"
         )
     )
@@ -324,7 +325,7 @@ bot.add_handler(
 bot.add_handler(
     CallbackQueryHandler(
         auto_tk_query,
-        filters=regex(
+        filters=CustomFilters.authorized & filters.regex(
             r'^tk '
         )
     )
