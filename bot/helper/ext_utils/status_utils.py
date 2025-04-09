@@ -108,49 +108,39 @@ def get_progress_bar_string(pct):
     return f"[{p_str}]"
 
 def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1, chat_id=None, is_all=False, cmd_user_id=None):
-
-    if is_all:
-        tasks = list(task_dict.values())
-        header_msg = "<b>🌐 Status Semua Tugas (Global)</b>\n\n"
-    elif is_user:
-        tasks = [tk for tk in task_dict.values() if tk.listener.user_id == sid]
-        header_msg = "<b>🔹 Status Tugas Pribadi Anda</b>\n\n"
-    elif chat_id and chat_id < 0:
-        tasks = [tk for tk in task_dict.values() if hasattr(tk.listener, 'message') and 
-                hasattr(tk.listener.message, 'chat') and tk.listener.message.chat.id == chat_id]
-        header_msg = "<b>📊 Status Tugas Group Ini</b>\n\n"
-    else:
-        if sid > 0:
-            tasks = [tk for tk in task_dict.values() if tk.listener.user_id == sid]
-            header_msg = "<b>🔹 Status Tugas Pribadi Anda</b>\n\n"
-            is_user = True
-        elif sid < 0:
-            tasks = [tk for tk in task_dict.values() if hasattr(tk.listener, 'message') and 
-                    hasattr(tk.listener.message, 'chat') and tk.listener.message.chat.id == sid]
-            header_msg = "<b>📊 Status Tugas Group Ini</b>\n\n"
-        else:
-            LOGGER.warning(f"Invalid status context: sid={sid}, is_user={is_user}, chat_id={chat_id}")
-            return None, None
-
     msg = ""
     button = None
 
+    if is_all:
+        tasks = list(task_dict.values())
+        header_msg = "<b>🌐 STATUS SEMUA TUGAS (GLOBAL)</b>\n\n"
+    elif is_user or (sid > 0 and not chat_id):
+        tasks = [tk for tk in task_dict.values() if tk.listener.user_id == sid]
+        header_msg = "<b>🔹 STATUS TUGAS PRIBADI ANDA</b>\n\n"
+    elif chat_id and chat_id < 0:
+        tasks = [tk for tk in task_dict.values() if hasattr(tk.listener, 'message') and 
+                hasattr(tk.listener.message, 'chat') and tk.listener.message.chat.id == chat_id]
+        header_msg = "<b>📊 STATUS TUGAS GRUP INI</b>\n\n"
+    else:
+        LOGGER.warning(f"Invalid status context: sid={sid}, is_user={is_user}, chat_id={chat_id}")
+        return None, None
+    
     if status != "All":
         if is_user:
             tasks = [
                 tk for tk in tasks
                 if tk.status() == status
             ]
-            header_msg = f"<b>🔹 Status Tugas Pribadi ({status})</b>\n\n"
+            header_msg = f"<b>🔹 STATUS TUGAS PRIBADI ({status})</b>\n\n"
         elif chat_id:
             tasks = [
                 tk for tk in tasks
                 if tk.status() == status
             ]
-            header_msg = f"<b>📊 Status Tugas Group ({status})</b>\n\n"
+            header_msg = f"<b>📊 STATUS TUGAS GRUP ({status})</b>\n\n"
         elif is_all:
             tasks = [tk for tk in tasks if tk.status() == status]
-            header_msg = f"<b>🌐 Status Semua Tugas ({status})</b>\n\n"
+            header_msg = f"<b>🌐 STATUS SEMUA TUGAS ({status})</b>\n\n"
     
     msg += header_msg
 
@@ -259,11 +249,11 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1, cha
 
     if len(msg) == 0 or tasks_no == 0:
         if is_user:
-            view_type = "Private"
+            view_type = "pribadi Anda"
         elif chat_id:
-            view_type = "Group"
+            view_type = "grup ini"
         else:
-            view_type = "Global"
+            view_type = "global"
             
         if status == "All":
             msg = f"{header_msg}<b>📭 Tidak ada tugas aktif untuk tampilan {view_type}!</b>\n\n"
@@ -301,7 +291,7 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1, cha
     
     button = buttons.build_menu(3)
     
-    view_type = "Private" if is_user else "Group" if chat_id else "Global"
+    view_type = "Pribadi" if is_user else "Grup" if chat_id else "Global"
     msg += f"<b>──────────────────</b>"
     msg += f"\n<b>Mode Tampilan:</b> <code>{view_type}</code>"
     msg += f"\n<b>CPU :</b> <code>{cpu_percent()}%</code> | <b>RAM :</b> <code>{virtual_memory().percent}%</code>"

@@ -23,8 +23,10 @@ from bot import (
     task_dict,
     botStartTime,
     DOWNLOAD_DIR,
+    Intervals,
     bot,
     OWNER_ID,
+    user_data,
     LOGGER
 )
 from bot.helper.telegram_helper.filters import CustomFilters
@@ -36,6 +38,7 @@ from bot.helper.telegram_helper.message_utils import (
     sendStatusMessage,
     update_status_message,
     edit_single_status,
+    editMessage,
 )
 from bot.helper.ext_utils.bot_utils import new_task
 from bot.helper.ext_utils.status_utils import (
@@ -54,9 +57,10 @@ from bot.helper.ext_utils.status_utils import (
 async def mirror_status(_, message):
     async with task_dict_lock:
         count = len(task_dict)
-
+    
     user_id = message.from_user.id
     is_owner = user_id == OWNER_ID
+    
     text = message.text.split()
     cmd_type = text[1].lower() if len(text) > 1 else None
     
@@ -149,11 +153,14 @@ async def mirror_status(_, message):
 @new_task
 async def status_pages(_, query):
     data = query.data.split()
+    
     sid = int(data[1])
     action = data[2]
+    
     cmd_user_id = int(data[3]) if len(data) > 3 else None
-    chat_id = query.message.chat.id
+    
     user_id = query.from_user.id
+    chat_id = query.message.chat.id
     is_owner = user_id == OWNER_ID
     
     async with task_dict_lock:
@@ -170,28 +177,30 @@ async def status_pages(_, query):
     
     if is_owner:
         has_permission = True
+        LOGGER.info(f"Owner {user_id} mengakses tombol status {sid}")
     elif status_owner_id and user_id == status_owner_id:
         has_permission = True
+        LOGGER.info(f"Pembuat status {status_owner_id} mengakses tombol statusnya sendiri")
     elif status_type == "group" and not is_all and status_chat_id and status_chat_id == chat_id:
         has_permission = True
+        LOGGER.info(f"User {user_id} mengakses tombol status grup {chat_id}")
     
     if not has_permission:
-        await query.answer("Anda tidak dizinkan mengakses tombol ini!!\nHanya peminta status dan owner yang dapat mengakses!", show_alert=True)
+        await query.answer("⚠️ Anda tidak memiliki izin untuk mengakses tombol status ini!", show_alert=True)
         return
     
     if action == "ref":
-        await query.answer("Sedang merefresh status...")
+        await query.answer("🔄 Menyegarkan status...")
         LOGGER.info(f"Refreshing status {sid}")
         await update_status_message(sid, force=True)
     
     elif action == "help":
         help_text = (
-            "📋 BANTUAN STATUS\n\n"
+            "📋 STATUS COMMANDS\n"
             "• /status - Status konteks\n"
-            "• /status me - Status pribadi\n"
-            "• /status all - Semua tugas (Owner)\n\n"
-            "TIPS:\n"
-            "• Gunakan perintah status diatas untuk melihat status yang anda inginkan\n"
+            "• /status me - Tugas pribadi\n"
+            "• /status all - Semua tugas (Owner)\n"
+            "• Filter - Gunakan tombol filter\n"
             "• Batalkan tugas lambat (<20KB/s)"
         )
         await query.answer(help_text, show_alert=True)
@@ -223,7 +232,7 @@ async def status_pages(_, query):
                 await update_status_message(sid, force=True)
     
     elif action == 'close':
-        await query.answer(f"Pesan status telah ditutup!\n\n Ketik /{BotCommands.StatusCommand[0]} untuk jika Anda melihat status lagi.")
+        await query.answer(f"✅ Status ditutup! Ketik /{BotCommands.StatusCommand[0]} untuk melihat status lagi.")
         success = await edit_single_status(sid)
         if not success:
             LOGGER.error(f"Gagal menutup status dengan ID: {sid}")
@@ -234,11 +243,11 @@ async def status_pages(_, query):
         chat_id = status_dict.get(sid, {}).get('chat_id')
         
         if is_all:
-            view_type = "Semua Status (Global)"
+            view_type = "Semua Tugas (Global)"
         elif is_user:
-            view_type = "Status Private" 
+            view_type = "Tugas Pribadi" 
         elif chat_id:
-            view_type = "Status Group"
+            view_type = "Tugas Grup"
         else:
             return is_all, is_user, chat_id
         
