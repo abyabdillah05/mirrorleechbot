@@ -317,13 +317,12 @@ async def update_status_message(sid, force=False):
         is_user = status_dict[sid]["is_user"]
         page_step = status_dict[sid]["page_step"]
         is_all = status_dict[sid].get("is_all", False)
-        status_type = status_dict[sid].get("status_type", "group")
         
         chat_id = status_dict[sid].get("chat_id")
         cmd_user_id = status_dict[sid].get("cmd_user_id") or (sid if is_user else None)
         
         text, buttons = await sync_to_async(
-            get_readable_message, sid, is_user, page_no, status, page_step, chat_id, is_all, cmd_user_id, status_type
+            get_readable_message, sid, is_user, page_no, status, page_step, chat_id, is_all, cmd_user_id,
         )
         
         if text is None:
@@ -357,26 +356,34 @@ async def update_status_message(sid, force=False):
 
 async def sendStatusMessage(message, user_id=0, is_user=False, chat_id=None, is_all=False, cmd_user_id=None):
     async with task_dict_lock:
-        sid = user_id or message.chat.id
         requester_id = cmd_user_id or message.from_user.id
         
-        if is_all and not is_user and not chat_id:
+        if is_all:
             status_type = "all"
+            sid = 0
         elif is_user:
             status_type = "personal"
-            sid = user_id 
+            sid = user_id or message.from_user.id
+            is_user = True
         elif chat_id:
-            status_type = "group"
-            sid = chat_id
+            if chat_id > 0:
+                status_type = "personal"
+                sid = chat_id
+                is_user = True
+            else:
+                status_type = "group"
+                sid = chat_id
         else:
             if message.chat.type in ["private", "bot"]:
-                status_type = "personal"
+                status_type = "personal" 
                 sid = message.from_user.id
                 is_user = True
             else:
                 status_type = "group"
                 sid = message.chat.id
                 chat_id = message.chat.id
+
+        LOGGER.info(f"Creating status: type={status_type}, sid={sid}, is_user={is_user}, chat_id={chat_id}")
         
         if sid in list(status_dict.keys()):
             page_no = status_dict[sid]["page_no"]
