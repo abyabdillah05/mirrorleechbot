@@ -396,32 +396,44 @@ Terima kasih telah menyapa {botname}. Saat ini, Anda belum memiliki akses untuk 
 async def donate(_, message):
     buttons = ButtonMaker()
     buttons.ubutton("👤 Maintainer", "https://t.me/WzdDizzyFlasherr", "header")
-    buttons.ubutton("📢 Channel", "https://t.me/DizzyStuffProject")
+    buttons.ubutton("📢 Channel", "https://t.me/IgnoredProjectXcl")
     buttons.ubutton("💰 Donate", "https://telegra.ph/Donate-and-Support-Us-03-21", "footer")
     
     donate_message = '''
-<b>Donate and Support Us</b>
+<b>🎁 Support and Donations</b>
 
 <b>𝐈𝐠𝐧𝐨𝐫𝐞𝐝 𝐏𝐫𝐨𝐣𝐞𝐜𝐭 𝐗𝐜𝐥</b>
 
-★ <b>Donasi / Traktir Kopi</b>
+Hai! 👋 Terima kasih telah menggunakan layanan kami.
 
- 👋 Halo! Jika kalian merasa terbantu dengan layanan dari Ignored Project Xcl atau ingin mendukung pengembangan lebih lanjut, kami sangat berterima kasih jika kalian bersedia memberikan sedikit donasi.
+<b>💡 Kenapa Donasi?</b>
+Bot ini dikelola dengan penuh dedikasi untuk memberikan pengalaman terbaik bagi pengguna. Semua donasi akan digunakan untuk:
+• 🖥️ Biaya server dan infrastruktur
+• 💾 Penyimpanan data dan bandwidth
+• 🔧 Pengembangan fitur baru
+• 🛠️ Pemeliharaan sistem
 
-★ Semua donasi yang masuk akan digunakan 100% untuk kebutuhan bot — seperti biaya server, penyimpanan data, pengembangan fitur baru, dan pemeliharaan sistem. Kami tidak mengambil keuntungan pribadi dari donasi ini, sehingga kontribusi kalian benar-benar membantu keberlangsungan dan perkembangan proyek ini.
+<b>🎯 Keuntungan Donatur:</b>
+• ✅ Akses premium untuk menambahkan bot ke grup pribadi
+• ✅ Bebas batasan saat menggunakan bot via PM
+• ✅ Dukungan prioritas dan bantuan teknis
+• ✅ Fitur eksklusif yang hanya tersedia untuk donatur
 
-📩 Jika sudah berdonasi, jangan ragu untuk menghubungi kami melalui PM sebagai konfirmasi. Sebagai bentuk apresiasi, kalian bisa mendapatkan beberapa keuntungan seperti:
+<b>💸 100% Transparansi</b>
+Semua donasi digunakan sepenuhnya untuk kebutuhan operasional bot - tidak ada keuntungan pribadi yang diambil.
 
- ✅ Akses khusus untuk menambahkan bot ini ke grup pribadi kalian.
+<b>📲 Cara Donasi</b>
+Klik tombol "Donate" di bawah untuk melihat berbagai metode pembayaran yang tersedia.
 
- ✅ Bebas batasan saat menggunakan bot di PM.
+<b>🙏 Dukungan Non-Finansial</b>
+Jika belum bisa berdonasi, Anda tetap dapat membantu dengan:
+• 🔄 Membagikan bot ini ke teman dan grup
+• ⭐ Memberikan feedback untuk pengembangan
+• 👥 Bergabung di channel dan grup kami
 
- ✅ Dukungan prioritas jika mengalami masalah atau membutuhkan bantuan lebih lanjut.
+<i>Setelah donasi, silakan hubungi Maintainer melalui tombol di atas untuk konfirmasi dan mengaktifkan benefit donatur Anda.</i>
 
-❤️ Terima kasih banyak untuk semua yang telah mendukung! Dukungan kalian sangat berarti bagi keberlanjutan dan perkembangan Ignored Project Xcl.
- 🙏 Jika belum bisa berdonasi, tidak masalah! Cukup gunakan bot ini dan bagikan informasinya kepada teman-teman, itu sudah sangat membantu. 😉
-
-<i>Jika sudah donate, silahkan PM owner di tombol Maintainer untuk konfirmasi</i>
+<b>❤️ Terima kasih atas dukungan Anda!</b>
 '''
     await sendMessage(message, donate_message, buttons.build_menu(2))
 
@@ -464,37 +476,79 @@ async def log(_, message):
 
 help_string = f"""
 <b>Daftar Perintah</b> <code>@{bot.me.username}</code>
+
+<b>🔄 Mirror dan Leech</b>
 <code>/{BotCommands.MirrorCommand[0]}</code> atau <code>/{BotCommands.MirrorCommand[1]}</code> : Mirror ke Google Drive/Cloud.
 <code>/{BotCommands.QbMirrorCommand[0]}</code> atau <code>/{BotCommands.QbMirrorCommand[1]}</code> : Mirror ke Google Drive/Cloud menggunakan qBittorrent.
 <code>/{BotCommands.YtdlCommand[0]}</code> atau <code>/{BotCommands.YtdlCommand[1]}</code> : Mirror link yang disupport YT-DLP.
 <code>/{BotCommands.LeechCommand[0]}</code> atau <code>/{BotCommands.LeechCommand[1]}</code> : Leech ke Telegram.
 <code>/{BotCommands.QbLeechCommand[0]}</code> atau <code>/{BotCommands.QbLeechCommand[1]}</code> : Leech ke Telegram menggunakan qBittorrent.
 <code>/{BotCommands.YtdlLeechCommand[0]}</code> atau <code>/{BotCommands.YtdlLeechCommand[1]}</code> : Leech link yang disupport YT-DLP.
+
+<b>📂 Manajemen File</b>
 <code>/{BotCommands.CloneCommand[0]}</code> atau <code>/{BotCommands.CloneCommand[1]}</code> [drive_url] : Menggandakan file/folder Google Drive.
 <code>/{BotCommands.CountCommand[0]}</code> atau <code>/{BotCommands.CountCommand[1]}</code> [drive_url] : Menghitung file/folder Google Drive.
 <code>/{BotCommands.DeleteCommand[0]}</code> atau <code>/{BotCommands.DeleteCommand[1]}</code> [drive_url] : Menghapus file/folder Google Drive (Hanya Owner & Sudo).
+<code>/{BotCommands.RenameCommand[0]}</code> atau <code>/{BotCommands.RenameCommand[1]}</code> : Mengganti nama file.
+
+<b>🔍 Pencarian</b>
+<code>/{BotCommands.ListCommand[0]}</code> atau <code>/{BotCommands.ListCommand[1]}</code> [query] : Mencari file/folder di Google Drive.
+<code>/{BotCommands.SearchCommand[0]}</code> atau <code>/{BotCommands.SearchCommand[1]}</code> [query] : Mencari torrent menggunakan API.
+
+<b>⚙️ Pengaturan & Manajemen</b>
 <code>/{BotCommands.UserSetCommand[0]}</code> atau <code>/{BotCommands.UserSetCommand[1]}</code> : Pengaturan User.
 <code>/{BotCommands.BotSetCommand[0]}</code> atau <code>/{BotCommands.BotSetCommand[1]}</code> : Pengaturan Bot (Hanya Owner & Sudo).
 <code>/{BotCommands.BtSelectCommand[0]}</code> atau <code>/{BotCommands.BtSelectCommand[1]}</code> : Memilih file dari torrent.
 <code>/{BotCommands.CancelTaskCommand[0]}</code> atau <code>/{BotCommands.CancelTaskCommand[1]}</code> : Membatalkan tugas.
 <code>/{BotCommands.CancelAllCommand[0]}</code> atau <code>/{BotCommands.CancelAllCommand[1]}</code> : Membatalkan semua tugas.
-<code>/{BotCommands.ListCommand[0]}</code> atau <code>/{BotCommands.ListCommand[1]}</code> [query] : Mencari file/folder di Google Drive.
-<code>/{BotCommands.SearchCommand[0]}</code> atau <code>/{BotCommands.SearchCommand[1]}</code> [query] : Mencari torrent menggunakan API.
+
+<b>📊 Status & Statistik</b>
 <code>/{BotCommands.StatusCommand[0]}</code> atau <code>/{BotCommands.StatusCommand[1]}</code> : Menampilkan status dari semua tugas yang sedang berjalan.
+- Di PM: Menampilkan status dari tugas pribadi
+- Di Grup: Menampilkan status semua tugas dalam grup
+- <code>/{BotCommands.StatusCommand[0]} help</code> : Menampilkan bantuan status
+- <code>/{BotCommands.StatusCommand[0]} me</code> : Menampilkan hanya status tugas Anda
+- <code>/{BotCommands.StatusCommand[0]} all</code> : Menampilkan semua tugas (Hanya Owner)
 <code>/{BotCommands.StatsCommand[0]}</code> atau <code>/{BotCommands.StatsCommand[1]}</code> : Menampilan statistik dari mesin bot.
 <code>/{BotCommands.PingCommand[0]}</code> atau <code>/{BotCommands.PingCommand[1]}</code> : Mengetes respon bot (Hanya Owner & Sudo).
-<code>/{BotCommands.AuthorizeCommand[0]}</code> atau <code>/{BotCommands.AuthorizeCommand[1]}</code> : Memberikan izin chat atau user untuk menggunakan bot (Hanya Owner & Sudo).
-<code>/{BotCommands.UnAuthorizeCommand[0]}</code> atau <code>/{BotCommands.UnAuthorizeCommand[1]}</code> : Menghapus izin chat atau user untuk menggunakan bot (Hanya Owner & Sudo).
+<code>/{BotCommands.SpeedCommand[0]}</code> atau <code>/{BotCommands.SpeedCommand[1]}</code> : Menjalankan speedtest server.
+
+<b>👥 Manajemen Pengguna</b>
+<code>/{BotCommands.AuthorizeCommand[0]}</code> atau <code>/{BotCommands.AuthorizeCommand[1]}</code> : Memberikan izin chat/user untuk menggunakan bot (Hanya Owner & Sudo).
+<code>/{BotCommands.UnAuthorizeCommand[0]}</code> atau <code>/{BotCommands.UnAuthorizeCommand[1]}</code> : Menghapus izin chat/user (Hanya Owner & Sudo).
 <code>/{BotCommands.UsersCommand[0]}</code> atau <code>/{BotCommands.UsersCommand[1]}</code> : Menampilan pengaturan User (Hanya Owner & Sudo).
-<code>/{BotCommands.AddSudoCommand[0]}</code> atau <code>/{BotCommands.AddSudoCommand[1]}</code> : Menambahkan User Sudo (Hanya Owner).
-<code>/{BotCommands.RmSudoCommand[0]}</code> atau <code>/{BotCommands.RmSudoCommand[1]}</code> : Menghapus User Sudo (Hanya Owner).
-<code>/{BotCommands.RestartCommand[0]}</code> atau <code>/{BotCommands.RestartCommand[1]}</code> : Memulai ulang dan memperbarui bot (Hanya Owner & Sudo).
+<code>/{BotCommands.AddSudoCommand[0]}</code> atau <code>/{BotCommands.AddSudoCommand[1]}</code> : Menambahkan User Sudo (Owner).
+<code>/{BotCommands.RmSudoCommand[0]}</code> atau <code>/{BotCommands.RmSudoCommand[1]}</code> : Menghapus User Sudo (Owner).
+
+<b>📱 Media & Konten</b>
+<code>/{BotCommands.MediaInfoCommand[0]}</code> atau <code>/{BotCommands.MediaInfoCommand[1]}</code> : Mendapatkan info media.
+<code>/{BotCommands.UploadCommand[0]}</code> atau <code>/{BotCommands.UploadCommand[1]}</code> : Upload ke telegra.ph.
+<code>/{BotCommands.TiktokCommand[0]}</code> atau <code>/{BotCommands.TiktokCommand[1]}</code> : Download video TikTok.
+<code>/{BotCommands.AsupanCommand[0]}</code> atau <code>/{BotCommands.AsupanCommand[1]}</code> : Mendapatkan asupan.
+<code>/{BotCommands.AnimekCommand[0]}</code> atau <code>/{BotCommands.AnimekCommand[1]}</code> : Download anime HD.
+<code>/{BotCommands.Yt_searchCommand[0]}</code> atau <code>/{BotCommands.Yt_searchCommand[1]}</code> : Mencari video di YouTube.
+<code>/{BotCommands.DirectCommand[0]}</code> atau <code>/{BotCommands.DirectCommand[1]}</code> : Bypass shortlink.
+
+<b>🔄 Upload Options</b>
+<code>/{BotCommands.GallerydlCommand[0]}</code> atau <code>/{BotCommands.GallerydlCommand[1]}</code> : Download gallery.
+<code>/{BotCommands.Upload_gofileCommand[0]}</code> atau <code>/{BotCommands.Upload_gofileCommand[1]}</code> : Upload ke Gofile.
+<code>/{BotCommands.Upload_buzzCommand[0]}</code> atau <code>/{BotCommands.Upload_buzzCommand[1]}</code> : Upload ke Buzzheavier.
+<code>/{BotCommands.Upload_pixelCommand[0]}</code> atau <code>/{BotCommands.Upload_pixelCommand[1]}</code> : Upload ke Pixeldrain.
+
+<b>🔐 Token Management</b>
+<code>/{BotCommands.CekQuotaCommand}</code> : Cek kuota.
+<code>/{BotCommands.GenTokenCommand[0]}</code> atau <code>/{BotCommands.GenTokenCommand[1]}</code> : Generate token.
+<code>/{BotCommands.GetTokenCommand[0]}</code> atau <code>/{BotCommands.GetTokenCommand[1]}</code> : Mendapatkan token.
+
+<b>⚙️ System Commands</b>
+<code>/{BotCommands.RestartCommand[0]}</code> atau <code>/{BotCommands.RestartCommand[1]}</code> : Memulai ulang bot (Hanya Owner & Sudo).
 <code>/{BotCommands.LogCommand[0]}</code> atau <code>/{BotCommands.LogCommand[1]}</code> : Mengambil log file dari bot (Hanya Owner & Sudo).
-<code>/{BotCommands.ShellCommand[0]}</code> atau <code>/{BotCommands.ShellCommand[1]}</code> : Menjalankan perintah Shell (Hanya Owner).
-<code>/{BotCommands.EvalCommand[0]}</code> atau <code>/{BotCommands.EvalCommand[1]}</code> : Menjalankan perintah Kode Python (Hanya Owner).
-<code>/{BotCommands.ExecCommand[0]}</code> atau <code>/{BotCommands.ExecCommand[1]}</code> : Menjalankan perintah Exec (Hanya Owner).
-<code>/{BotCommands.ClearLocalsCommand[0]}</code> atau <code>/{BotCommands.ClearLocalsCommand[1]}</code> : Menghapus penyimpanan lokal (Hanya Owner)
+<code>/{BotCommands.ShellCommand[0]}</code> atau <code>/{BotCommands.ShellCommand[1]}</code> : Menjalankan perintah Shell (Owner).
+<code>/{BotCommands.EvalCommand[0]}</code> atau <code>/{BotCommands.EvalCommand[1]}</code> : Menjalankan perintah Kode Python (Owner).
+<code>/{BotCommands.ExecCommand[0]}</code> atau <code>/{BotCommands.ExecCommand[1]}</code> : Menjalankan perintah Exec (Owner).
+<code>/{BotCommands.ClearLocalsCommand[0]}</code> atau <code>/{BotCommands.ClearLocalsCommand[1]}</code> : Menghapus penyimpanan lokal (Owner).
 <code>/{BotCommands.RssCommand}</code> : Menu RSS.
+<code>/{BotCommands.DonateCommand}</code> : Mendukung pengembangan bot.
 
 <b>NOTE :</b> Kirim perintah tanpa argument untuk melihat perintah secara detail!
 """
@@ -508,7 +562,7 @@ async def bot_help(client, message):
     buttons.ibutton('Ytdlp', f'pika {user_id} guide ytdlp')
     buttons.ibutton('Lainnya', f'pika {user_id} guide other')
     buttons.ibutton('⬇️ Tutup', f'pika {user_id} close', 'footer')
-    await sendMessage(message, f"Silahkan pilih jenis bantuan yang anda perlukan !", buttons.build_menu(2))
+    await sendMessage(message, help_string + f"\n\nAtau pilih jenis bantuan yang anda perlukan !", buttons.build_menu(2))
 
 
 async def restart_notification():
@@ -639,7 +693,7 @@ async def main():
             log, 
             filters=command(
                 BotCommands.LogCommand
-            ) & CustomFilters.sudo
+            ) & CustomFilters.owner
         )
     )
     bot.add_handler(
@@ -647,7 +701,7 @@ async def main():
             restart, 
             filters=command(
                 BotCommands.RestartCommand
-            ) & CustomFilters.sudo
+            ) & CustomFilters.owner
         )
     )
     bot.add_handler(
