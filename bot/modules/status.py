@@ -232,9 +232,9 @@ async def status_pages(_, query):
         chat_id = status_dict.get(sid, {}).get('chat_id')
         
         if is_all:
-            view_type = "All Status (Global)"
+            view_type = "Semua Status (Global)"
         elif is_user:
-            view_type = "Status Group" 
+            view_type = "Status Private" 
         elif chat_id:
             view_type = "Status Group"
         else:
