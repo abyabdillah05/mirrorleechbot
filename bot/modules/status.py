@@ -27,6 +27,7 @@ from bot import (
     OWNER_ID,
     LOGGER
 )
+from bot.__main__ import botname
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.telegram_helper.message_utils import (
@@ -105,11 +106,14 @@ async def mirror_status(_, message):
                 await auto_delete_message(message, reply)
                 return
             msg = "<b>Tidak Ada Status Yang Aktif (Global)</b>\n___________________________"
-        elif cmd_type == "me" or message.chat.type in ["private", "bot"]:
-            msg = "<b>Tidak Ada Status Yang Aktif (Private)</b>\n___________________________"
+        elif cmd_type == "me":
+            msg = "<b>Tidak Ada Status Yang Aktif (Private))</b>\n___________________________"
         else:
-            msg = "<b>Tidak Ada Status Yang Aktif (Group)</b>\n___________________________"
-        
+            if message.chat.type in ["private", "bot"]:
+                msg = "<b>Tidak Ada Status Yang Aktif (Private)</b>\n___________________________"
+            else:
+                msg = "<b>Tidak Ada Status Yang Aktif (Group Ini)</b>\n___________________________"
+
         msg += (
             f"\n<b>CPU :</b> <code>{cpu_percent()}%</code> | <b>FREE :</b> <code>{free}</code>" \
             f"\n<b>RAM :</b> <code>{virtual_memory().percent}%</code> | <b>UPTIME :</b> <code>{currentTime}</code>" \
