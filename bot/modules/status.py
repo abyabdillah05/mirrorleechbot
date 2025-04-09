@@ -109,7 +109,7 @@ async def mirror_status(_, message):
                 await auto_delete_message(message, reply)
                 return
             msg = "<b>📭 TIDAK ADA TUGAS AKTIF (GLOBAL)</b>\n___________________________"
-        elif cmd_type == "me" or message.chat.type in ["private", "bot"]:
+        elif cmd_type == "me" or message.chat.type == "private":
             msg = "<b>📭 TIDAK ADA TUGAS AKTIF (PRIBADI ANDA)</b>\n___________________________"
         else:
             msg = "<b>📭 TIDAK ADA TUGAS AKTIF (GRUP INI)</b>\n___________________________"
