@@ -54,7 +54,7 @@ from bot.helper.ext_utils.status_utils import (
 async def mirror_status(_, message):
     async with task_dict_lock:
         count = len(task_dict)
-
+    
     user_id = message.from_user.id
     is_owner = user_id == OWNER_ID
     text = message.text.split()
@@ -100,20 +100,20 @@ async def mirror_status(_, message):
         
         if cmd_type == "all":
             if not is_owner:
-                msg = "<b>⚠️ AKSES DITOLAK</b>\n\n<code>/status all</code> hanya dapat digunakan oleh Owner bot!"
+                msg = "<b>⚠️ Anda tidak dapat menggunakan perintah ini!!</b>\n\n<code>/status all</code> hanya dapat digunakan oleh Owner bot saja!"
                 reply = await sendMessage(message, msg)
                 await auto_delete_message(message, reply)
                 return
-            msg = "<b>📭 TIDAK ADA TUGAS AKTIF (GLOBAL)</b>\n___________________________"
+            msg = "<b>Tidak Ada Status Yang Aktif (Global)</b>\n___________________________"
         elif cmd_type == "me" or message.chat.type in ["private", "bot"]:
-            msg = "<b>📭 TIDAK ADA TUGAS AKTIF (PRIBADI ANDA)</b>\n___________________________"
+            msg = "<b>Tidak Ada Status Yang Aktif (Private)</b>\n___________________________"
         else:
-            msg = "<b>📭 TIDAK ADA TUGAS AKTIF (GRUP INI)</b>\n___________________________"
+            msg = "<b>Tidak Ada Status Yang Aktif (Group)</b>\n___________________________"
         
         msg += (
             f"\n<b>CPU :</b> <code>{cpu_percent()}%</code> | <b>FREE :</b> <code>{free}</code>" \
             f"\n<b>RAM :</b> <code>{virtual_memory().percent}%</code> | <b>UPTIME :</b> <code>{currentTime}</code>" \
-            f"\n<b>T.Unduh :</b> <code>{recv}</code> | <b>T.Unggah :</b> <code>{sent}</code>" \
+            f"\n<b>T.Unduh :</b> <code>{recv}</code> | <b>T.Unggah :</b> <code>{sent}</code>\n" \
             f"\n<b>Powered By {bot.me.first_name}</b>"
         )
         reply_message = await sendMessage(message, msg)
@@ -152,8 +152,8 @@ async def status_pages(_, query):
     sid = int(data[1])
     action = data[2]
     cmd_user_id = int(data[3]) if len(data) > 3 else None
-    chat_id = query.message.chat.id
     user_id = query.from_user.id
+    chat_id = query.message.chat.id
     is_owner = user_id == OWNER_ID
     
     async with task_dict_lock:
@@ -176,22 +176,20 @@ async def status_pages(_, query):
         has_permission = True
     
     if not has_permission:
-        await query.answer("Anda tidak dizinkan mengakses tombol ini!!\nHanya peminta status dan owner yang dapat mengakses!", show_alert=True)
+        await query.answer("⚠️ Anda tidak dizinkan mengakses tombol ini!!\nHanya peminta status dan Owner yang dapat mengakses!", show_alert=True)
         return
     
     if action == "ref":
-        await query.answer("Sedang merefresh status...")
+        await query.answer("🔄 Sedang merefresh status...")
         LOGGER.info(f"Refreshing status {sid}")
         await update_status_message(sid, force=True)
     
     elif action == "help":
         help_text = (
-            "📋 BANTUAN STATUS\n\n"
-            "• /status - Status konteks\n"
-            "• /status me - Status pribadi\n"
-            "• /status all - Semua tugas (Owner)\n\n"
-            "TIPS:\n"
-            "• Gunakan perintah status diatas untuk melihat status yang anda inginkan\n"
+            "📋 Status Help\n"
+            "• /status - Gunakan di PM atau Group\n"
+            "• /status me - Tugas pribadi\n"
+            "• /status all - Semua tugas (Owner)\n"
             "• Batalkan tugas lambat (<20KB/s)"
         )
         await query.answer(help_text, show_alert=True)
@@ -223,10 +221,10 @@ async def status_pages(_, query):
                 await update_status_message(sid, force=True)
     
     elif action == 'close':
-        await query.answer(f"Pesan status telah ditutup!\n\n Ketik /{BotCommands.StatusCommand[0]} untuk jika Anda melihat status lagi.")
+        await query.answer(f"Pesan status telah ditutup! Ketik /{BotCommands.StatusCommand[0]} untuk jika Anda ingin melihat status lagi.")
         success = await edit_single_status(sid)
-        if not success:
-            LOGGER.error(f"Gagal menutup status dengan ID: {sid}")
+    if not success:
+        LOGGER.error(f"Gagal menutup status dengan ID: {sid}")
     
     elif action == 'info':
         is_all = status_dict.get(sid, {}).get('is_all', False)
@@ -234,9 +232,9 @@ async def status_pages(_, query):
         chat_id = status_dict.get(sid, {}).get('chat_id')
         
         if is_all:
-            view_type = "Semua Status (Global)"
+            view_type = "All Status (Global)"
         elif is_user:
-            view_type = "Status Private" 
+            view_type = "Status Group" 
         elif chat_id:
             view_type = "Status Group"
         else:

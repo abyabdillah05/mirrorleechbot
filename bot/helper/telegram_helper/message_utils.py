@@ -10,6 +10,7 @@ from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.ext_utils.exceptions import TgLinkException
 from pyrogram import Client as tgClient
 
+## Send Message ##
 
 async def sendMessage(message, text, buttons=None, block=True):
     try:
@@ -30,6 +31,7 @@ async def sendMessage(message, text, buttons=None, block=True):
         LOGGER.error(str(e))
         return str(e)
 
+## Edit Message ##
 
 async def editMessage(message, text, buttons=None, block=True):
     try:
@@ -46,6 +48,7 @@ async def editMessage(message, text, buttons=None, block=True):
         LOGGER.error(str(e))
         return str(e)
    
+## Copy Message ##
 
 async def copyMessage(chat_id:int, from_chat_id:int, message_id=int, message_thread_id=None, is_media_group=False):
     try:
@@ -71,6 +74,7 @@ async def copyMessage(chat_id:int, from_chat_id:int, message_id=int, message_thr
         LOGGER.error(str(e))
         raise Exception(e)
 
+## Forward Message ##
 
 async def forwardMessage(chat_id:int, from_chat_id:int, message_id=int, message_thread_id=None, unquote=True):
     try:
@@ -89,6 +93,7 @@ async def forwardMessage(chat_id:int, from_chat_id:int, message_id=int, message_
         LOGGER.error(str(e))
         raise Exception(e)
 
+## Send Document ##
 
 async def sendFile(message, file, caption=None):
     try:
@@ -106,6 +111,7 @@ async def sendFile(message, file, caption=None):
         LOGGER.error(str(e))
         return str(e)
 
+## Send Photo ##
 
 async def sendPhoto(message, photo, caption=None):
     try:
@@ -123,6 +129,10 @@ async def sendPhoto(message, photo, caption=None):
         LOGGER.error(str(e))
         return str(e)
 
+## Send Rss ##
+## This Function Is No Longer Used, But You Can Use It If Needed ##
+## This Function For Rss ##
+# Noted By: Tg @IgnoredProjectXcl #
 
 async def sendRss(text):
     try:
@@ -148,6 +158,7 @@ async def sendRss(text):
         LOGGER.error(str(e))
         return str(e)
 
+## Delete Message ##
 
 async def deleteMessage(message):
     try:
@@ -155,6 +166,8 @@ async def deleteMessage(message):
     except Exception as e:
         LOGGER.error(str(e))
 
+## Auto Delete Message ##
+## You Can Change Time Auto Delte Message In config.env ##
 
 async def auto_delete_message(cmd_message=None, bot_message=None):
     if config_dict["AUTO_DELETE_MESSAGE_DURATION"] != -1:
@@ -164,6 +177,7 @@ async def auto_delete_message(cmd_message=None, bot_message=None):
         if bot_message is not None:
             await deleteMessage(bot_message)
 
+## Delete Status Message ##
 
 async def delete_status():
     async with task_dict_lock:
@@ -174,6 +188,10 @@ async def delete_status():
             except Exception as e:
                 LOGGER.error(str(e))
 
+## Edit Status Message ##
+## This Function Is No Longer Used, But You Can Use It If Needed ##
+# Noted By: Tg @IgnoredProjectXcl #
+
 async def edit_status():
     async with task_dict_lock:
         for key, data in list(status_dict.items()):
@@ -183,19 +201,7 @@ async def edit_status():
             except Exception as e:
                 LOGGER.error(str(e))
 
-async def edit_single_status(sid):
-    async with task_dict_lock:
-        if sid in status_dict:
-            try:
-                await editMessage(status_dict[sid]["message"], f"Status telah ditutup. Gunakan /{BotCommands.StatusCommand[0]} untuk melihat status baru.")
-                del status_dict[sid]
-                if obj := Intervals["status"].get(sid):
-                    obj.cancel()
-                    del Intervals["status"][sid]
-                return True
-            except Exception as e:
-                LOGGER.error(f"Error saat menutup status {sid}: {str(e)}")
-        return False
+## Get Telegram Link Message ##
 
 async def get_tg_link_message(link, uid=None):
     user_dict = user_data.get(uid, {})
@@ -271,6 +277,9 @@ async def get_tg_link_message(link, uid=None):
     else:
         raise TgLinkException("Link private!")
 
+## Enhanced Status All | Private | Group ##
+## This Enhanced Different Each User And Group ##
+# You Can Modify It Again Or Improve It Again | Noted By: Tg @IgnoredProjectXcl #
 
 async def update_status_message(sid, force=False):
     async with task_dict_lock:
@@ -296,7 +305,7 @@ async def update_status_message(sid, force=False):
         cmd_user_id = status_dict[sid].get("cmd_user_id") or (sid if is_user else None)
         
         text, buttons = await sync_to_async(
-            get_readable_message, sid, is_user, page_no, status, page_step, chat_id, is_all, cmd_user_id
+            get_readable_message, sid, is_user, page_no, status, page_step, chat_id, is_all, cmd_user_id, status_type
         )
         
         if text is None:
@@ -324,37 +333,32 @@ async def update_status_message(sid, force=False):
             status_dict[sid]["message"].text = text
             status_dict[sid]["time"] = time()
 
+## Enhanced Status All | Private | Group ##
+## This Enhanced Different Each User And Group ##
+# You Can Modify It Again Or Improve It Again | Noted By: Tg @IgnoredProjectXcl #
 
 async def sendStatusMessage(message, user_id=0, is_user=False, chat_id=None, is_all=False, cmd_user_id=None):
     async with task_dict_lock:
+        sid = user_id or message.chat.id
         requester_id = cmd_user_id or message.from_user.id
         
-        if is_all:
+        if is_all and not is_user and not chat_id:
             status_type = "all"
-            sid = 0
         elif is_user:
             status_type = "personal"
-            sid = user_id or message.from_user.id
-            is_user = True
+            sid = user_id 
         elif chat_id:
-            if chat_id > 0:
-                status_type = "personal"
-                sid = chat_id
-                is_user = True
-            else:
-                status_type = "group"
-                sid = chat_id
+            status_type = "group"
+            sid = chat_id
         else:
             if message.chat.type in ["private", "bot"]:
-                status_type = "personal" 
+                status_type = "personal"
                 sid = message.from_user.id
                 is_user = True
             else:
                 status_type = "group"
                 sid = message.chat.id
                 chat_id = message.chat.id
-
-        LOGGER.info(f"Creating status: type={status_type}, sid={sid}, is_user={is_user}, chat_id={chat_id}")
         
         if sid in list(status_dict.keys()):
             page_no = status_dict[sid]["page_no"]
@@ -423,6 +427,7 @@ async def sendStatusMessage(message, user_id=0, is_user=False, chat_id=None, is_
             config_dict["STATUS_UPDATE_INTERVAL"], update_status_message, sid
         )
 
+## Custom Send Message ##
 
 # NOTE: Custom by Me, if You dont need it, just ignore or delete from this line ^^
 async def customSendMessage(client, chat_id:int, text:str, message_thread_id=None, buttons=None):
@@ -443,69 +448,7 @@ async def customSendMessage(client, chat_id:int, text:str, message_thread_id=Non
         LOGGER.error(str(e))
         raise Exception(e)
 
-
-async def customSendRss(text, image=None, image_caption=None, reply_markup=None):
-    chat_id = None
-    message_thread_id = None
-    if chat_id := config_dict.get("RSS_CHAT_ID"):
-        if not isinstance(chat_id, int):
-            if ":" in chat_id:
-                message_thread_id = chat_id.split(":")[1]
-                chat_id = chat_id.split(":")[0]
-        
-        if chat_id.isdigit():
-            chat_id = int(chat_id)
-        
-        if message_thread_id.isdigit():
-            message_thread_id = int(message_thread_id)
-    else:
-        return "RSS_CHAT_ID tidak ditemukan!"
-        
-    try:
-        if image:
-            if len(text) > 1024:
-                reply_photo = await bot.send_photo(
-                    chat_id=chat_id,
-                    photo=image,
-                    caption=f"<code>{image_caption}</code>",
-                    disable_notification=True,
-                    message_thread_id=message_thread_id
-                )
-                return await bot.send_message(
-                    chat_id=chat_id,
-                    text=text,
-                    disable_web_page_preview=True,
-                    disable_notification=True,
-                    message_thread_id=message_thread_id,
-                    reply_to_message_id=reply_photo.id,
-                    reply_markup=reply_markup
-                )
-            else:
-                return await bot.send_photo(
-                    chat_id=chat_id,
-                    photo=image,
-                    caption=text,
-                    disable_notification=True,
-                    message_thread_id=message_thread_id,
-                    reply_markup=reply_markup
-                )
-        else:
-            return await bot.send_message(
-                chat_id=chat_id,
-                text=text,
-                disable_web_page_preview=True,
-                disable_notification=True,
-                message_thread_id=message_thread_id,
-                reply_markup=reply_markup
-            )
-    except FloodWait as f:
-        LOGGER.warning(str(f))
-        await sleep(f.value * 1.2)
-        return await customSendRss(text)
-    except Exception as e:
-        LOGGER.error(str(e))
-        return str(e)
-
+## Custom Send Document ##
 
 async def customSendDocument(client, document, thumb, caption, progress):
     try:
@@ -526,6 +469,7 @@ async def customSendDocument(client, document, thumb, caption, progress):
         LOGGER.error(str(e))
         raise Exception(e)
 
+## Custom Send Video ##
 
 async def customSendVideo(client, video, caption, duration, width, height, thumb, progress):
     try:
@@ -549,6 +493,7 @@ async def customSendVideo(client, video, caption, duration, width, height, thumb
         LOGGER.error(str(e))
         raise Exception(e)
 
+## Custom Send Audio ##
 
 async def customSendAudio(client, audio, caption, duration, performer, title, thumb, progress):
     try:
@@ -571,6 +516,7 @@ async def customSendAudio(client, audio, caption, duration, performer, title, th
         LOGGER.error(str(e))
         raise Exception(e)
 
+## Custom Send Photo ##
 
 async def customSendPhoto(client, photo, caption, progress):
     try:

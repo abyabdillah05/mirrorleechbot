@@ -7,7 +7,7 @@ from psutil import (
     virtual_memory
 )
 
-from bot import task_dict, task_dict_lock, botStartTime, config_dict
+from bot import task_dict, task_dict_lock, botStartTime, config_dict, LOGGER
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.telegram_helper.button_build import ButtonMaker
 
@@ -108,38 +108,49 @@ def get_progress_bar_string(pct):
     return f"[{p_str}]"
 
 def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1, chat_id=None, is_all=False, cmd_user_id=None):
-    msg = ""
-    button = None
 
     if is_all:
         tasks = list(task_dict.values())
-        header_msg = "<b>🌐 STATUS SEMUA TUGAS</b>\n\n"
-    elif status == "All":
-        if is_user:
-            tasks = [tk for tk in task_dict.values() if tk.listener.user_id == sid]
-            header_msg = "<b>🔹 STATUS TUGAS PRIBADI ANDA</b>\n\n"
-        elif chat_id:
-            tasks = [tk for tk in task_dict.values() if tk.listener.message.chat.id == chat_id]
-            header_msg = "<b>📊 STATUS TUGAS GRUP INI</b>\n\n"
-        else:
-            tasks = list(task_dict.values())
-            header_msg = "<b>📋 STATUS TUGAS DEFAULT</b>\n\n"
+        header_msg = "<b>🌐 Status Semua Tugas (Global)</b>\n\n"
+    elif is_user:
+        tasks = [tk for tk in task_dict.values() if tk.listener.user_id == sid]
+        header_msg = "<b>🔹 Status Tugas Pribadi Anda</b>\n\n"
+    elif chat_id and chat_id < 0:
+        tasks = [tk for tk in task_dict.values() if hasattr(tk.listener, 'message') and 
+                hasattr(tk.listener.message, 'chat') and tk.listener.message.chat.id == chat_id]
+        header_msg = "<b>📊 Status Tugas Group Ini</b>\n\n"
     else:
+        if sid > 0:
+            tasks = [tk for tk in task_dict.values() if tk.listener.user_id == sid]
+            header_msg = "<b>🔹 Status Tugas Pribadi Anda</b>\n\n"
+            is_user = True
+        elif sid < 0:
+            tasks = [tk for tk in task_dict.values() if hasattr(tk.listener, 'message') and 
+                    hasattr(tk.listener.message, 'chat') and tk.listener.message.chat.id == sid]
+            header_msg = "<b>📊 Status Tugas Group Ini</b>\n\n"
+        else:
+            LOGGER.warning(f"Invalid status context: sid={sid}, is_user={is_user}, chat_id={chat_id}")
+            return None, None
+
+    msg = ""
+    button = None
+
+    if status != "All":
         if is_user:
             tasks = [
-                tk for tk in task_dict.values()
-                if tk.status() == status and tk.listener.user_id == sid
+                tk for tk in tasks
+                if tk.status() == status
             ]
-            header_msg = f"<b>🔹 STATUS TUGAS PRIBADI ({status})</b>\n\n"
+            header_msg = f"<b>🔹 Status Tugas Pribadi ({status})</b>\n\n"
         elif chat_id:
             tasks = [
-                tk for tk in task_dict.values()
-                if tk.status() == status and tk.listener.message.chat.id == chat_id
+                tk for tk in tasks
+                if tk.status() == status
             ]
-            header_msg = f"<b>📊 STATUS TUGAS GRUP ({status})</b>\n\n"
-        else:
-            tasks = [tk for tk in task_dict.values() if tk.status() == status]
-            header_msg = f"<b>📋 STATUS TUGAS ({status})</b>\n\n"
+            header_msg = f"<b>📊 Status Tugas Group ({status})</b>\n\n"
+        elif is_all:
+            tasks = [tk for tk in tasks if tk.status() == status]
+            header_msg = f"<b>🌐 Status Semua Tugas ({status})</b>\n\n"
     
     msg += header_msg
 
@@ -158,48 +169,79 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1, cha
         tasks[start_position : STATUS_LIMIT + start_position], start=1
     ):
         tstatus = task.status()
-        if task.listener.isPrivateChat: 
-            msg += f"<blockquote><b>🔐 Nama :</b> <code>Private Task</code></b></blockquote>"
-        else: 
-            msg += f"<blockquote>📄 <b>Nama :</b> <code>{escape(f'{task.name()}')}</code></blockquote>"
-        if tstatus not in [
-            MirrorStatus.STATUS_DUMPING,
-            MirrorStatus.STATUS_VIDEDIT,
-        ]:
-            msg += f"\n<b>┌ Status : <a href='{task.listener.message.link}'>{tstatus}</a></b> <code>({task.progress()})</code>"
-        else:
-            msg += f"\n<b>┌ Status : <a href='{task.listener.message.link}'>{tstatus}</a></b>"
-        if tstatus not in [
-            MirrorStatus.STATUS_DUMPING,
-            MirrorStatus.STATUS_VIDEDIT,
-        ]:
-            msg += f"\n<b>├ </b>{get_progress_bar_string(task.progress())}"
-        user = f'<a href="tg://user?id={task.listener.user.id}">{task.listener.user.first_name}</a>'
-        msg += f"\n<b>├ Oleh :</b> <code>@{task.listener.user.username or task.listener.user.first_name}</code>"
-        msg += f"\n<b>├ UserID :</b> [<code>{task.listener.user.id}</code>]"
-        msg += f"\n<b>├ Waktu :</b> <code>{get_readable_time(time() - task.listener.extra_details['startTime'])}</code>"
-        msg += f"\n<b>├ Ukuran :</b> {task.size()}"
-        if tstatus not in [
-            MirrorStatus.STATUS_SPLITTING,
-            MirrorStatus.STATUS_SEEDING,
-            MirrorStatus.STATUS_SAMVID,
-            MirrorStatus.STATUS_DUMPING,
-            MirrorStatus.STATUS_VIDEDIT,
-        ]:
-            msg += f"\n<b>├ Diproses :</b> <code>{task.processed_bytes()}</code>"
-            msg += f"\n<b>├ Estimasi :</b> <code>{task.eta()}</code>"
-            msg += f"\n<b>├ Kecepatan :</b> <code>{task.speed()}</code>"
-            if hasattr(task, "seeders_num"):
-                try:
-                    msg += f"\n<b>├ Seeders :</b> <code>{task.seeders_num()}</code>"
-                    msg += f"\n<b>├ Leechers :</b> <code>{task.leechers_num()}</code>"
-                except:
-                    pass
-        elif tstatus == MirrorStatus.STATUS_SEEDING:
+        
+        if is_user:
+            if task.listener.isPrivateChat: 
+                msg += f"<blockquote><b>🔐 Nama :</b> <code>Private Task</code></b></blockquote>"
+            else:
+                msg += f"<blockquote>📄 <b>Nama :</b> <code>{escape(f'{task.name()}')}</code></blockquote>"
+            
+            if tstatus not in [MirrorStatus.STATUS_DUMPING, MirrorStatus.STATUS_VIDEDIT]:
+                msg += f"\n<b>┌ Status :</b> <code>{tstatus}</code> <code>({task.progress()})</code>"
+                msg += f"\n<b>├ </b>{get_progress_bar_string(task.progress())}"
+            else:
+                msg += f"\n<b>┌ Status :</b> <code>{tstatus}</code>"
+                
+            msg += f"\n<b>├ Waktu :</b> <code>{get_readable_time(time() - task.listener.extra_details['startTime'])}</code>"
+            msg += f"\n<b>├ Ukuran :</b> {task.size()}"
+            
+            if tstatus not in [
+                MirrorStatus.STATUS_SPLITTING,
+                MirrorStatus.STATUS_SEEDING,
+                MirrorStatus.STATUS_SAMVID,
+                MirrorStatus.STATUS_DUMPING,
+                MirrorStatus.STATUS_VIDEDIT,
+            ]:
+                msg += f"\n<b>├ Diproses :</b> <code>{task.processed_bytes()}</code>"
+                msg += f"\n<b>├ Estimasi :</b> <code>{task.eta()}</code>"
+                msg += f"\n<b>├ Kecepatan :</b> <code>{task.speed()}</code>"
+            
+        elif chat_id or is_all:
+            if task.listener.isPrivateChat: 
+                msg += f"<blockquote><b>🔐 Nama :</b> <code>Private Task</code></b></blockquote>"
+            else: 
+                msg += f"<blockquote>📄 <b>Nama :</b> <code>{escape(f'{task.name()}')}</code></blockquote>"
+                
+            if tstatus not in [
+                MirrorStatus.STATUS_DUMPING,
+                MirrorStatus.STATUS_VIDEDIT,
+            ]:
+                msg += f"\n<b>┌ Status : <a href='{task.listener.message.link}'>{tstatus}</a></b> <code>({task.progress()})</code>"
+                msg += f"\n<b>├ </b>{get_progress_bar_string(task.progress())}"
+            else:
+                msg += f"\n<b>┌ Status : <a href='{task.listener.message.link}'>{tstatus}</a></b>"
+                
+            user_mention = f'<a href="tg://user?id={task.listener.user.id}">{task.listener.user.first_name}</a>'
+            msg += f"\n<b>├ Oleh :</b> <code>@{task.listener.user.username or task.listener.user.first_name}</code>"
+            msg += f"\n<b>├ UserID :</b> [<code>{task.listener.user.id}</code>]"
+            
+            msg += f"\n<b>├ Waktu :</b> <code>{get_readable_time(time() - task.listener.extra_details['startTime'])}</code>"
+            msg += f"\n<b>├ Ukuran :</b> {task.size()}"
+            
+            if tstatus not in [
+                MirrorStatus.STATUS_SPLITTING,
+                MirrorStatus.STATUS_SEEDING,
+                MirrorStatus.STATUS_SAMVID,
+                MirrorStatus.STATUS_DUMPING,
+                MirrorStatus.STATUS_VIDEDIT,
+            ]:
+                msg += f"\n<b>├ Diproses :</b> <code>{task.processed_bytes()}</code>"
+                msg += f"\n<b>├ Estimasi :</b> <code>{task.eta()}</code>"
+                msg += f"\n<b>├ Kecepatan :</b> <code>{task.speed()}</code>"
+                
+                if hasattr(task, "seeders_num"):
+                    try:
+                        msg += f"\n<b>├ Seeders :</b> <code>{task.seeders_num()}</code>"
+                        msg += f"\n<b>├ Leechers :</b> <code>{task.leechers_num()}</code>"
+                    except:
+                        pass
+                        
+        if tstatus == MirrorStatus.STATUS_SEEDING:
             msg += f"\n<b>├ Ratio :</b> <code>{task.ratio()}</code>"
             msg += f"\n<b>├ Waktu :</b> <code>{task.seeding_time()}</code>"
-            msg += f"\n<b>├ Ukuran :</b> <code>{task.size()}</code>"
-            msg += f"\n<b>├ Diupload :</b> <code>{task.uploaded_bytes()}</code>"
+            if not is_user:
+                msg += f"\n<b>├ Ukuran :</b> <code>{task.size()}</code>"
+                msg += f"\n<b>├ Diupload :</b> <code>{task.uploaded_bytes()}</code>"
             msg += f"\n<b>├ Kecepatan :</b> <code>{task.seed_speed()}</code>"
         
         engine = ""
@@ -216,7 +258,13 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1, cha
         msg += f"\n<b>└⛔️ /{BotCommands.CancelTaskCommand[0]}_{task.gid()}</b>\n\n"
 
     if len(msg) == 0 or tasks_no == 0:
-        view_type = "pribadi Anda" if is_user else "grup ini" if chat_id else "global" if is_all else "default"
+        if is_user:
+            view_type = "Private"
+        elif chat_id:
+            view_type = "Group"
+        else:
+            view_type = "Global"
+            
         if status == "All":
             msg = f"{header_msg}<b>📭 Tidak ada tugas aktif untuk tampilan {view_type}!</b>\n\n"
         else:
@@ -253,7 +301,7 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1, cha
     
     button = buttons.build_menu(3)
     
-    view_type = "Pribadi" if is_user else "Grup" if chat_id else "Global" if is_all else "Default"
+    view_type = "Private" if is_user else "Group" if chat_id else "Global"
     msg += f"<b>──────────────────</b>"
     msg += f"\n<b>Mode Tampilan:</b> <code>{view_type}</code>"
     msg += f"\n<b>CPU :</b> <code>{cpu_percent()}%</code> | <b>RAM :</b> <code>{virtual_memory().percent}%</code>"
