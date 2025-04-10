@@ -260,7 +260,7 @@ def get_readable_message(sid, is_user=False, page_no=1, status_filter="All", pag
         type_status = "Global"
     elif is_user:
         # Get user's tasks
-        tasks = [tk for tk in task_dict.values() if tk.listener.user_id == sid]
+        tasks = [tk for tk in task_dict.values() if hasattr(tk.listener, 'user_id') and tk.listener.user_id == sid]
         header_msg = "<b>STATUS PRIBADI</b>\n\n"
         type_status = "Private"
     elif chat_id and chat_id < 0:
@@ -369,11 +369,11 @@ def get_readable_message(sid, is_user=False, page_no=1, status_filter="All", pag
             context_type = "global"
             
         if status_filter == "All":
-            msg = f"{header_msg}<b>Tidak ada tugas aktif untuk tampilan {context_type}!</b>\n\n"
+            msg = f"{header_msg}<b>Tidak ada tugas aktif untuk tampilan {context_type}!</b>\n"
         else:
-            msg = f"{header_msg}<b>Tidak ada tugas {status_filter} untuk tampilan {context_type}!</b>\n\n"
+            msg = f"{header_msg}<b>Tidak ada tugas {status_filter} untuk tampilan {context_type}!</b>\n"
         
-        msg += "─────────────────────────────\n\n"
+        msg += "─────────────────────────────\n"
 
     # Add system information
     msg += get_system_info()

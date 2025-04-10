@@ -102,7 +102,7 @@ async def mirror_status(_, message):
         except:
             recv = "NaN"
         
-        # Format message based on command type
+        # Format message based on command type and chat context
         if cmd_type == "all":
             if not is_owner:
                 msg = "<b>⚠️ AKSES DITOLAK</b>\n\n<code>[/status all]</code> hanya dapat digunakan oleh Owner bot!"
@@ -110,15 +110,15 @@ async def mirror_status(_, message):
                 await auto_delete_message(message, reply)
                 return
             msg = "<b>Tidak ada tugas aktif (GLOBAL)</b>\n─────────────────────────────"
-            view_type = "Global"
-        elif cmd_type == "me" or message.chat.type == "private":
+        elif cmd_type == "me":
             msg = "<b>Tidak ada tugas aktif (PRIBADI ANDA)</b>\n─────────────────────────────"
-            view_type = "Private"
+        elif message.chat.type in ["private", "bot"]:
+            msg = "<b>Tidak ada tugas aktif (PRIBADI ANDA)</b>\n─────────────────────────────"
         else:
             msg = "<b>Tidak ada tugas aktif (GRUP INI)</b>\n─────────────────────────────"
-            view_type = "Group"
+        view_type = "Group"
         
-            msg += (
+        msg += (
             f"\n<b>Type:</b> <code>{view_type}</code>"
             f"\n<b>CPU:</b> <code>{cpu_percent()}%</code> | <b>FREE:</b> <code>{free}</code>" \
             f"\n<b>RAM:</b> <code>{virtual_memory().percent}%</code> | <b>UPTIME:</b> <code>{currentTime}</code>" \

@@ -377,22 +377,28 @@ async def sendStatusMessage(message, user_id=0, is_user=False, chat_id=None, is_
         if is_all:
             sid = 0
             status_type = "global"
+            chat_id = None  # Reset chat_id for global context
         elif is_user:
             sid = user_id
-            status_type = "private" 
+            status_type = "private"
+            chat_id = None  # Reset chat_id for private context 
         elif chat_id and chat_id < 0:
             sid = chat_id
             status_type = "group"
         else:
+            # Default context detection
             if message.chat.type in ["private", "bot"]:
                 sid = message.from_user.id
-                is_user = True
+                is_user = True  # Force private context in PM
                 status_type = "private"
                 chat_id = None
             else:
                 sid = message.chat.id
                 chat_id = message.chat.id
                 status_type = "group"
+        
+        # Log the context detection for debugging
+        LOGGER.info(f"Status context: sid={sid}, is_user={is_user}, chat_id={chat_id}, status_type={status_type}")
         
         # Set the requester ID for permission checks
         requester_id = cmd_user_id or message.from_user.id
