@@ -1,9 +1,8 @@
 from bot.helper.ext_utils.status_utils import (
-    MirrorStatus,
-    get_readable_file_size,
-    get_readable_time,
+    MirrorStatus
 )
-
+from .helper.ext_utils.common_utils import (get_readable_file_size,
+                                            get_readable_time)
 
 class TelegramStatus:
     def __init__(self, listener, obj, size, gid, status):

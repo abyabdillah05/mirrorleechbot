@@ -2,13 +2,12 @@ from time import time
 
 from bot import LOGGER, subprocess_lock
 from bot.helper.ext_utils.status_utils import (
-    get_readable_file_size,
-    MirrorStatus,
-    get_readable_time,
+    MirrorStatus
 )
 from bot.helper.ext_utils.bot_utils import async_to_sync
 from bot.helper.ext_utils.files_utils import get_path_size
-
+from .helper.ext_utils.common_utils import (get_readable_file_size,
+                                            get_readable_time)
 
 class ZipStatus:
     def __init__(self, listener, size, gid):

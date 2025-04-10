@@ -3,11 +3,10 @@ from asyncio import sleep
 from bot import LOGGER, get_client, QbTorrents, qb_listener_lock
 from bot.helper.ext_utils.bot_utils import sync_to_async
 from bot.helper.ext_utils.status_utils import (
-    MirrorStatus,
-    get_readable_file_size,
-    get_readable_time,
+    MirrorStatus
 )
-
+from .helper.ext_utils.common_utils import (get_readable_file_size,
+                                            get_readable_time)
 
 def get_download(client, tag, old_info=None):
     try:

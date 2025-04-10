@@ -37,7 +37,8 @@ from bot.helper.telegram_helper.message_utils import (
     update_status_message,
     customSendMessage,
 )
-from bot.helper.ext_utils.status_utils import get_readable_file_size, get_readable_time
+from .helper.ext_utils.common_utils import (get_readable_file_size,
+                                            get_readable_time)
 from bot.helper.ext_utils.bot_utils import sync_to_async
 from bot.helper.ext_utils.links_utils import is_gdrive_id
 from bot.helper.ext_utils.task_manager import start_from_queued
