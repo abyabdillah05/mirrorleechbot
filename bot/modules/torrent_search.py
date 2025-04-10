@@ -11,7 +11,7 @@ from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.ext_utils.bot_utils import sync_to_async, new_task
 from bot.helper.telegram_helper.button_build import ButtonMaker
-from .helper.ext_utils.common_utils import get_readable_file_size
+from bot.helper.ext_utils.common_utils import get_readable_file_size
 
 PLUGINS = []
 SITES = None

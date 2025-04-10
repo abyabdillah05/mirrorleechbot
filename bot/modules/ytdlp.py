@@ -30,7 +30,7 @@ from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.listeners.task_listener import TaskListener
-from .helper.ext_utils.common_utils import (get_readable_file_size,
+from bot.helper.ext_utils.common_utils import (get_readable_file_size,
                                             get_readable_time)
 from bot.helper.ext_utils.links_utils import is_url
 

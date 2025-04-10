@@ -8,7 +8,7 @@ from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.ext_utils.bot_utils import sync_to_async, new_task
 from bot.helper.ext_utils.links_utils import is_gdrive_link
-from .helper.ext_utils.common_utils import get_readable_file_size
+from bot.helper.ext_utils.common_utils import get_readable_file_size
 
 @new_task
 async def countNode(_, message):

@@ -8,7 +8,7 @@ from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.ext_utils.db_handler import DbManger
 from bot.helper.ext_utils.bot_utils import update_user_ldata
-from .helper.ext_utils.common_utils import get_readable_file_size
+from bot.helper.ext_utils.common_utils import get_readable_file_size
 from bot.helper.ext_utils.quota_utils import create_token
 
 

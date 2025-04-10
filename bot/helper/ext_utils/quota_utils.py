@@ -14,8 +14,7 @@ from bot.helper.ext_utils.db_handler import DbManger
 from bot.helper.ext_utils.safelinku_utils import SafeLinkU
 from bot.helper.ext_utils.bot_utils import update_user_ldata
 from bot.helper.telegram_helper.button_build import ButtonMaker
-from .helper.ext_utils.common_utils import (get_readable_file_size,
-                                            get_readable_time)
+from bot.helper.ext_utils.common_utils import (get_readable_file_size)
 
 ######################################
 ## Quota Check | Credit @aenulrofik ##

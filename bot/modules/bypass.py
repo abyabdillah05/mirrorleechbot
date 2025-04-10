@@ -18,7 +18,7 @@ import time
 from bot.helper.ext_utils.bot_utils import sync_to_async
 from bot.helper.ext_utils.links_utils import is_url
 from bot.helper.mirror_utils.download_utils.direct_link_generator import direct_link_generator
-from .helper.ext_utils.common_utils import get_readable_file_size
+from bot.helper.ext_utils.common_utils import get_readable_file_size
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.message_utils import sendMessage, editMessage
 from bot.helper.telegram_helper.bot_commands import BotCommands
