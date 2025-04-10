@@ -209,7 +209,7 @@ async def edit_single_status(sid):
     async with task_dict_lock:
         if sid in status_dict:
             try:
-                await editMessage(status_dict[sid]["message"], f"Status telah ditutup. Gunakan /{BotCommands.StatusCommand[0]} jika anda melihat status lagi.")
+                await editMessage(status_dict[sid]["message"], f"Status telah ditutup. Gunakan /{BotCommands.StatusCommand[0]} jika anda ingin melihat status lagi.")
                 del status_dict[sid]
                 if obj := Intervals["status"].get(sid):
                     obj.cancel()
@@ -356,35 +356,31 @@ async def update_status_message(sid, force=False):
 
 async def sendStatusMessage(message, user_id=0, is_user=False, chat_id=None, is_all=False, cmd_user_id=None):
     async with task_dict_lock:
-        requester_id = cmd_user_id or message.from_user.id
-        
+        # Determine the status ID and context type
         if is_all:
-            status_type = "all"
             sid = 0
+            status_type = "global"
         elif is_user:
-            status_type = "personal"
-            sid = user_id or message.from_user.id
-            is_user = True
-        elif chat_id:
-            if chat_id > 0:
-                status_type = "personal"
-                sid = chat_id
-                is_user = True
-            else:
-                status_type = "group"
-                sid = chat_id
+            sid = user_id
+            status_type = "private" 
+        elif chat_id and chat_id < 0:
+            sid = chat_id
+            status_type = "group"
         else:
             if message.chat.type in ["private", "bot"]:
-                status_type = "personal" 
                 sid = message.from_user.id
                 is_user = True
+                status_type = "private"
+                chat_id = None
             else:
-                status_type = "group"
                 sid = message.chat.id
                 chat_id = message.chat.id
-
-        LOGGER.info(f"Creating status: type={status_type}, sid={sid}, is_user={is_user}, chat_id={chat_id}")
+                status_type = "group"
         
+        # Set the requester ID for permission checks
+        requester_id = cmd_user_id or message.from_user.id
+        
+        # Update existing status or create new one
         if sid in list(status_dict.keys()):
             page_no = status_dict[sid]["page_no"]
             status = status_dict[sid]["status"]
@@ -447,7 +443,8 @@ async def sendStatusMessage(message, user_id=0, is_user=False, chat_id=None, is_
                 "status_type": status_type
             }
             
-    if not Intervals["status"].get(sid) and status_type == "group" and not is_user:
+    # Set up interval for status update
+    if not Intervals["status"].get(sid):
         Intervals["status"][sid] = setInterval(
             config_dict["STATUS_UPDATE_INTERVAL"], update_status_message, sid
         )

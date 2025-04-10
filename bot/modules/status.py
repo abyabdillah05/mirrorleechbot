@@ -23,10 +23,8 @@ from bot import (
     task_dict,
     botStartTime,
     DOWNLOAD_DIR,
-    Intervals,
     bot,
     OWNER_ID,
-    user_data,
     LOGGER
 )
 from bot.helper.telegram_helper.filters import CustomFilters
@@ -38,7 +36,6 @@ from bot.helper.telegram_helper.message_utils import (
     sendStatusMessage,
     update_status_message,
     edit_single_status,
-    editMessage,
 )
 from bot.helper.ext_utils.bot_utils import new_task
 from bot.helper.ext_utils.status_utils import (
@@ -68,19 +65,19 @@ async def mirror_status(_, message):
         help_text = (
             "<b>📋 BANTUAN PERINTAH STATUS</b>\n\n"
             "<b>Perintah Dasar:</b>\n"
-            "• <code>/status</code>: Menampilkan status tugas berdasarkan konteks\n"
+            "• <code>[/status]</code>: Menampilkan status tugas berdasarkan konteks\n"
             "  - Di grup: Menampilkan tugas grup tersebut\n"
             "  - Di PM: Menampilkan tugas pribadi Anda\n\n"
             "<b>Perintah Khusus:</b>\n"
-            "• <code>/status me</code>: Menampilkan hanya tugas Anda (pribadi)\n"
-            "• <code>/status all</code>: Menampilkan semua tugas (khusus Owner)\n"
-            "• <code>/status help</code>: Menampilkan bantuan ini\n\n"
+            "• <code>[/status me]</code>: Menampilkan hanya tugas Anda (pribadi)\n"
+            "• <code>[/status all]</code>: Menampilkan semua tugas (khusus Owner)\n"
+            "• <code>[/status help]</code>: Menampilkan bantuan ini\n\n"
             "<b>Informasi Tombol:</b>\n"
-            "• ⏪ Prev / ⏩ Next: Navigasi antar halaman\n"
+            "• ◀️ Prev / ▶️ Next: Navigasi antar halaman\n"
             "• 🔄 Refresh: Memperbarui status terbaru\n"
-            "• ❓ Help: Menampilkan bantuan singkat\n"
-            "• ℹ️ Info: Informasi tentang status saat ini\n"
-            "• 🔽 Tutup: Menutup pesan status\n\n"
+            "• Help: Menampilkan bantuan singkat\n"
+            "• Info: Informasi tentang status saat ini\n"
+            "• Close: Menutup pesan status\n\n"
             "<b>Catatan Penting:</b>\n"
             "• Tombol-tombol hanya dapat digunakan oleh pengguna yang meminta status atau Owner\n"
             "• Status diperbarui otomatis setiap beberapa detik\n"
@@ -104,21 +101,24 @@ async def mirror_status(_, message):
         
         if cmd_type == "all":
             if not is_owner:
-                msg = "<b>⚠️ AKSES DITOLAK</b>\n\n<code>/status all</code> hanya dapat digunakan oleh Owner bot!"
+                msg = "<b>⚠️ AKSES DITOLAK</b>\n\n<code>[/status all]</code> hanya dapat digunakan oleh Owner bot!"
                 reply = await sendMessage(message, msg)
                 await auto_delete_message(message, reply)
                 return
-            msg = "<b>📭 TIDAK ADA TUGAS AKTIF (GLOBAL)</b>\n___________________________"
+            msg = "<b>Tidak ada tugas aktif (GLOBAL)</b>\n___________________________"
+            view_type = "Global"
         elif cmd_type == "me" or message.chat.type == "private":
-            msg = "<b>📭 TIDAK ADA TUGAS AKTIF (PRIBADI ANDA)</b>\n___________________________"
+            msg = "<b>Tidak ada tugas aktif (PRIBADI ANDA)</b>\n___________________________"
+            view_type = "Private"
         else:
-            msg = "<b>📭 TIDAK ADA TUGAS AKTIF (GRUP INI)</b>\n___________________________"
+            msg = "<b>Tidak ada tugas aktif (GRUP INI)</b>\n___________________________"
+            view_type = "Group"
         
         msg += (
-            f"\n<b>CPU :</b> <code>{cpu_percent()}%</code> | <b>FREE :</b> <code>{free}</code>" \
-            f"\n<b>RAM :</b> <code>{virtual_memory().percent}%</code> | <b>UPTIME :</b> <code>{currentTime}</code>" \
-            f"\n<b>T.Unduh :</b> <code>{recv}</code> | <b>T.Unggah :</b> <code>{sent}</code>" \
-            f"\n<b>Powered By {bot.me.first_name}</b>"
+            f"\n<b>Type:</b> <code>{view_type}</code>"
+            f"\n<b>CPU:</b> <code>{cpu_percent()}%</code> | <b>FREE:</b> <code>{free}</code>" \
+            f"\n<b>RAM:</b> <code>{virtual_memory().percent}%</code> | <b>UPTIME:</b> <code>{currentTime}</code>" \
+            f"\n<b>T.Unduh:</b> <code>{recv}</code> | <b>T.Unggah:</b> <code>{sent}</code>"
         )
         reply_message = await sendMessage(message, msg)
         await auto_delete_message(message, reply_message)
@@ -126,7 +126,7 @@ async def mirror_status(_, message):
     
     if cmd_type == "all":
         if not is_owner:
-            msg = "<b>⚠️ AKSES DITOLAK</b>\n\n<code>/status all</code> hanya dapat digunakan oleh Owner bot!"
+            msg = "<b>⚠️ AKSES DITOLAK</b>\n\n<code>[/status all]</code> hanya dapat digunakan oleh Owner bot!"
             reply = await sendMessage(message, msg)
             await auto_delete_message(message, reply)
             return
@@ -177,29 +177,26 @@ async def status_pages(_, query):
     
     if is_owner:
         has_permission = True
-        LOGGER.info(f"Owner {user_id} mengakses tombol status {sid}")
     elif status_owner_id and user_id == status_owner_id:
         has_permission = True
-        LOGGER.info(f"Pembuat status {status_owner_id} mengakses tombol statusnya sendiri")
     elif status_type == "group" and not is_all and status_chat_id and status_chat_id == chat_id:
         has_permission = True
-        LOGGER.info(f"User {user_id} mengakses tombol status grup {chat_id}")
     
     if not has_permission:
         await query.answer("⚠️ Anda tidak memiliki izin untuk mengakses tombol status ini!", show_alert=True)
         return
     
     if action == "ref":
-        await query.answer("🔄 Menyegarkan status...")
+        await query.answer("🔄 Sedang merefresh status...", show_alert=True)
         LOGGER.info(f"Refreshing status {sid}")
         await update_status_message(sid, force=True)
     
     elif action == "help":
         help_text = (
-            "📋 STATUS COMMANDS\n"
-            "• /status - Status konteks\n"
-            "• /status me - Tugas pribadi\n"
-            "• /status all - Semua tugas (Owner)\n"
+            "STATUS COMMANDS\n"
+            "• [/status] - Status konteks\n"
+            "• [/status me] - Tugas pribadi\n"
+            "• [/status all] - Semua tugas (Owner)\n"
             "• Filter - Gunakan tombol filter\n"
             "• Batalkan tugas lambat (<20KB/s)"
         )
@@ -217,7 +214,7 @@ async def status_pages(_, query):
     
     elif action == "ps":
         page_step = int(data[3])
-        await query.answer(f"🔢 Step diubah menjadi {page_step}")
+        await query.answer(f"Step diubah menjadi {page_step}")
         async with task_dict_lock:
             if sid in status_dict:
                 status_dict[sid]["page_step"] = page_step
@@ -225,31 +222,32 @@ async def status_pages(_, query):
     
     elif action == "st":
         new_status = data[3]
-        await query.answer(f"🔍 Filter: {new_status}")
+        await query.answer(f"Filter: {new_status}")
         async with task_dict_lock:
             if sid in status_dict:
                 status_dict[sid]["status"] = new_status
                 await update_status_message(sid, force=True)
     
     elif action == 'close':
-        await query.answer(f"✅ Status ditutup! Ketik /{BotCommands.StatusCommand[0]} untuk melihat status lagi.")
+        await query.answer(f"Status ditutup! Ketik [/{BotCommands.StatusCommand[0]}] untuk melihat status lagi.")
         success = await edit_single_status(sid)
         if not success:
             LOGGER.error(f"Gagal menutup status dengan ID: {sid}")
     
     elif action == 'info':
+        status_type = status_dict.get(sid, {}).get("status_type", "")
         is_all = status_dict.get(sid, {}).get('is_all', False)
         is_user = status_dict.get(sid, {}).get('is_user', False)
         chat_id = status_dict.get(sid, {}).get('chat_id')
         
         if is_all:
-            view_type = "Semua Tugas (Global)"
+            view_type = "Global"
         elif is_user:
-            view_type = "Tugas Pribadi" 
+            view_type = "Private" 
         elif chat_id:
-            view_type = "Tugas Grup"
+            view_type = "Group"
         else:
-            return is_all, is_user, chat_id
+            return is_all and is_user and chat_id
         
         async with task_dict_lock:
             tasks = {
@@ -271,8 +269,9 @@ async def status_pages(_, query):
             seed_speed = 0
             
             for download in task_dict.values():
-                tstatus = download.status()
                 task_matches = False
+                tstatus = download.status()
+                
                 if is_all:
                     task_matches = True
                 elif is_user and download.listener.user_id == sid:
@@ -310,14 +309,14 @@ async def status_pages(_, query):
                         tasks["SamVid"] += 1
         
         info_text = (
-            f"ℹ️ INFO STATUS\n\n"
-            f"Mode: {view_type}\n"
+            f"INFO STATUS\n\n"
+            f"Type: {view_type}\n"
             f"ID: {sid}\n\n"
-            f"TUGAS:\n"
+            f"TASKS:\n"
             f"• DL: {tasks['Download']} | UP: {tasks['Upload']} | Seed: {tasks['Seed']}\n"
             f"• Arc: {tasks['Archive']} | Ext: {tasks['Extract']}\n"
             f"• QDL: {tasks['QueueDl']} | QUP: {tasks['QueueUp']}\n\n"
-            f"KECEPATAN:\n"
+            f"SPEEDS:\n"
             f"• Seed: {get_readable_file_size(seed_speed)}/s\n"
             f"• DL: {get_readable_file_size(dl_speed)}/s\n"
             f"• UP: {get_readable_file_size(up_speed)}/s"
