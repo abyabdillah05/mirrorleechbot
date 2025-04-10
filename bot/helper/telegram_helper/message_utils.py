@@ -337,8 +337,7 @@ async def update_status_message(sid, force=False):
             page_step,
             chat_id,
             is_all,
-            cmd_user_id,
-            user_id
+            cmd_user_id
         )
         
         if text is None:
@@ -458,6 +457,7 @@ async def sendStatusMessage(message, user_id=0, is_user=False, chat_id=None, is_
                 "status_type": status_type
             })
         else:
+            # Remove the extra user_id parameter
             text, buttons = await sync_to_async(
                 get_readable_message,
                 sid,
@@ -467,8 +467,7 @@ async def sendStatusMessage(message, user_id=0, is_user=False, chat_id=None, is_
                 1,
                 chat_id,
                 is_all,
-                requester_id,
-                user_id
+                requester_id
             )
             
             if text is None:
