@@ -107,11 +107,11 @@ async def mirror_status(_, message):
                 await auto_delete_message(message, reply)
                 return
             context_type = "Global"
-        if cmd_type == "me":
+        elif cmd_type == "me":
             context_type = "Private"
-        if user_id:
+        elif message.chat.type in ["private", "bot"]:
             context_type = "Private"
-        if chat_id:
+        else:
             context_type = "Group"
             
         msg = f"<b>Tidak ada tugas aktif ({context_type})</b>\n─────────────────────────────"
