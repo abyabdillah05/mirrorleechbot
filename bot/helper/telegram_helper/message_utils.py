@@ -206,7 +206,6 @@ async def edit_status():
 # Noted By: Tg @IgnoredProjectXcl #
 
 async def edit_single_status(sid):
-    """Edit a single status message to indicate it's been closed"""
     async with task_dict_lock:
         if sid in status_dict:
             try:
@@ -304,7 +303,6 @@ async def get_tg_link_message(link, uid=None):
 # You Can Modify It Again Or Improve It Again | Noted By: Tg @IgnoredProjectXcl #
 
 async def update_status_message(sid, force=False):
-    """Update a status message with the latest information"""
     async with task_dict_lock:
         if not status_dict.get(sid):
             if obj := Intervals["status"].get(sid):
@@ -324,11 +322,24 @@ async def update_status_message(sid, force=False):
         is_all = status_dict[sid].get("is_all", False)
         
         chat_id = status_dict[sid].get("chat_id")
-        cmd_user_id = status_dict[sid].get("cmd_user_id") or (sid if is_user else None)
+        cmd_user_id = status_dict[sid].get("cmd_user_id")
+        
+        actual_id = None
+        if sid.startswith("user_"):
+            actual_id = int(sid.split("_")[1])
+        elif sid.startswith("group_"):
+            actual_id = int(sid.split("_")[1])
+        elif sid == "global_status":
+            actual_id = 0
+        else:
+            try:
+                actual_id = int(sid)
+            except:
+                actual_id = 0
         
         text, buttons = await sync_to_async(
             get_readable_message, 
-            sid, 
+            actual_id, 
             is_user, 
             page_no, 
             status_filter, 
@@ -371,39 +382,33 @@ async def update_status_message(sid, force=False):
 # You Can Modify It Again Or Improve It Again | Noted By: Tg @IgnoredProjectXcl #
 
 async def sendStatusMessage(message, user_id=0, is_user=False, chat_id=None, is_all=False, cmd_user_id=None):
-    """Send a new status message or update an existing one"""
     async with task_dict_lock:
-        # Determine the status ID and context type based on parameters
         if is_all:
-            sid = 0
-            status_type = "global"
-            chat_id = None  # Reset chat_id for global context
+            sid = "global_status"
+            status_type = "Global"
+            chat_id = None
         elif is_user:
-            sid = user_id
-            status_type = "private"
-            chat_id = None  # Reset chat_id for private context 
+            sid = f"user_{user_id}"
+            status_type = "Private"
+            chat_id = None 
         elif chat_id and chat_id < 0:
-            sid = chat_id
-            status_type = "group"
+            sid = f"group_{chat_id}"
+            status_type = "Group"
         else:
-            # Default context detection
             if message.chat.type in ["private", "bot"]:
-                sid = message.from_user.id
-                is_user = True  # Force private context in PM
-                status_type = "private"
+                sid = f"user_{message.from_user.id}"
+                is_user = True 
+                status_type = "Private"
                 chat_id = None
             else:
-                sid = message.chat.id
+                sid = f"group_{message.chat.id}"
                 chat_id = message.chat.id
-                status_type = "group"
+                status_type = "Group"
         
-        # Log the context detection for debugging
         LOGGER.info(f"Status context: sid={sid}, is_user={is_user}, chat_id={chat_id}, status_type={status_type}")
         
-        # Set the requester ID for permission checks
         requester_id = cmd_user_id or message.from_user.id
         
-        # Update existing status or create new one
         if sid in list(status_dict.keys()):
             page_no = status_dict[sid]["page_no"]
             status_filter = status_dict[sid]["status"]
@@ -482,7 +487,6 @@ async def sendStatusMessage(message, user_id=0, is_user=False, chat_id=None, is_
                 "status_type": status_type
             }
             
-    # Set up interval for status update
     if not Intervals["status"].get(sid):
         Intervals["status"][sid] = setInterval(
             config_dict["STATUS_UPDATE_INTERVAL"], 

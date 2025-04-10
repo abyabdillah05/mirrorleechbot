@@ -52,17 +52,16 @@ from bot.helper.ext_utils.status_utils import (
 
 @new_task
 async def mirror_status(_, message):
-    """Handler for the status command with different context options"""
     async with task_dict_lock:
         count = len(task_dict)
     
     user_id = message.from_user.id
+    chat_id = message.chat.id
     is_owner = user_id == OWNER_ID
     
     text = message.text.split()
     cmd_type = text[1].lower() if len(text) > 1 else None
     
-    # Show help information
     if cmd_type == "help":
         help_text = (
             "<b>📋 BANTUAN PERINTAH STATUS</b>\n\n"
@@ -89,7 +88,6 @@ async def mirror_status(_, message):
         await auto_delete_message(message, reply)
         return
     
-    # Handle empty status
     if count == 0:
         currentTime = get_readable_time(time() - botStartTime)
         free = get_readable_file_size(disk_usage(DOWNLOAD_DIR).free)
@@ -102,20 +100,19 @@ async def mirror_status(_, message):
         except:
             recv = "NaN"
         
-        # Format message based on command type and chat context
         if cmd_type == "all":
             if not is_owner:
-                msg = "<b>⚠️ AKSES DITOLAK</b>\n\n<code>[/status all]</code> hanya dapat digunakan oleh Owner bot!"
+                msg = "<b>⚠️ Anda Tidak Dapat Menggunakan Perintah Ini!!</b>\n\n<code>[/status all]</code> hanya dapat digunakan oleh Owner bot!"
                 reply = await sendMessage(message, msg)
                 await auto_delete_message(message, reply)
                 return
-            context_type = "GLOBAL"
-        elif cmd_type == "me":
-            context_type = "PRIBADI ANDA"
-        elif message.chat.type in ["private", "bot"]:
-            context_type = "PRIBADI ANDA"
-        else:
-            context_type = "GRUP INI"
+            context_type = "Global"
+        if cmd_type == "me":
+            context_type = "Private"
+        if user_id:
+            context_type = "Private"
+        if chat_id:
+            context_type = "Group"
             
         msg = f"<b>Tidak ada tugas aktif ({context_type})</b>\n─────────────────────────────"
         
@@ -129,7 +126,6 @@ async def mirror_status(_, message):
         await auto_delete_message(message, reply_message)
         return
     
-    # Handle /status all (only for owner)
     if cmd_type == "all":
         if not is_owner:
             msg = "<b>⚠️ AKSES DITOLAK</b>\n\n<code>[/status all]</code> hanya dapat digunakan oleh Owner bot!"
@@ -140,19 +136,16 @@ async def mirror_status(_, message):
         await deleteMessage(message)
         return
     
-    # Handle /status me (personal status)
     if cmd_type == "me":
         await sendStatusMessage(message, message.from_user.id, is_user=True, cmd_user_id=user_id)
         await deleteMessage(message)
         return
     
-    # Default status based on context
-    if message.chat.type in ["private", "bot"]:
-        # In private chat, show user's own tasks
+    if user_id:
         await sendStatusMessage(message, message.from_user.id, is_user=True, cmd_user_id=user_id)
-    else:
-        # In group chat, show group's tasks
-        await sendStatusMessage(message, 0, chat_id=message.chat.id, cmd_user_id=user_id)
+
+    if chat_id:
+        await sendStatusMessage(message, 0, chat_id=message.chat.id, chat_id=True, cmd_user_id=user_id)
     
     await deleteMessage(message)
 
@@ -162,54 +155,64 @@ async def mirror_status(_, message):
 
 @new_task
 async def status_pages(_, query):
-    """Handler for status page interaction via callback queries"""
     data = query.data.split()
     
-    sid = int(data[1])
+    raw_sid = data[1]
     action = data[2]
     
-    # Get command user ID if provided
+    if raw_sid.startswith("user_"):
+        actual_sid = int(raw_sid.split("_")[1])
+    elif raw_sid.startswith("group_"):
+        actual_sid = int(raw_sid.split("_")[1])
+    elif raw_sid == "global_status":
+        actual_sid = 0
+    else:
+        try:
+            actual_sid = int(raw_sid)
+            if actual_sid > 0:
+                raw_sid = f"user_{actual_sid}"
+            elif actual_sid < 0:
+                raw_sid = f"group_{actual_sid}"
+            else:
+                raw_sid = "global_status"
+        except:
+            await query.answer("Invalid status ID!", show_alert=True)
+            return
+    
     cmd_user_id = int(data[3]) if len(data) > 3 else None
     
     user_id = query.from_user.id
     chat_id = query.message.chat.id
     is_owner = user_id == OWNER_ID
     
-    # Check if status exists
     async with task_dict_lock:
-        if sid not in status_dict:
+        if raw_sid not in status_dict:
             await query.answer("⚠️ Status message tidak ditemukan atau sudah ditutup!", show_alert=True)
             return
             
-        status_type = status_dict[sid].get("status_type", "group")
-        status_owner_id = status_dict[sid].get("cmd_user_id")
-        is_all = status_dict[sid].get("is_all", False)
-        status_chat_id = status_dict[sid].get("chat_id")
+        status_type = status_dict[raw_sid].get("status_type", "group")
+        status_owner_id = status_dict[raw_sid].get("cmd_user_id")
+        is_all = status_dict[raw_sid].get("is_all", False)
+        status_chat_id = status_dict[raw_sid].get("chat_id")
     
-    # Determine if user has permission to interact with the status
     has_permission = False
     
     if is_owner:
-        # Owner can access all statuses
         has_permission = True
     elif status_owner_id and user_id == status_owner_id:
-        # User can access their own requested status
         has_permission = True
-    elif status_type == "group" and not is_all and status_chat_id and status_chat_id == chat_id:
-        # Group members can access their group's status
+    elif status_type == "Group" and not is_all and status_chat_id and status_chat_id == chat_id:
         has_permission = True
     
     if not has_permission:
         await query.answer("⚠️ Anda tidak memiliki izin untuk mengakses tombol status ini!", show_alert=True)
         return
     
-    # Handle refresh action
     if action == "ref":
         await query.answer("🔄 Sedang merefresh status...", show_alert=True)
-        LOGGER.info(f"Refreshing status {sid}")
-        await update_status_message(sid, force=True)
+        LOGGER.info(f"Refreshing status {raw_sid}")
+        await update_status_message(raw_sid, force=True)
     
-    # Handle help action
     elif action == "help":
         help_text = (
             "STATUS COMMANDS\n"
@@ -221,51 +224,44 @@ async def status_pages(_, query):
         )
         await query.answer(help_text, show_alert=True)
     
-    # Handle pagination actions
     elif action in ["nex", "pre"]:
         await query.answer()
         async with task_dict_lock:
-            if sid in status_dict:
+            if raw_sid in status_dict:
                 if action == "nex":
-                    status_dict[sid]["page_no"] += status_dict[sid]["page_step"]
+                    status_dict[raw_sid]["page_no"] += status_dict[raw_sid]["page_step"]
                 else:
-                    status_dict[sid]["page_no"] -= status_dict[sid]["page_step"]
-                await update_status_message(sid, force=True)
+                    status_dict[raw_sid]["page_no"] -= status_dict[raw_sid]["page_step"]
+                await update_status_message(raw_sid, force=True)
     
-    # Handle page step change
     elif action == "ps":
         page_step = int(data[3])
         await query.answer(f"Step diubah menjadi {page_step}")
         async with task_dict_lock:
-            if sid in status_dict:
-                status_dict[sid]["page_step"] = page_step
-                await update_status_message(sid, force=True)
+            if raw_sid in status_dict:
+                status_dict[raw_sid]["page_step"] = page_step
+                await update_status_message(raw_sid, force=True)
     
-    # Handle status filter change
     elif action == "st":
         new_status = data[3]
         await query.answer(f"Filter: {new_status}")
         async with task_dict_lock:
-            if sid in status_dict:
-                status_dict[sid]["status"] = new_status
-                await update_status_message(sid, force=True)
+            if raw_sid in status_dict:
+                status_dict[raw_sid]["status"] = new_status
+                await update_status_message(raw_sid, force=True)
     
-    # Handle close action
     elif action == 'close':
         await query.answer(f"Status ditutup! Ketik [/{BotCommands.StatusCommand[0]}] untuk melihat status lagi.")
-        success = await edit_single_status(sid)
+        success = await edit_single_status(raw_sid)
         if not success:
-            LOGGER.error(f"Gagal menutup status dengan ID: {sid}")
+            LOGGER.error(f"Gagal menutup status dengan ID: {raw_sid}")
     
-    # Handle info action
     elif action == 'info':
-        # Get status context information
-        status_type = status_dict.get(sid, {}).get("status_type", "")
-        is_all = status_dict.get(sid, {}).get('is_all', False)
-        is_user = status_dict.get(sid, {}).get('is_user', False)
-        chat_id = status_dict.get(sid, {}).get('chat_id')
+        status_type = status_dict.get(raw_sid, {}).get("status_type", "")
+        is_all = status_dict.get(raw_sid, {}).get('is_all', False)
+        is_user = status_dict.get(raw_sid, {}).get('is_user', False)
+        chat_id = status_dict.get(raw_sid, {}).get('chat_id')
         
-        # Determine view type
         if is_all:
             view_type = "Global"
         elif is_user:
@@ -276,7 +272,6 @@ async def status_pages(_, query):
             await query.answer("Invalid status context", show_alert=True)
             return
         
-        # Count tasks by status
         async with task_dict_lock:
             tasks = {
                 "Download": 0,
@@ -300,15 +295,13 @@ async def status_pages(_, query):
                 task_matches = False
                 tstatus = download.status()
                 
-                # Filter tasks based on context
                 if is_all:
                     task_matches = True
-                elif is_user and download.listener.user_id == sid:
+                elif is_user and download.listener.user_id == actual_sid:
                     task_matches = True
                 elif chat_id and hasattr(download.listener, 'message') and hasattr(download.listener.message, 'chat') and download.listener.message.chat.id == chat_id:
                     task_matches = True
                 
-                # Count task by status
                 if task_matches:
                     if tstatus == MirrorStatus.STATUS_DOWNLOADING:
                         tasks["Download"] += 1
@@ -338,11 +331,10 @@ async def status_pages(_, query):
                     elif tstatus == MirrorStatus.STATUS_SAMVID:
                         tasks["SamVid"] += 1
         
-        # Format info message
         info_text = (
-            f"INFO STATUS\n\n"
+            f"STATS INFO\n\n"
             f"Type: {view_type}\n"
-            f"ID: {sid}\n\n"
+            f"ID: {raw_sid}\n\n"
             f"TASKS:\n"
             f"• DL: {tasks['Download']} | UP: {tasks['Upload']} | Seed: {tasks['Seed']}\n"
             f"• Arc: {tasks['Archive']} | Ext: {tasks['Extract']}\n"
