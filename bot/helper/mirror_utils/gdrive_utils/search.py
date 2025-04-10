@@ -1,7 +1,7 @@
 from logging import getLogger
 
 from bot import DRIVES_NAMES, DRIVES_IDS, INDEX_URLS, user_data
-from .helper.ext_utils.common_utils import get_readable_file_size
+from bot.helper.ext_utils.common_utils import get_readable_file_size
 from bot.helper.mirror_utils.gdrive_utils.helper import GoogleDriveHelper
 from bot.helper.telegram_helper.button_build import ButtonMaker
 
