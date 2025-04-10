@@ -270,9 +270,12 @@ def get_readable_message(sid, is_user=False, page_no=1, status_filter="All", pag
         header_msg = "<b>STATUS GRUP</b>\n\n"
         type_status = "Group"
     else:
-        LOGGER.warning(f"Invalid status context: sid={sid}, is_user={is_user}, chat_id={chat_id}")
-        return None, None
-    
+        # Fallback to user tasks if context is unclear
+        LOGGER.warning(f"Unclear status context: sid={sid}, is_user={is_user}, chat_id={chat_id}, falling back to user tasks")
+        tasks = [tk for tk in task_dict.values() if hasattr(tk.listener, 'user_id') and tk.listener.user_id == sid]
+        header_msg = "<b>STATUS PRIBADI</b>\n\n"
+        type_status = "Private"
+
     # Apply status filter if needed
     if status_filter != "All":
         tasks = [tk for tk in tasks if tk.status() == status_filter]
