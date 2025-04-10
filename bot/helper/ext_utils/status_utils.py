@@ -303,39 +303,21 @@ def get_readable_message(sid, is_user=False, page_no=1, status_filter="All", pag
                 
         msg += user_info
         
-    elif chat_id and chat_id < 0:
-        group_info = None
-        is_private_group = False
-        
-        for task in tasks:
-            if hasattr(task.listener, 'message') and hasattr(task.listener.message, 'chat'):
-                chat = task.listener.message.chat
-                is_private_group = chat.type == "private" or not chat.username
-                group_info = build_user_context_info(
-                    chat.id,
-                    chat.username,
-                    chat.title,
-                    "Group",
-                    None,
-                    is_private_group
-                )
-                break
-                
-        if not group_info:
-            try:
-                chat = bot.get_chat(chat_id)
-                is_private_group = chat.type == "private" or not chat.username
-                group_info = build_user_context_info(
-                    chat_id,
-                    chat.username,
-                    chat.title,
-                    None,
-                    is_private_group
-                )
-            except:
-                group_info = build_user_context_info(chat_id, None, None, None, True)
-                
-        msg += group_info
+    elif chat_id:
+        try:
+            chat = bot.get_chat(chat_id)
+            user_info = build_user_context_info(
+                chat_id,
+                None,
+                None,
+                "Group",
+                chat.title if hasattr(chat, 'title') else f"Group {chat_id}",
+                True
+            )
+            msg += user_info
+        except Exception as e:
+            LOGGER.warning(f"Failed to get group info for {chat_id}: {str(e)}")
+            msg += f"Group ID: {chat_id}\n"
     
     if len(msg) == 0 or tasks_no == 0:
         if is_user:
