@@ -109,7 +109,7 @@ async def mirror_status(_, message):
             context_type = "Global"
         elif cmd_type == "me":
             context_type = "Private"
-        elif message.chat.type in ["private", "bot"]:
+        elif user_id:
             context_type = "Private"
         else:
             context_type = "Group"
@@ -141,7 +141,7 @@ async def mirror_status(_, message):
         await deleteMessage(message)
         return
     
-    if message.chat.type in ["private", "bot"]:
+    if user_id:
         await sendStatusMessage(message, user_id, is_user=True, cmd_user_id=user_id)
     else:
         await sendStatusMessage(message, 0, chat_id=chat_id, cmd_user_id=user_id)
