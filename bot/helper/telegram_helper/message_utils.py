@@ -320,7 +320,7 @@ async def update_status_message(sid, force=False):
         is_user = status_dict[sid]["is_user"]
         page_step = status_dict[sid]["page_step"]
         is_all = status_dict[sid].get("is_all", False)
-        
+        user_id = status_dict[sid].get("user_id")
         chat_id = status_dict[sid].get("chat_id")
         if chat_id and chat_id > 0 and not is_user and not is_all:
             chat_id = -abs(chat_id)
@@ -328,31 +328,17 @@ async def update_status_message(sid, force=False):
         
         cmd_user_id = status_dict[sid].get("cmd_user_id")
         
-        actual_id = None
-        if sid.startswith("user_"):
-            actual_id = int(sid.split("_")[1])
-        elif sid.startswith("group_"):
-            actual_id = int(sid.split("_")[1])
-            if actual_id > 0:
-                actual_id = -abs(actual_id)
-        elif sid == "global_status":
-            actual_id = 0
-        else:
-            try:
-                actual_id = int(sid)
-            except:
-                actual_id = 0
-        
         text, buttons = await sync_to_async(
-            get_readable_message, 
-            actual_id, 
-            is_user, 
-            page_no, 
-            status_filter, 
-            page_step, 
-            chat_id, 
-            is_all, 
-            cmd_user_id
+            get_readable_message,
+            sid,
+            is_user,
+            page_no,
+            status_filter,
+            page_step,
+            chat_id,
+            is_all,
+            cmd_user_id,
+            user_id
         )
         
         if text is None:
@@ -364,9 +350,9 @@ async def update_status_message(sid, force=False):
             
         if text != status_dict[sid]["message"].text:
             message = await editMessage(
-                status_dict[sid]["message"], 
-                text, 
-                buttons, 
+                status_dict[sid]["message"],
+                text,
+                buttons,
                 block=False
             )
             
@@ -389,35 +375,44 @@ async def update_status_message(sid, force=False):
 
 async def sendStatusMessage(message, user_id=0, is_user=False, chat_id=None, is_all=False, cmd_user_id=None):
     async with task_dict_lock:
+        requester_id = cmd_user_id or message.from_user.id
+        
         if is_all:
             sid = "global_status"
             status_type = "Global"
             chat_id = None
+            is_user = False
+        
         elif is_user:
+            if user_id == 0:
+                user_id = message.from_user.id
             sid = f"user_{user_id}"
             status_type = "Private"
-            chat_id = None 
-        elif chat_id:
+            chat_id = None
+        
+        elif chat_id is not None:
             if chat_id > 0:
                 chat_id = -abs(chat_id)
-            sid = f"group_{abs(chat_id)}" 
+            sid = f"group_{abs(chat_id)}"
             status_type = "Group"
+            is_user = False
+        
         else:
             if message.chat.type in ["private", "bot"]:
-                sid = f"user_{message.from_user.id}"
-                is_user = True 
+                user_id = message.from_user.id
+                sid = f"user_{user_id}"
                 status_type = "Private"
                 chat_id = None
+                is_user = True
             else:
                 chat_id = message.chat.id
                 if chat_id > 0:
                     chat_id = -abs(chat_id)
                 sid = f"group_{abs(chat_id)}"
                 status_type = "Group"
+                is_user = False
         
-        LOGGER.info(f"Status context: sid={sid}, is_user={is_user}, chat_id={chat_id}, status_type={status_type}")
-        
-        requester_id = cmd_user_id or message.from_user.id
+        LOGGER.info(f"Status context: sid={sid}, is_user={is_user}, user_id={user_id}, chat_id={chat_id}, status_type={status_type}")
         
         if sid in list(status_dict.keys()):
             page_no = status_dict[sid]["page_no"]
@@ -425,14 +420,14 @@ async def sendStatusMessage(message, user_id=0, is_user=False, chat_id=None, is_
             page_step = status_dict[sid]["page_step"]
             
             text, buttons = await sync_to_async(
-                get_readable_message, 
-                sid, 
-                is_user, 
-                page_no, 
-                status_filter, 
-                page_step, 
-                chat_id, 
-                is_all, 
+                get_readable_message,
+                sid,  
+                is_user,
+                page_no,
+                status_filter,
+                page_step,
+                chat_id,
+                is_all,
                 requester_id
             )
             
@@ -458,20 +453,22 @@ async def sendStatusMessage(message, user_id=0, is_user=False, chat_id=None, is_
                 "cmd_user_id": requester_id,
                 "is_all": is_all,
                 "is_user": is_user,
+                "user_id": user_id if is_user else None,
                 "chat_id": chat_id,
                 "status_type": status_type
             })
         else:
             text, buttons = await sync_to_async(
-                get_readable_message, 
-                sid, 
-                is_user, 
-                1, 
-                "All", 
-                1, 
-                chat_id, 
-                is_all, 
-                requester_id
+                get_readable_message,
+                sid,
+                is_user,
+                1,
+                "All",
+                1,
+                chat_id,
+                is_all,
+                requester_id,
+                user_id
             )
             
             if text is None:
@@ -491,16 +488,17 @@ async def sendStatusMessage(message, user_id=0, is_user=False, chat_id=None, is_
                 "page_step": 1,
                 "status": "All",
                 "is_user": is_user,
+                "user_id": user_id if is_user else None,
                 "cmd_user_id": requester_id,
                 "is_all": is_all,
                 "chat_id": chat_id,
                 "status_type": status_type
             }
-            
+        
     if not Intervals["status"].get(sid):
         Intervals["status"][sid] = setInterval(
-            config_dict["STATUS_UPDATE_INTERVAL"], 
-            update_status_message, 
+            config_dict["STATUS_UPDATE_INTERVAL"],
+            update_status_message,
             sid
         )
 

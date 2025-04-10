@@ -137,16 +137,14 @@ async def mirror_status(_, message):
         return
     
     if cmd_type == "me":
-        await sendStatusMessage(message, message.from_user.id, is_user=True, cmd_user_id=user_id)
+        await sendStatusMessage(message, user_id, is_user=True, cmd_user_id=user_id)
         await deleteMessage(message)
         return
     
-    if user_id:
-        await sendStatusMessage(message, message.from_user.id, is_user=True, cmd_user_id=user_id)
-
-    if chat_id:
-        chat_id = -abs(chat_id)
-        await sendStatusMessage(message, 0, chat_id=message.chat.id, cmd_user_id=user_id)
+    if message.chat.type in ["private", "bot"]:
+        await sendStatusMessage(message, user_id, is_user=True, cmd_user_id=user_id)
+    else:
+        await sendStatusMessage(message, 0, chat_id=chat_id, cmd_user_id=user_id)
     
     await deleteMessage(message)
 
