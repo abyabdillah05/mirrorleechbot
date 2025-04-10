@@ -206,10 +206,14 @@ async def edit_status():
 # Noted By: Tg @IgnoredProjectXcl #
 
 async def edit_single_status(sid):
+    """Edit a single status message to indicate it's been closed"""
     async with task_dict_lock:
         if sid in status_dict:
             try:
-                await editMessage(status_dict[sid]["message"], f"Status telah ditutup. Gunakan /{BotCommands.StatusCommand[0]} jika anda ingin melihat status lagi.")
+                await editMessage(
+                    status_dict[sid]["message"], 
+                    f"Status telah ditutup. Gunakan /{BotCommands.StatusCommand[0]} jika anda ingin melihat status lagi."
+                )
                 del status_dict[sid]
                 if obj := Intervals["status"].get(sid):
                     obj.cancel()
@@ -300,6 +304,7 @@ async def get_tg_link_message(link, uid=None):
 # You Can Modify It Again Or Improve It Again | Noted By: Tg @IgnoredProjectXcl #
 
 async def update_status_message(sid, force=False):
+    """Update a status message with the latest information"""
     async with task_dict_lock:
         if not status_dict.get(sid):
             if obj := Intervals["status"].get(sid):
@@ -313,7 +318,7 @@ async def update_status_message(sid, force=False):
         status_dict[sid]["time"] = time()
         
         page_no = status_dict[sid]["page_no"]
-        status = status_dict[sid]["status"]
+        status_filter = status_dict[sid]["status"]
         is_user = status_dict[sid]["is_user"]
         page_step = status_dict[sid]["page_step"]
         is_all = status_dict[sid].get("is_all", False)
@@ -322,7 +327,15 @@ async def update_status_message(sid, force=False):
         cmd_user_id = status_dict[sid].get("cmd_user_id") or (sid if is_user else None)
         
         text, buttons = await sync_to_async(
-            get_readable_message, sid, is_user, page_no, status, page_step, chat_id, is_all, cmd_user_id,
+            get_readable_message, 
+            sid, 
+            is_user, 
+            page_no, 
+            status_filter, 
+            page_step, 
+            chat_id, 
+            is_all, 
+            cmd_user_id
         )
         
         if text is None:
@@ -334,7 +347,10 @@ async def update_status_message(sid, force=False):
             
         if text != status_dict[sid]["message"].text:
             message = await editMessage(
-                status_dict[sid]["message"], text, buttons, block=False
+                status_dict[sid]["message"], 
+                text, 
+                buttons, 
+                block=False
             )
             
             if isinstance(message, str):
@@ -355,8 +371,9 @@ async def update_status_message(sid, force=False):
 # You Can Modify It Again Or Improve It Again | Noted By: Tg @IgnoredProjectXcl #
 
 async def sendStatusMessage(message, user_id=0, is_user=False, chat_id=None, is_all=False, cmd_user_id=None):
+    """Send a new status message or update an existing one"""
     async with task_dict_lock:
-        # Determine the status ID and context type
+        # Determine the status ID and context type based on parameters
         if is_all:
             sid = 0
             status_type = "global"
@@ -383,11 +400,19 @@ async def sendStatusMessage(message, user_id=0, is_user=False, chat_id=None, is_
         # Update existing status or create new one
         if sid in list(status_dict.keys()):
             page_no = status_dict[sid]["page_no"]
-            status = status_dict[sid]["status"]
+            status_filter = status_dict[sid]["status"]
             page_step = status_dict[sid]["page_step"]
             
             text, buttons = await sync_to_async(
-                get_readable_message, sid, is_user, page_no, status, page_step, chat_id, is_all, requester_id
+                get_readable_message, 
+                sid, 
+                is_user, 
+                page_no, 
+                status_filter, 
+                page_step, 
+                chat_id, 
+                is_all, 
+                requester_id
             )
             
             if text is None:
@@ -417,7 +442,15 @@ async def sendStatusMessage(message, user_id=0, is_user=False, chat_id=None, is_
             })
         else:
             text, buttons = await sync_to_async(
-                get_readable_message, sid, is_user, 1, "All", 1, chat_id, is_all, requester_id
+                get_readable_message, 
+                sid, 
+                is_user, 
+                1, 
+                "All", 
+                1, 
+                chat_id, 
+                is_all, 
+                requester_id
             )
             
             if text is None:
@@ -446,7 +479,9 @@ async def sendStatusMessage(message, user_id=0, is_user=False, chat_id=None, is_
     # Set up interval for status update
     if not Intervals["status"].get(sid):
         Intervals["status"][sid] = setInterval(
-            config_dict["STATUS_UPDATE_INTERVAL"], update_status_message, sid
+            config_dict["STATUS_UPDATE_INTERVAL"], 
+            update_status_message, 
+            sid
         )
 
 ## Custom Send Message ##
