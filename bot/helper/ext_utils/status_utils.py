@@ -168,11 +168,12 @@ def format_status_message(task, is_user=False, is_all=False):
     
     return msg
 
-def build_user_context_info(user_id, username=None, first_name=None, type_status="Private", chat_title=None, is_private_chat=False):
+def build_user_context_info(user_id, username=None, first_name=None, type_status="Private", chat_title=None, is_private_chat=False, chat_id=None):
     msg = "╔═════ Info Status ═════╗\n"
     msg += f"╠[ • Tipe     : {type_status}\n"
     
-    if type_status == "Private":
+    # For user/private context
+    if type_status == "Private" or (isinstance(user_id, int) and user_id > 0):
         nickname = first_name or "User"
         msg += f"╠[ • Nickname  : {nickname}\n"
         msg += f"╠[ • ID    : {user_id}\n"
@@ -183,16 +184,17 @@ def build_user_context_info(user_id, username=None, first_name=None, type_status
             msg += f"╠[ • Username  : <a href='tg://user?id={user_id}'>User</a>\n"
     else:
         group_name = chat_title or "Group"
+        display_id = chat_id if chat_id < 0 else -abs(chat_id)
         msg += f"╠[ • Grup     : {group_name}\n"
-        msg += f"╠[ • ID       : {user_id}\n"
+        msg += f"╠[ • ID       : {display_id}\n"
         
         if username:
             msg += f"╠[ • Username  : @{username}\n"
         else:
             if is_private_chat:
-                msg += f"╠[ • Username  : Private Group\n"
+                msg += f"╠[ • Username  : Group\n"
             else:
-                msg += f"╠[ • Username  : <a href='tg://join?invite=Group_{abs(user_id)}'>{group_name}</a>\n"
+                msg += f"╠[ • Username  : <a href='tg://join?invite=Group_{abs(chat_id)}'>{group_name}</a>\n"
             
     msg += "╚═══════════════════════════╝\n"
     return msg
@@ -214,7 +216,6 @@ def get_readable_message(sid, is_user=False, page_no=1, status_filter="All", pag
     msg = ""
     button = None
     
-    # Extract actual ID from sid string if needed
     actual_id = None
     if isinstance(sid, str):
         if sid.startswith("user_"):
@@ -224,10 +225,10 @@ def get_readable_message(sid, is_user=False, page_no=1, status_filter="All", pag
         elif sid.startswith("group_"):
             actual_id = int(sid.split("_")[1])
             is_user = False
-            # Ensure chat_id is negative for groups
-            if actual_id > 0:
-                actual_id = -actual_id
-            chat_id = actual_id
+            chat_id = -actual_id if actual_id != abs(cmd_user_id or 0) else actual_id
+        elif sid == "global_status":
+            actual_id = 0
+            is_all = True
     else:
         actual_id = sid
 
@@ -328,7 +329,7 @@ def get_readable_message(sid, is_user=False, page_no=1, status_filter="All", pag
         is_private_group = False
         
         for task in tasks:
-            if hasattr(task.listener, 'message') and hasattr(task.listener.message, 'chat'):
+            if hasattr(task.listener, 'message') and hasattr(task.listener, 'chat'):
                 chat = task.listener.message.chat
                 is_private_group = chat.type == "private" or not chat.username
                 group_info = build_user_context_info(

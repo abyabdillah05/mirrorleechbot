@@ -56,6 +56,7 @@ async def mirror_status(_, message):
         count = len(task_dict)
     
     user_id = message.from_user.id
+    chat_type = message.chat.type
     chat_id = message.chat.id
     is_owner = user_id == OWNER_ID
     
@@ -109,9 +110,9 @@ async def mirror_status(_, message):
             context_type = "Global"
         elif cmd_type == "me":
             context_type = "Private"
-        elif user_id:
+        elif chat_type in "private":
             context_type = "Private"
-        else:
+        elif chat_id:
             context_type = "Group"
             
         msg = f"<b>Tidak ada tugas aktif ({context_type})</b>\n─────────────────────────────"
@@ -141,9 +142,10 @@ async def mirror_status(_, message):
         await deleteMessage(message)
         return
     
-    if user_id:
+    if chat_type in "private":
         await sendStatusMessage(message, user_id, is_user=True, cmd_user_id=user_id)
-    else:
+
+    if chat_id:
         await sendStatusMessage(message, 0, chat_id=chat_id, cmd_user_id=user_id)
     
     await deleteMessage(message)
@@ -161,20 +163,21 @@ async def status_pages(_, query):
     
     if raw_sid.startswith("user_"):
         actual_sid = int(raw_sid.split("_")[1])
+        is_user = True
     elif raw_sid.startswith("group_"):
         actual_sid = int(raw_sid.split("_")[1])
-        if actual_sid > 0:
+        if actual_sid != query.from_user.id:
             actual_sid = -abs(actual_sid)
     elif raw_sid == "global_status":
         actual_sid = 0
     else:
         try:
             actual_sid = int(raw_sid)
-            if actual_sid > 0:
+            if actual_sid > 0 and not raw_sid.startswith("user_"):
                 raw_sid = f"user_{actual_sid}"
-            elif actual_sid < 0:
+            elif actual_sid < 0 and not raw_sid.startswith("group_"):
                 raw_sid = f"group_{abs(actual_sid)}"
-            else:
+            elif actual_sid == 0:
                 raw_sid = "global_status"
         except:
             await query.answer("Invalid status ID!", show_alert=True)

@@ -327,7 +327,7 @@ async def update_status_message(sid, force=False):
             status_dict[sid]["chat_id"] = chat_id
         
         cmd_user_id = status_dict[sid].get("cmd_user_id")
-        
+
         text, buttons = await sync_to_async(
             get_readable_message,
             sid,
@@ -375,6 +375,7 @@ async def update_status_message(sid, force=False):
 async def sendStatusMessage(message, user_id=0, is_user=False, chat_id=None, is_all=False, cmd_user_id=None):
     async with task_dict_lock:
         requester_id = cmd_user_id or message.from_user.id
+        chat_type = message.chat.type
         
         if is_all:
             sid = "global_status"
@@ -390,14 +391,14 @@ async def sendStatusMessage(message, user_id=0, is_user=False, chat_id=None, is_
             chat_id = None
         
         elif chat_id is not None:
-            if chat_id > 0:
+            if chat_id > 0 and chat_type not in ["private", "bot"]:
                 chat_id = -abs(chat_id)
             sid = f"group_{abs(chat_id)}"
             status_type = "Group"
             is_user = False
         
         else:
-            if message.chat.type in ["private", "bot"]:
+            if chat_type in ["private", "bot"]:
                 user_id = message.from_user.id
                 sid = f"user_{user_id}"
                 status_type = "Private"
