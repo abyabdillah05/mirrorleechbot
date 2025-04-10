@@ -145,6 +145,7 @@ async def mirror_status(_, message):
         await sendStatusMessage(message, message.from_user.id, is_user=True, cmd_user_id=user_id)
 
     if chat_id:
+        chat_id = -abs(chat_id)
         await sendStatusMessage(message, 0, chat_id=message.chat.id, cmd_user_id=user_id)
     
     await deleteMessage(message)
@@ -164,6 +165,8 @@ async def status_pages(_, query):
         actual_sid = int(raw_sid.split("_")[1])
     elif raw_sid.startswith("group_"):
         actual_sid = int(raw_sid.split("_")[1])
+        if actual_sid > 0:
+            actual_sid = -abs(actual_sid)
     elif raw_sid == "global_status":
         actual_sid = 0
     else:
@@ -172,7 +175,7 @@ async def status_pages(_, query):
             if actual_sid > 0:
                 raw_sid = f"user_{actual_sid}"
             elif actual_sid < 0:
-                raw_sid = f"group_{actual_sid}"
+                raw_sid = f"group_{abs(actual_sid)}"
             else:
                 raw_sid = "global_status"
         except:

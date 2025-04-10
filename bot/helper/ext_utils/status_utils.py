@@ -213,6 +213,23 @@ def get_system_info():
 def get_readable_message(sid, is_user=False, page_no=1, status_filter="All", page_step=1, chat_id=None, is_all=False, cmd_user_id=None):
     msg = ""
     button = None
+    
+    # Extract actual ID from sid string if needed
+    actual_id = None
+    if isinstance(sid, str):
+        if sid.startswith("user_"):
+            actual_id = int(sid.split("_")[1])
+            is_user = True
+            chat_id = None
+        elif sid.startswith("group_"):
+            actual_id = int(sid.split("_")[1])
+            is_user = False
+            # Ensure chat_id is negative for groups
+            if actual_id > 0:
+                actual_id = -actual_id
+            chat_id = actual_id
+    else:
+        actual_id = sid
 
     if is_all:
         private_tasks = []
@@ -228,10 +245,13 @@ def get_readable_message(sid, is_user=False, page_no=1, status_filter="All", pag
         header_msg = "<b>Status Global</b>\n\n"
         type_status = "Global"
     elif is_user:
-        tasks = [tk for tk in task_dict.values() if hasattr(tk.listener, 'user_id') and tk.listener.user_id == sid]
+        tasks = [tk for tk in task_dict.values() if hasattr(tk.listener, 'user_id') and tk.listener.user_id == actual_id]
         header_msg = "<b>Status Pribadi</b>\n\n"
         type_status = "Private"
-    elif chat_id and chat_id < 0:
+    elif chat_id:
+        if chat_id > 0:
+            chat_id = -chat_id
+        
         tasks = [tk for tk in task_dict.values() if hasattr(tk.listener, 'message') and 
                 hasattr(tk.listener.message, 'chat') and tk.listener.message.chat.id == chat_id]
         header_msg = "<b>Status Group</b>\n\n"
@@ -239,7 +259,7 @@ def get_readable_message(sid, is_user=False, page_no=1, status_filter="All", pag
     else:
         LOGGER.warning(f"Invalid status context: sid={sid}, is_user={is_user}, chat_id={chat_id}")
         return None, None
-    
+
     if status_filter != "All":
         tasks = [tk for tk in tasks if tk.status() == status_filter]
         header_msg = f"<b>STATUS {type_status.upper()} ({status_filter})</b>\n"
@@ -291,33 +311,51 @@ def get_readable_message(sid, is_user=False, page_no=1, status_filter="All", pag
                 
         if not user_info:
             try:
-                user = bot.get_users(sid)
+                user = bot.get_users(actual_id)
                 user_info = build_user_context_info(
-                    sid,
+                    actual_id,
                     user.username,
                     user.first_name,
                     "Private"
                 )
             except:
-                user_info = build_user_context_info(sid, None, None, "Private")
+                user_info = build_user_context_info(actual_id, None, None, "Private")
                 
         msg += user_info
         
-    elif chat_id:
-        try:
-            chat = bot.get_chat(chat_id)
-            user_info = build_user_context_info(
-                chat_id,
-                None,
-                None,
-                "Group",
-                chat.title if hasattr(chat, 'title') else f"Group {chat_id}",
-                True
-            )
-            msg += user_info
-        except Exception as e:
-            LOGGER.warning(f"Failed to get group info for {chat_id}: {str(e)}")
-            msg += f"Group ID: {chat_id}\n"
+    elif chat_id and chat_id < 0:
+        group_info = None
+        is_private_group = False
+        
+        for task in tasks:
+            if hasattr(task.listener, 'message') and hasattr(task.listener.message, 'chat'):
+                chat = task.listener.message.chat
+                is_private_group = chat.type == "private" or not chat.username
+                group_info = build_user_context_info(
+                    chat.id,
+                    chat.username,
+                    chat.title,
+                    "Group",
+                    None,
+                    is_private_group
+                )
+                break
+                
+        if not group_info:
+            try:
+                chat = bot.get_chat(chat_id)
+                is_private_group = chat.type == "private" or not chat.username
+                group_info = build_user_context_info(
+                    chat_id,
+                    chat.username,
+                    chat.title,
+                    None,
+                    is_private_group
+                )
+            except:
+                group_info = build_user_context_info(chat_id, None, None, None, True)
+                
+        msg += group_info
     
     if len(msg) == 0 or tasks_no == 0:
         if is_user:
@@ -336,16 +374,16 @@ def get_readable_message(sid, is_user=False, page_no=1, status_filter="All", pag
         
         if is_user:
             try:
-                user = bot.get_users(sid)
+                user = bot.get_users(actual_id)
                 user_info = build_user_context_info(
-                    sid,
+                    actual_id,
                     user.username,
                     user.first_name,
                     "Private"
                 )
                 msg += user_info
             except:
-                user_info = build_user_context_info(sid, None, None, "Private")
+                user_info = build_user_context_info(actual_id, None, None, "Private")
                 msg += user_info
         elif chat_id and chat_id < 0:
             try:
@@ -386,11 +424,11 @@ def get_readable_message(sid, is_user=False, page_no=1, status_filter="All", pag
     if is_all:
         sid_str = "global_status"
     elif is_user:
-        sid_str = f"user_{sid}"
+        sid_str = f"user_{actual_id}"
     elif chat_id:
         sid_str = f"group_{chat_id}"
     else:
-        sid_str = str(sid)
+        sid_str = str(actual_id)
     
     buttons = ButtonMaker()
     

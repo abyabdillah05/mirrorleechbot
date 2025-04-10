@@ -322,6 +322,10 @@ async def update_status_message(sid, force=False):
         is_all = status_dict[sid].get("is_all", False)
         
         chat_id = status_dict[sid].get("chat_id")
+        if chat_id and chat_id > 0 and not is_user and not is_all:
+            chat_id = -abs(chat_id)
+            status_dict[sid]["chat_id"] = chat_id
+        
         cmd_user_id = status_dict[sid].get("cmd_user_id")
         
         actual_id = None
@@ -329,6 +333,8 @@ async def update_status_message(sid, force=False):
             actual_id = int(sid.split("_")[1])
         elif sid.startswith("group_"):
             actual_id = int(sid.split("_")[1])
+            if actual_id > 0:
+                actual_id = -abs(actual_id)
         elif sid == "global_status":
             actual_id = 0
         else:
@@ -391,8 +397,10 @@ async def sendStatusMessage(message, user_id=0, is_user=False, chat_id=None, is_
             sid = f"user_{user_id}"
             status_type = "Private"
             chat_id = None 
-        elif chat_id and chat_id < 0:
-            sid = f"group_{chat_id}"
+        elif chat_id:
+            if chat_id > 0:
+                chat_id = -abs(chat_id)
+            sid = f"group_{abs(chat_id)}" 
             status_type = "Group"
         else:
             if message.chat.type in ["private", "bot"]:
@@ -401,8 +409,10 @@ async def sendStatusMessage(message, user_id=0, is_user=False, chat_id=None, is_
                 status_type = "Private"
                 chat_id = None
             else:
-                sid = f"group_{message.chat.id}"
                 chat_id = message.chat.id
+                if chat_id > 0:
+                    chat_id = -abs(chat_id)
+                sid = f"group_{abs(chat_id)}"
                 status_type = "Group"
         
         LOGGER.info(f"Status context: sid={sid}, is_user={is_user}, chat_id={chat_id}, status_type={status_type}")
