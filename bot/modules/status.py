@@ -109,17 +109,18 @@ async def mirror_status(_, message):
                 reply = await sendMessage(message, msg)
                 await auto_delete_message(message, reply)
                 return
-            msg = "<b>Tidak ada tugas aktif (GLOBAL)</b>\n─────────────────────────────"
+            context_type = "GLOBAL"
         elif cmd_type == "me":
-            msg = "<b>Tidak ada tugas aktif (PRIBADI ANDA)</b>\n─────────────────────────────"
+            context_type = "PRIBADI ANDA"
         elif message.chat.type in ["private", "bot"]:
-            msg = "<b>Tidak ada tugas aktif (PRIBADI ANDA)</b>\n─────────────────────────────"
+            context_type = "PRIBADI ANDA"
         else:
-            msg = "<b>Tidak ada tugas aktif (GRUP INI)</b>\n─────────────────────────────"
-        view_type = "Group"
+            context_type = "GRUP INI"
+            
+        msg = f"<b>Tidak ada tugas aktif ({context_type})</b>\n─────────────────────────────"
         
         msg += (
-            f"\n<b>Type:</b> <code>{view_type}</code>"
+            f"\n<b>Type:</b> <code>{context_type}</code>"
             f"\n<b>CPU:</b> <code>{cpu_percent()}%</code> | <b>FREE:</b> <code>{free}</code>" \
             f"\n<b>RAM:</b> <code>{virtual_memory().percent}%</code> | <b>UPTIME:</b> <code>{currentTime}</code>" \
             f"\n<b>T.Unduh:</b> <code>{recv}</code> | <b>T.Unggah:</b> <code>{sent}</code>"
