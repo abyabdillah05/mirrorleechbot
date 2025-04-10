@@ -14,6 +14,8 @@ from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.telegram_helper.button_build import ButtonMaker
 from bot.__main__ import botname
 
+bn = botname
+
 class MirrorStatus:
     STATUS_DOWNLOADING = "Download.."
     STATUS_UPLOADING = "Upload.."
@@ -396,9 +398,9 @@ def get_readable_message(sid, is_user=False, page_no=1, status_filter="All", pag
     msg += get_system_info()
     
     if tasks_no > STATUS_LIMIT:
-        msg += f"\nHalaman: {page_no}/{pages} | Step: {page_step} | Total: {tasks_no}\n"
+        msg += f"Halaman: {page_no}/{pages} | Step: {page_step} | Total: {tasks_no}\n"
     
-    msg += f"Powered by: {botname}"
+    msg += f"Powered by: {bn}"
     
     if is_all:
         sid_str = "global_status"
@@ -407,7 +409,6 @@ def get_readable_message(sid, is_user=False, page_no=1, status_filter="All", pag
     elif chat_id:
         sid_str = f"group_{chat_id}"
     else:
-        # Fallback
         sid_str = str(sid)
     
     buttons = ButtonMaker()
