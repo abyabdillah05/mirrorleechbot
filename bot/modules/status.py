@@ -145,7 +145,7 @@ async def mirror_status(_, message):
         await sendStatusMessage(message, message.from_user.id, is_user=True, cmd_user_id=user_id)
 
     if chat_id:
-        await sendStatusMessage(message, 0, chat_id=message.chat.id, chat_id=True, cmd_user_id=user_id)
+        await sendStatusMessage(message, 0, chat_id=message.chat.id, cmd_user_id=user_id)
     
     await deleteMessage(message)
 
