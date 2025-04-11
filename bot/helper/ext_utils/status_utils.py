@@ -172,7 +172,6 @@ def build_user_context_info(user_id, username=None, first_name=None, type_status
     msg = "╔═════ Info Status ═════╗\n"
     msg += f"╠[ • Tipe     : {type_status}\n"
     
-    # For user/private context
     if type_status == "Private" or (isinstance(user_id, int) and user_id > 0):
         nickname = first_name or "User"
         msg += f"╠[ • Nickname  : {nickname}\n"
@@ -184,14 +183,18 @@ def build_user_context_info(user_id, username=None, first_name=None, type_status
             msg += f"╠[ • Username  : <a href='tg://user?id={user_id}'>User</a>\n"
     else:
         group_name = chat_title or "Group"
-        display_id = chat_id if chat_id < 0 else -abs(chat_id)
+        if chat_id is not None:
+            display_id = chat_id if chat_id < 0 else -abs(chat_id)
+        else:
+            display_id = "Unknown"
+            
         msg += f"╠[ • Grup     : {group_name}\n"
         msg += f"╠[ • ID       : {display_id}\n"
         
         if username:
             msg += f"╠[ • Username  : @{username}\n"
         else:
-            if is_private_chat:
+            if is_private_chat or chat_id is None:
                 msg += f"╠[ • Username  : Group\n"
             else:
                 msg += f"╠[ • Username  : <a href='tg://join?invite=Group_{abs(chat_id)}'>{group_name}</a>\n"
