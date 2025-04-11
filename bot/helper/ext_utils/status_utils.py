@@ -398,6 +398,7 @@ def get_readable_message(sid, is_user=False, page_no=1, status_filter="All", pag
             except:
                 user_info = build_user_context_info(actual_id, None, None, "Private")
                 msg += user_info
+                
         elif chat_id and chat_id < 0:
             try:
                 chat = bot.get_chat(chat_id)
@@ -407,12 +408,22 @@ def get_readable_message(sid, is_user=False, page_no=1, status_filter="All", pag
                     chat.username,
                     chat.title,
                     "Group",
-                    None,
-                    is_private_group
+                    chat.title,
+                    is_private_group,
+                    chat_id
                 )
                 msg += group_info
-            except:
-                group_info = build_user_context_info(chat_id, None, None, "Group", None, True)
+            except Exception as e:
+                LOGGER.error(f"Error saat mendapatkan info grup {chat_id}: {str(e)}")
+                group_info = build_user_context_info(
+                    chat_id,
+                    None, 
+                    "Group",
+                    "Group",
+                    None,
+                    True,
+                    chat_id
+                )
                 msg += group_info
         elif is_all and cmd_user_id:
             try:
