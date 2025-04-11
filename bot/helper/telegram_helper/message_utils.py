@@ -377,32 +377,24 @@ async def sendStatusMessage(message, user_id=0, is_user=False, chat_id=None, is_
         requester_id = cmd_user_id or message.from_user.id
         chat_type = message.chat.type
         
-        if is_all:
-            sid = "global_status"
-            status_type = "Global"
-            chat_id = None
-            is_user = False
-            
-        elif is_user:
+        if is_user:
             if user_id == 0:
                 user_id = message.from_user.id
             sid = f"user_{user_id}"
             status_type = "Private"
             chat_id = None
             
+        elif is_all:
+            sid = "global_status"
+            status_type = "Global"
+            chat_id = None
+            is_user = False
+            
         elif chat_id is not None:
-            if chat_id > 1000000000:
-                user_id = chat_id
-                sid = f"user_{user_id}"
-                status_type = "Private"
-                chat_id = None
-                is_user = True
-                LOGGER.info(f"Detected large ID {chat_id} as user ID, switching to Private mode")
-            else:
-                chat_id = -abs(chat_id) if chat_id > 0 else chat_id
-                sid = f"group_{abs(chat_id)}"
-                status_type = "Group"
-                is_user = False
+            chat_id = -abs(chat_id) if chat_id > 0 else chat_id
+            sid = f"group_{abs(chat_id)}"
+            status_type = "Group"
+            is_user = False
                 
         else:
             if chat_type in ["private", "bot"]:
@@ -411,7 +403,6 @@ async def sendStatusMessage(message, user_id=0, is_user=False, chat_id=None, is_
                 status_type = "Private"
                 chat_id = None
                 is_user = True
-            
             else:
                 chat_id = message.chat.id
                 chat_id = -abs(chat_id) if chat_id > 0 else chat_id
