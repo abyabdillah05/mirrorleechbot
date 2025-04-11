@@ -391,7 +391,21 @@ async def sendStatusMessage(message, user_id=0, is_user=False, chat_id=None, is_
             chat_id = None
             
         elif chat_id is not None:
-            if chat_id > 1000000000:
+            if chat_id is not None and chat_id > 1000000000:
+                try:
+                    user_id = chat_id
+                    sid = f"user_{user_id}"
+                    status_type = "Private"
+                    chat_id = None
+                    is_user = True
+                    LOGGER.info(f"Detected large ID {chat_id} as user ID, switching to Private mode")
+                except Exception:
+                    chat_id = -abs(chat_id)
+                    sid = f"group_{abs(chat_id)}"
+                    status_type = "Group"
+                    is_user = False
+
+            elif chat_id > 1000000000:
                 user_id = chat_id
                 sid = f"user_{user_id}"
                 status_type = "Private"
