@@ -144,10 +144,10 @@ async def mirror_status(_, message):
     
     if chat_type == "private" or chat_type == "bot":
         await sendStatusMessage(message, user_id, is_user=True, cmd_user_id=user_id)
-
-    if chat_id:
-        await sendStatusMessage(message, 0, chat_id=chat_id, cmd_user_id=user_id)
+        await deleteMessage(message)
+        return
     
+    await sendStatusMessage(message, 0, chat_id=chat_id, cmd_user_id=user_id)
     await deleteMessage(message)
 
 ##################
@@ -164,21 +164,33 @@ async def status_pages(_, query):
     if raw_sid.startswith("user_"):
         actual_sid = int(raw_sid.split("_")[1])
         is_user = True
+        chat_id = None
     elif raw_sid.startswith("group_"):
-        actual_sid = int(raw_sid.split("_")[1])
-        if actual_sid != query.from_user.id:
-            actual_sid = -abs(actual_sid)
+        group_id = int(raw_sid.split("_")[1])
+        if group_id > 1000000000:
+            actual_sid = group_id
+            is_user = True
+            chat_id = None
+            raw_sid = f"user_{actual_sid}"
+        else:
+            actual_sid = -group_id
+            is_user = False
+            chat_id = actual_sid
     elif raw_sid == "global_status":
         actual_sid = 0
+        is_user = False
+        chat_id = None
     else:
         try:
             actual_sid = int(raw_sid)
-            if actual_sid > 0 and not raw_sid.startswith("user_"):
+            if actual_sid > 0:
+                is_user = True
+                chat_id = None
                 raw_sid = f"user_{actual_sid}"
-            elif actual_sid < 0 and not raw_sid.startswith("group_"):
+            else:
+                is_user = False
+                chat_id = actual_sid
                 raw_sid = f"group_{abs(actual_sid)}"
-            elif actual_sid == 0:
-                raw_sid = "global_status"
         except:
             await query.answer("Invalid status ID!", show_alert=True)
             return

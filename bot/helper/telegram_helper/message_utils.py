@@ -393,9 +393,17 @@ async def sendStatusMessage(message, user_id=0, is_user=False, chat_id=None, is_
         elif chat_id is not None:
             if chat_id > 0 and chat_type not in ["private", "bot"]:
                 chat_id = -abs(chat_id)
-            sid = f"group_{abs(chat_id)}"
-            status_type = "Group"
-            is_user = False
+            
+            if chat_type in ["private", "bot"]:
+                user_id = message.from_user.id
+                sid = f"user_{user_id}"
+                status_type = "Private"
+                chat_id = None
+                is_user = True
+            else:
+                sid = f"group_{abs(chat_id)}"
+                status_type = "Group"
+                is_user = False
         
         else:
             if chat_type in ["private", "bot"]:
@@ -406,8 +414,6 @@ async def sendStatusMessage(message, user_id=0, is_user=False, chat_id=None, is_
                 is_user = True
             else:
                 chat_id = message.chat.id
-                if chat_id > 0:
-                    chat_id = -abs(chat_id)
                 sid = f"group_{abs(chat_id)}"
                 status_type = "Group"
                 is_user = False

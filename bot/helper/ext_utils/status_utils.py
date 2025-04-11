@@ -226,9 +226,16 @@ def get_readable_message(sid, is_user=False, page_no=1, status_filter="All", pag
             is_user = True
             chat_id = None
         elif sid.startswith("group_"):
-            actual_id = int(sid.split("_")[1])
-            is_user = False
-            chat_id = -actual_id if actual_id != abs(cmd_user_id or 0) else actual_id
+            group_id = int(sid.split("_")[1])
+            
+            if group_id > 1000000000:
+                actual_id = group_id
+                is_user = True
+                chat_id = None
+            else:
+                actual_id = group_id
+                is_user = False
+                chat_id = -actual_id
         elif sid == "global_status":
             actual_id = 0
             is_all = True
