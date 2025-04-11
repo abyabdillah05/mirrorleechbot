@@ -225,20 +225,17 @@ def get_readable_message(sid, is_user=False, page_no=1, status_filter="All", pag
             actual_id = int(sid.split("_")[1])
             is_user = True
             chat_id = None
+
         elif sid.startswith("group_"):
             group_id = int(sid.split("_")[1])
-            
-            if group_id > 1000000000:
-                actual_id = group_id
-                is_user = True
-                chat_id = None
-            else:
-                actual_id = group_id
-                is_user = False
-                chat_id = -actual_id
+            actual_id = -group_id
+            is_user = False
+            chat_id = actual_id
+
         elif sid == "global_status":
             actual_id = 0
             is_all = True
+
     else:
         actual_id = sid
 
@@ -255,10 +252,12 @@ def get_readable_message(sid, is_user=False, page_no=1, status_filter="All", pag
         tasks = private_tasks + group_tasks
         header_msg = "<b>Status Global</b>\n\n"
         type_status = "Global"
+
     elif is_user:
         tasks = [tk for tk in task_dict.values() if hasattr(tk.listener, 'user_id') and tk.listener.user_id == actual_id]
         header_msg = "<b>Status Pribadi</b>\n\n"
         type_status = "Private"
+
     elif chat_id:
         if chat_id > 0:
             chat_id = -chat_id
@@ -267,6 +266,7 @@ def get_readable_message(sid, is_user=False, page_no=1, status_filter="All", pag
                 hasattr(tk.listener.message, 'chat') and tk.listener.message.chat.id == chat_id]
         header_msg = "<b>Status Group</b>\n\n"
         type_status = "Group"
+
     else:
         LOGGER.warning(f"Invalid status context: sid={sid}, is_user={is_user}, chat_id={chat_id}")
         return None, None
@@ -284,6 +284,7 @@ def get_readable_message(sid, is_user=False, page_no=1, status_filter="All", pag
     
     if page_no > pages:
         page_no = (page_no - 1) % pages + 1
+
     elif page_no < 1:
         page_no = pages - (abs(page_no) % pages)
         
@@ -307,6 +308,7 @@ def get_readable_message(sid, is_user=False, page_no=1, status_filter="All", pag
                 msg += user_info
             except:
                 pass
+            
     elif is_user:
         user_info = None
         for task in tasks:

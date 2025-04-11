@@ -142,7 +142,7 @@ async def mirror_status(_, message):
         await deleteMessage(message)
         return
     
-    if chat_type == "private" or chat_type == "bot":
+    if chat_type in ["private", "bot"]:
         await sendStatusMessage(message, user_id, is_user=True, cmd_user_id=user_id)
         await deleteMessage(message)
         return
@@ -167,15 +167,9 @@ async def status_pages(_, query):
         chat_id = None
     elif raw_sid.startswith("group_"):
         group_id = int(raw_sid.split("_")[1])
-        if group_id > 1000000000:
-            actual_sid = group_id
-            is_user = True
-            chat_id = None
-            raw_sid = f"user_{actual_sid}"
-        else:
-            actual_sid = -group_id
-            is_user = False
-            chat_id = actual_sid
+        actual_sid = -group_id
+        is_user = False
+        chat_id = actual_sid
     elif raw_sid == "global_status":
         actual_sid = 0
         is_user = False
