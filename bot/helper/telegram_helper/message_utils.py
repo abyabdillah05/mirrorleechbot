@@ -1,14 +1,38 @@
-from asyncio import sleep
-from pyrogram.errors import FloodWait
 from time import time
+from asyncio import sleep
 from re import match as re_match
-
-from bot import config_dict, LOGGER, status_dict, task_dict_lock, user_data, Intervals, bot, user as owner_ses
-from bot.helper.ext_utils.bot_utils import setInterval, sync_to_async, create_session
-from bot.helper.ext_utils.status_utils import get_readable_message
-from bot.helper.telegram_helper.bot_commands import BotCommands
-from bot.helper.ext_utils.exceptions import TgLinkException
+from pyrogram.errors import FloodWait
 from pyrogram import Client as tgClient
+
+####################################
+## Import Variables From Project ##
+###################################
+
+from bot.helper.ext_utils.exceptions import TgLinkException
+from bot.helper.telegram_helper.bot_commands import BotCommands
+from bot.helper.ext_utils.status_utils import get_readable_message
+from bot.helper.ext_utils.status_utils import (
+    StatusType, StatusPermission, StatusButtonManager, 
+    StatusContext, StatusRequest,
+    format_private_status_message, format_group_status_message, 
+    format_global_status_message
+)
+
+from bot.helper.ext_utils.bot_utils import (
+    setInterval,
+    sync_to_async,
+    create_session,
+)
+from bot import (
+    config_dict,
+    LOGGER,
+    status_dict,
+    task_dict_lock,
+    user_data,
+    Intervals,
+    bot,
+    user as owner_ses,
+)
 
 ## Send Message ##
 
@@ -93,7 +117,7 @@ async def forwardMessage(chat_id:int, from_chat_id:int, message_id=int, message_
         LOGGER.error(str(e))
         raise Exception(e)
 
-## Send Document ##
+## Send File ##
 
 async def sendFile(message, file, caption=None):
     try:
@@ -129,10 +153,7 @@ async def sendPhoto(message, photo, caption=None):
         LOGGER.error(str(e))
         return str(e)
 
-## Send Rss ##
-## This Function Is No Longer Used, But You Can Use It If Needed ##
-## This Function For Rss ##
-# Noted By: Tg @IgnoredProjectXcl #
+## Send RSS ##
 
 async def sendRss(text):
     try:
@@ -167,7 +188,7 @@ async def deleteMessage(message):
         LOGGER.error(str(e))
 
 ## Auto Delete Message ##
-## You Can Change Time Auto Delte Message In config.env ##
+## You Can Edit Time In config.env ##
 
 async def auto_delete_message(cmd_message=None, bot_message=None):
     if config_dict["AUTO_DELETE_MESSAGE_DURATION"] != -1:
@@ -188,41 +209,44 @@ async def delete_status():
             except Exception as e:
                 LOGGER.error(str(e))
 
-## Edit Status Message ##
-## This Function Is No Longer Used, But You Can Use It If Needed ##
-# Noted By: Tg @IgnoredProjectXcl #
-
-async def edit_status():
-    async with task_dict_lock:
-        for key, data in list(status_dict.items()):
-            try:
-                del status_dict[key]
-                await editMessage(data["message"], f"Status message telah ditutup, silahkan buka kembali dengan perintah /{BotCommands.StatusCommand[0]}")
-            except Exception as e:
-                LOGGER.error(str(e))
-
-## Edit Status Message ##
-## This Function Replaces The Function Above, The Difference Is That It Only Edits One Status In Global | Private | Group ##
-# Noted By: Tg @IgnoredProjectXcl #
+## Edit Single Status ##
 
 async def edit_single_status(sid):
+    """Edit a single status message to closed state"""
     async with task_dict_lock:
         if sid in status_dict:
             try:
+                status_data = status_dict[sid]
                 await editMessage(
-                    status_dict[sid]["message"], 
-                    f"Status telah ditutup. Gunakan /{BotCommands.StatusCommand[0]} jika anda ingin melihat status lagi."
+                    status_data["message"], 
+                    f"Status message telah ditutup, silahkan buka kembali dengan perintah /{BotCommands.StatusCommand[0]}"
                 )
                 del status_dict[sid]
                 if obj := Intervals["status"].get(sid):
                     obj.cancel()
                     del Intervals["status"][sid]
-                return True
             except Exception as e:
-                LOGGER.error(f"Error saat menutup status {sid}: {str(e)}")
-        return False
+                LOGGER.error(str(e))
 
-## Get Telegram Link Message ##
+## Edit Status Message ##
+
+async def edit_status():
+    """Edit all status messages to closed state"""
+    async with task_dict_lock:
+        for key, data in list(status_dict.items()):
+            try:
+                await editMessage(
+                    data["message"], 
+                    f"Status message telah ditutup, silahkan buka kembali dengan perintah /{BotCommands.StatusCommand[0]}"
+                )
+                del status_dict[key]
+                if obj := Intervals["status"].get(key):
+                    obj.cancel()
+                    del Intervals["status"][key]
+            except Exception as e:
+                LOGGER.error(str(e))
+
+## Get Read Link Message ##
 
 async def get_tg_link_message(link, uid=None):
     user_dict = user_data.get(uid, {})
@@ -298,63 +322,89 @@ async def get_tg_link_message(link, uid=None):
     else:
         raise TgLinkException("Link private!")
 
-## Enhanced Status All | Private | Group ##
-## This Enhanced Different Each User And Group ##
-# You Can Modify It Again Or Improve It Again | Noted By: Tg @IgnoredProjectXcl #
+## Update Status Message ##
 
 async def update_status_message(sid, force=False):
+    """Update status message for given status ID"""
     async with task_dict_lock:
         if not status_dict.get(sid):
             if obj := Intervals["status"].get(sid):
                 obj.cancel()
                 del Intervals["status"][sid]
             return
-            
         if not force and time() - status_dict[sid]["time"] < 3:
             return
             
-        status_dict[sid]["time"] = time()
+        # Get status information
+        status_data = status_dict[sid]
+        page_no = status_data["page_no"]
+        status_filter = status_data["status"]
+        status_type = status_data["type"]
+        cmd_user_id = status_data["cmd_user_id"]
+        is_user = status_data["is_user"]
+        page_step = status_data["page_step"]
         
-        page_no = status_dict[sid]["page_no"]
-        status_filter = status_dict[sid]["status"]
-        is_user = status_dict[sid]["is_user"]
-        page_step = status_dict[sid]["page_step"]
-        is_all = status_dict[sid].get("is_all", False)
-        user_id = status_dict[sid].get("user_id")
-        chat_id = status_dict[sid].get("chat_id")
-        if chat_id and chat_id > 0 and not is_user and not is_all:
-            chat_id = -abs(chat_id)
-            status_dict[sid]["chat_id"] = chat_id
-        
-        cmd_user_id = status_dict[sid].get("cmd_user_id")
-
-        text, buttons = await sync_to_async(
-            get_readable_message,
-            sid,
-            is_user,
-            page_no,
-            status_filter,
-            page_step,
-            chat_id,
-            is_all,
-            cmd_user_id
+        # Create a status request for this update
+        request = StatusRequest(
+            user_id=sid if is_user else 0,
+            chat_id=sid if not is_user else 0,
+            status_type=status_type,
+            cmd_user_id=cmd_user_id,
+            page_no=page_no,
+            status_filter=status_filter,
+            page_step=page_step
         )
         
-        if text is None:
+        # Get tasks based on context
+        tasks = request.get_filtered_tasks()
+        
+        # If no tasks and filter is All, cleanup
+        if len(tasks) == 0 and status_filter == "All":
             del status_dict[sid]
             if obj := Intervals["status"].get(sid):
                 obj.cancel()
                 del Intervals["status"][sid]
             return
+        
+        # Ensure page number is valid
+        STATUS_LIMIT = config_dict["STATUS_LIMIT"]
+        tasks_no = len(tasks)
+        
+        if status_type == StatusType.GLOBAL:
+            pages = max(tasks_no, 1)  # For global, one task per page
+        else:
+            pages = (max(tasks_no, 1) + STATUS_LIMIT - 1) // STATUS_LIMIT
             
+        if page_no > pages:
+            page_no = (page_no - 1) % pages + 1
+        elif page_no < 1:
+            page_no = pages - (abs(page_no) % pages)
+            
+        status_data["page_no"] = page_no  # Update the page number
+        
+        # Format message based on context type
+        if status_type == StatusType.PRIVATE:
+            user = next((tk.listener.user for tk in tasks), None) if tasks else None
+            username = getattr(user, 'username', 'Unknown')
+            first_name = getattr(user, 'first_name', 'User')
+            text = format_private_status_message(tasks, sid, username, first_name, page_no, status_filter, page_step)
+        elif status_type == StatusType.GROUP:
+            chat_title = getattr(next((tk.listener.message.chat for tk in tasks), None) if tasks else None, 'title', 'Group')
+            text = format_group_status_message(tasks, sid, chat_title, page_no, status_filter, page_step)
+        else:  # Global
+            text = format_global_status_message(tasks, page_no, status_filter, page_step)
+            
+        # Generate buttons
+        button_maker = StatusButtonManager.generate_buttons(
+            status_type, sid, cmd_user_id, page_no, pages, tasks_no, status_filter
+        )
+        buttons = button_maker.build_menu(3)
+        
+        # Only update if text has changed
         if text != status_dict[sid]["message"].text:
             message = await editMessage(
-                status_dict[sid]["message"],
-                text,
-                buttons,
-                block=False
+                status_dict[sid]["message"], text, buttons, block=False
             )
-            
             if isinstance(message, str):
                 if message.startswith("Telegram says: [400"):
                     del status_dict[sid]
@@ -362,146 +412,178 @@ async def update_status_message(sid, force=False):
                         obj.cancel()
                         del Intervals["status"][sid]
                 else:
-                    LOGGER.error(f"Status dengan ID: {sid} tidak dapat diperbarui. Error: {message}")
+                    LOGGER.error(
+                        f"Status with id: {sid} haven't been updated. Error: {message}"
+                    )
                 return
-                
             status_dict[sid]["message"].text = text
-            status_dict[sid]["time"] = time()
+        
+        status_dict[sid]["time"] = time()
 
-## Enhanced Status All | Private | Group ##
-## This Enhanced Different Each User And Group ##
-# You Can Modify It Again Or Improve It Again | Noted By: Tg @IgnoredProjectXcl #
+## Send Status Message ##
 
 async def sendStatusMessage(message, user_id=0, is_user=False, chat_id=None, is_all=False, cmd_user_id=None):
+    """Send new status message based on context"""
+    # Determine context if not explicitly provided
+    if cmd_user_id is None:
+        cmd_user_id = message.from_user.id
+        
+    # Determine context type
+    if is_all and StatusPermission.is_owner(cmd_user_id):
+        # Global status (owner only)
+        status_type = StatusType.GLOBAL
+        sid = 0  # Global status always uses 0 as ID
+    elif is_user or user_id:
+        # Private user status
+        status_type = StatusType.PRIVATE
+        sid = user_id or message.from_user.id
+    elif chat_id:
+        # Specific chat status
+        status_type = StatusType.GROUP
+        sid = chat_id
+    else:
+        # Default: derive from message context
+        cmd_args = message.text.split()[1] if len(message.text.split()) > 1 else None
+        status_type, sid, cmd_user_id = StatusContext.determine_context(message, cmd_args)
+    
     async with task_dict_lock:
-        requester_id = cmd_user_id or message.from_user.id
-        chat_type = message.chat.type
+        # Create request object to handle filtering
+        request = StatusRequest(
+            user_id=sid if status_type == StatusType.PRIVATE else 0,
+            chat_id=sid if status_type == StatusType.GROUP else 0,
+            status_type=status_type,
+            cmd_user_id=cmd_user_id
+        )
         
-        if is_user:
-            if user_id == 0:
-                user_id = message.from_user.id
-            sid = f"user_{user_id}"
-            status_type = "Private"
-            chat_id = None
-            
-        elif is_all:
-            sid = "global_status"
-            status_type = "Global"
-            chat_id = None
-            is_user = False
-            
-        elif chat_id is not None:
-            chat_id = -abs(chat_id) if chat_id > 0 else chat_id
-            sid = f"group_{abs(chat_id)}"
-            status_type = "Group"
-            is_user = False
-                
-        else:
-            if chat_type in ["private", "bot"]:
-                user_id = message.from_user.id
-                sid = f"user_{user_id}"
-                status_type = "Private"
-                chat_id = None
-                is_user = True
-            else:
-                chat_id = message.chat.id
-                chat_id = -abs(chat_id) if chat_id > 0 else chat_id
-                sid = f"group_{abs(chat_id)}"
-                status_type = "Group"
-                is_user = False
-        
-        LOGGER.info(f"Status context: sid={sid}, is_user={is_user}, user_id={user_id}, chat_id={chat_id}, status_type={status_type}")
-        
-        if sid in list(status_dict.keys()):
+        # Check if a status already exists for this ID
+        if sid in status_dict:
+            # Use existing status parameters
             page_no = status_dict[sid]["page_no"]
             status_filter = status_dict[sid]["status"]
             page_step = status_dict[sid]["page_step"]
             
-            text, buttons = await sync_to_async(
-                get_readable_message,
-                sid,  
-                is_user,
-                page_no,
-                status_filter,
-                page_step,
-                chat_id,
-                is_all,
-                requester_id
-            )
+            # Update request with existing parameters
+            request.page_no = page_no
+            request.status_filter = status_filter
+            request.page_step = page_step
             
-            if text is None:
+            # Get tasks with these parameters
+            tasks = request.get_filtered_tasks()
+            
+            if len(tasks) == 0 and status_filter == "All":
                 del status_dict[sid]
                 if obj := Intervals["status"].get(sid):
                     obj.cancel()
                     del Intervals["status"][sid]
                 return
                 
-            message_obj = status_dict[sid]["message"]
-            await deleteMessage(message_obj)
-            message_obj = await sendMessage(message, text, buttons, block=False)
+            # Delete old message
+            old_message = status_dict[sid]["message"]
+            await deleteMessage(old_message)
             
-            if isinstance(message_obj, str):
-                LOGGER.error(f"Status dengan ID: {sid} tidak dapat dikirim. Error: {message_obj}")
+            # Format new message based on context
+            if status_type == StatusType.PRIVATE:
+                user = next((tk.listener.user for tk in tasks), None) if tasks else None
+                username = getattr(user, 'username', message.from_user.username) 
+                first_name = getattr(user, 'first_name', message.from_user.first_name)
+                text = format_private_status_message(tasks, sid, username, first_name, page_no, status_filter, page_step)
+            elif status_type == StatusType.GROUP:
+                chat_title = message.chat.title
+                text = format_group_status_message(tasks, sid, chat_title, page_no, status_filter, page_step)
+            else:  # Global
+                text = format_global_status_message(tasks, page_no, status_filter, page_step)
+            
+            # Generate buttons
+            STATUS_LIMIT = config_dict["STATUS_LIMIT"]
+            tasks_no = len(tasks)
+            
+            if status_type == StatusType.GLOBAL:
+                pages = max(tasks_no, 1)  # One task per page for global
+            else:
+                pages = (max(tasks_no, 1) + STATUS_LIMIT - 1) // STATUS_LIMIT
+                
+            button_maker = StatusButtonManager.generate_buttons(
+                status_type, sid, cmd_user_id, page_no, pages, tasks_no, status_filter
+            )
+            buttons = button_maker.build_menu(3)
+            
+            # Send new message
+            new_message = await sendMessage(message, text, buttons, block=False)
+            if isinstance(new_message, str):
+                LOGGER.error(f"Status with id: {sid} hasn't been sent. Error: {new_message}")
                 return
                 
-            message_obj.text = text
+            new_message.text = text
+            
+            # Update status_dict
             status_dict[sid].update({
-                "message": message_obj, 
+                "message": new_message,
                 "time": time(),
-                "cmd_user_id": requester_id,
-                "is_all": is_all,
-                "is_user": is_user,
-                "user_id": user_id if is_user else None,
-                "chat_id": chat_id,
-                "status_type": status_type
+                "cmd_user_id": cmd_user_id,
+                "type": status_type
             })
         else:
-            text, buttons = await sync_to_async(
-                get_readable_message,
-                sid,
-                is_user,
-                1,
-                "All",
-                1,
-                chat_id,
-                is_all,
-                requester_id
+            # Create new status
+            tasks = request.get_filtered_tasks()
+            
+            if len(tasks) == 0 and request.status_filter == "All":
+                return
+                
+            # Format message based on context
+            if status_type == StatusType.PRIVATE:
+                user = next((tk.listener.user for tk in tasks), None) if tasks else None
+                username = getattr(user, 'username', message.from_user.username)
+                first_name = getattr(user, 'first_name', message.from_user.first_name)
+                text = format_private_status_message(tasks, sid, username, first_name, 1, "All", 1)
+            elif status_type == StatusType.GROUP:
+                chat_title = message.chat.title
+                text = format_group_status_message(tasks, sid, chat_title, 1, "All", 1)
+            else:  # Global
+                text = format_global_status_message(tasks, 1, "All", 1)
+                
+            # Generate buttons
+            STATUS_LIMIT = config_dict["STATUS_LIMIT"]
+            tasks_no = len(tasks)
+            
+            if status_type == StatusType.GLOBAL:
+                pages = max(tasks_no, 1)  # One task per page for global
+            else:
+                pages = (max(tasks_no, 1) + STATUS_LIMIT - 1) // STATUS_LIMIT
+                
+            button_maker = StatusButtonManager.generate_buttons(
+                status_type, sid, cmd_user_id, 1, pages, tasks_no, "All"
             )
+            buttons = button_maker.build_menu(3)
             
-            if text is None:
+            # Send message
+            new_message = await sendMessage(message, text, buttons, block=False)
+            if isinstance(new_message, str):
+                LOGGER.error(f"Status with id: {sid} hasn't been sent. Error: {new_message}")
                 return
                 
-            message_obj = await sendMessage(message, text, buttons, block=False)
+            new_message.text = text
             
-            if isinstance(message_obj, str):
-                LOGGER.error(f"Status dengan ID: {sid} tidak dapat dikirim. Error: {message_obj}")
-                return
-                
-            message_obj.text = text
+            # Create entry in status_dict
             status_dict[sid] = {
-                "message": message_obj,
+                "message": new_message,
                 "time": time(),
                 "page_no": 1,
                 "page_step": 1,
                 "status": "All",
-                "is_user": is_user,
-                "user_id": user_id if is_user else None,
-                "cmd_user_id": requester_id,
-                "is_all": is_all,
-                "chat_id": chat_id,
-                "status_type": status_type
+                "is_user": status_type == StatusType.PRIVATE,
+                "cmd_user_id": cmd_user_id,
+                "type": status_type
             }
         
-    if not Intervals["status"].get(sid):
+    # Set up interval for auto-refresh (but not for private user status)
+    if not Intervals["status"].get(sid) and status_type != StatusType.PRIVATE:
         Intervals["status"][sid] = setInterval(
-            config_dict["STATUS_UPDATE_INTERVAL"],
-            update_status_message,
-            sid
+            config_dict["STATUS_UPDATE_INTERVAL"], update_status_message, sid
         )
 
 ## Custom Send Message ##
 
-# NOTE: Custom by Me, if You dont need it, just ignore or delete from this line ^^
+# NOTE: Custom by @aenulrofik, if You dont need it, just ignore or delete from this line ^^
 async def customSendMessage(client, chat_id:int, text:str, message_thread_id=None, buttons=None):
     try:
         return await client.send_message(
@@ -520,9 +602,7 @@ async def customSendMessage(client, chat_id:int, text:str, message_thread_id=Non
         LOGGER.error(str(e))
         raise Exception(e)
 
-## Custom Send Rss Message ##
-## This Function Is No Longer Used, But You Can Use It If Needed ##
-# Noted By: Tg @IgnoredProjectXcl #
+## Custom Send RSS ##
 
 async def customSendRss(text, image=None, image_caption=None, reply_markup=None):
     chat_id = None

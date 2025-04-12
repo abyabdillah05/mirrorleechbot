@@ -12,7 +12,7 @@ from bot.helper.telegram_helper.message_utils import (
     editMessage
 )
 from bot.helper.ext_utils.bot_utils import new_task
-from bot.helper.ext_utils.common_utils import get_readable_file_size
+from bot.helper.ext_utils.status_utils import get_readable_file_size
 
 
 @new_task
@@ -67,6 +67,6 @@ bot.add_handler(
         speedtest, 
         filters=command(
             BotCommands.SpeedCommand
-        ) & CustomFilters.owner
+        ) & CustomFilters.sudo
     )
 )

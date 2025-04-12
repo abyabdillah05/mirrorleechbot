@@ -4,13 +4,13 @@ import httpx
 import os
 import subprocess
 
-from asyncio import sleep as asleep, create_subprocess_exec
+from asyncio import create_subprocess_exec
 from bot import bot
-from aiofiles.os import remove as aioremove, path as aiopath, mkdir, makedirs
+from aiofiles.os import remove as aioremove, path as aiopath, mkdir
 from os import path as ospath, getcwd
 from pyrogram.filters import command
 from pyrogram.types import InputMediaPhoto, InputMediaVideo
-from pyrogram.handlers import MessageHandler, CallbackQueryHandler
+from pyrogram.handlers import MessageHandler
 from bot.helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.ext_utils.bot_utils import new_task
 from bot.helper.telegram_helper.message_utils import (sendMessage,
@@ -20,7 +20,6 @@ from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.ext_utils.telegraph_helper import telegraph
 from bot.helper.ext_utils.bot_utils import sync_to_async
-from bot.modules.ytdlp import YtDlp
 from bot.helper.ext_utils.bot_utils import new_task
 
 user_agent  = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0"

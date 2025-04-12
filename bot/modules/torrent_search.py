@@ -4,19 +4,19 @@ from aiohttp import ClientSession
 from html import escape
 from urllib.parse import quote
 
-from bot import bot, LOGGER, config_dict, get_client
+from bot import bot, LOGGER, config_dict, get_client, botname
 from bot.helper.telegram_helper.message_utils import editMessage, sendMessage
 from bot.helper.ext_utils.telegraph_helper import telegraph
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.ext_utils.bot_utils import sync_to_async, new_task
 from bot.helper.telegram_helper.button_build import ButtonMaker
-from bot.helper.ext_utils.common_utils import get_readable_file_size
+from bot.helper.ext_utils.status_utils import get_readable_file_size
 
 PLUGINS = []
 SITES = None
 TELEGRAPH_LIMIT = 300
-botnname = bot.me.first_name
+
 
 async def initiate_search_tools():
     qbclient = await sync_to_async(get_client)
@@ -200,7 +200,7 @@ async def _getResult(search_results, key, message, method):
     path = [
         (
             await telegraph.create_page(
-                title="Pencarian {botnname}", content=content
+                title=f"Pencarian {botname}", content=content
             )
         )["path"]
         for content in telegraph_content
@@ -319,7 +319,7 @@ bot.add_handler(
         torrentSearch,
         filters=command(
             BotCommands.SearchCommand
-        ) & CustomFilters.authorized,
+        ) & CustomFilters.authorized
     )
 )
 bot.add_handler(

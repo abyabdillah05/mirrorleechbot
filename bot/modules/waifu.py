@@ -1,42 +1,44 @@
+import os
+import time
 import random
 import requests
-import os
 import tempfile
-import time
-import aiohttp
+
+from PIL import Image
 from io import BytesIO
 from datetime import datetime
-from PIL import Image
 
 ###############################
 ## Import Libraries Pyrogram ##
 ###############################
 
 from pyrogram.enums import ChatType
-from pyrogram.filters import (command,
-                              regex)
+from pyrogram.filters import command
 from pyrogram.handlers import MessageHandler
-from pyrogram.handlers import CallbackQueryHandler
 
 ##################################
 ## Import Variable From Project ##
 ##################################
 
-from bot import (bot,
-                 LOGGER,
-                 DOWNLOAD_DIR)
-from bot.helper.telegram_helper.bot_commands import BotCommands
-from bot.helper.telegram_helper.message_utils import (sendMessage,
-                                                      editMessage)
-from bot.helper.telegram_helper.button_build import ButtonMaker
-from bot.helper.ext_utils.safelinku_utils import SafeLinkU
 from bot.helper.ext_utils.bot_utils import new_thread
+from bot.helper.ext_utils.safelinku_utils import SafeLinkU
+from bot.helper.telegram_helper.button_build import ButtonMaker
+from bot.helper.telegram_helper.bot_commands import BotCommands
+
+from bot import (
+    bot,
+    LOGGER
+    )
+from bot.helper.telegram_helper.message_utils import (
+    sendMessage,
+    editMessage
+    )
 
 #########################
 ## Api Anime Image URL ##
 #########################
 
-## Modified by Tg @WzdDizzyFlasherr ##
+## Modified by Tg @IgnoredProjectXcl ##
 ## You can add/remove/edit all APIs here ##
 
 # 10 Different Anime Image APIs
@@ -50,7 +52,6 @@ ANIME_APIS = [
         "nsfw_tags": ["waifu", "neko", "trap", "blowjob"],
         "parse": lambda r: r.json()["url"] if r.status_code == 200 and "url" in r.json() else None
     },
-    
     # 2. NEKOS.LIFE - Another good API for anime images
     {
         "name": "Nekos.life",
@@ -60,7 +61,6 @@ ANIME_APIS = [
         "nsfw_tags": ["lewd", "ero", "blowjob", "tits", "boobs", "trap", "pussy", "cum", "hentai"],
         "parse": lambda r: r.json()["url"] if r.status_code == 200 and "url" in r.json() else None
     },
-    
     # 3. WAIFU.IM - Great for higher quality anime images
     {
         "name": "Waifu.im",
@@ -70,7 +70,6 @@ ANIME_APIS = [
         "nsfw_tags": ["ass", "hentai", "milf", "oral", "paizuri", "ecchi", "ero"],
         "parse": lambda r: r.json()["images"][0]["url"] if r.status_code == 200 and "images" in r.json() and r.json()["images"] else None
     },
-    
     # 4. NEKOBOT API - Popular anime image API with lots of NSFW
     {
         "name": "Nekobot",
@@ -80,7 +79,6 @@ ANIME_APIS = [
         "nsfw_tags": ["hentai", "ass", "boobs", "paizuri", "thigh", "hthigh", "anal", "hanal", "gonewild", "pgif", "4k", "lewdneko", "pussy", "holo", "lewdkitsune", "kemonomimi", "feet", "hfeet", "blowjob", "hmidriff", "hboobs", "tentacle"],
         "parse": lambda r: r.json()["message"] if r.status_code == 200 and "message" in r.json() else None
     },
-    
     # 5. HMTAI API - Hentai/anime image API with tons of NSFW
     {
         "name": "HMTAI",
@@ -90,7 +88,6 @@ ANIME_APIS = [
         "nsfw_tags": ["ass", "bdsm", "cum", "creampie", "manga", "femdom", "hentai", "incest", "masturbation", "public", "ero", "orgy", "elves", "yuri", "pantsu", "glasses", "cuckold", "blowjob", "boobjob", "foot", "thighs", "vagina", "ahegao", "uniform", "gangbang", "tentacles", "gif", "neko", "nsfwMobileWallpaper", "zettaiRyouiki"],
         "parse": lambda r: r.json() if r.status_code == 200 else None
     },
-    
     # 6. WAIFU API
     {
         "name": "Waifu API",
@@ -100,7 +97,6 @@ ANIME_APIS = [
         "nsfw_tags": ["waifu", "neko", "trap", "maid"],
         "parse": lambda r: r.json()["url"] if r.status_code == 200 and "url" in r.json() else None
     },
-    
     # 7. ANIME-IMAGES-API - Another anime API
     {
         "name": "Anime Images",
@@ -110,7 +106,6 @@ ANIME_APIS = [
         "nsfw_tags": ["hentai", "boobs", "lesbian"],
         "parse": lambda r: r.json()["url"] if r.status_code == 200 and "url" in r.json() else None
     },
-    
     # 8. PICREW API - Better anime image API
     {
         "name": "Picrew API",
@@ -120,7 +115,6 @@ ANIME_APIS = [
         "nsfw_tags": ["waifu", "neko", "trap", "blowjob"],
         "parse": lambda r: r.json()["url"] if r.status_code == 200 and "url" in r.json() else None
     },
-    
     # 9. NEKOS.FUN - Anime API
     {
         "name": "Nekos Fun",
@@ -130,7 +124,6 @@ ANIME_APIS = [
         "nsfw_tags": ["lesbian", "anal", "bj", "classic", "cum", "spank"],
         "parse": lambda r: r.json()["image"] if r.status_code == 200 and "image" in r.json() else None
     },
-    
     # 10. ANIME-NEKO-API
     {
         "name": "Anime Neko",
@@ -142,11 +135,19 @@ ANIME_APIS = [
     }
 ]
 
-##########################################
-## Another Tags By Tg @WzdDizzyFlasherr ##
-##########################################
+##############################################
+## Additional Tags by Tg @IgnoredProjectXcl ##
+##############################################
 
-## You can add/remove/edit all tags here ##
+## Major Enhancements to Waifu Features:
+## - Added more anime image APIs, including SFW and NSFW tags.
+## - Improved parsing logic.
+## - Refactored code structure for better readability and maintainability.
+## - Added more comments and organized the code for clarity.
+## - Introduced more anime character tags and categories for better organization.
+
+## Enhancement by: Tg @IgnoredProjectXcl
+## Note: You can add, remove, or edit all tags here.
 
 # SFW Tags organized by categories
 SFW_TAGS = {
@@ -778,9 +779,7 @@ NSFW_TAGS = {
     "pixel": "Pixel Art NSFW"
 }
 
-# Keyword mapping for user input
 TAG_MAPPING = {
-    # Character mappings
     "wife": "waifu",
     "marin": "marin-kitagawa",
     "mori": "mori-calliope",
@@ -861,15 +860,16 @@ ANIME_IMAGES_DIR = "/root/kazumaxcl/anime"
 
 try:
     os.makedirs(ANIME_IMAGES_DIR, exist_ok=True)
-    LOGGER.info(f"Anime images directory created at: {ANIME_IMAGES_DIR}")
+    LOGGER.info(f"Membuar direktori untuk anime: {ANIME_IMAGES_DIR}")
 except Exception as e:
     LOGGER.error(f"Error creating anime images directory: {str(e)}")
 
-########################################
-## Waifu Feature | Credit @aenulrofik ##
-########################################
+####################
+## Function Waifu ##
+####################
 
-## For another features enhanced by Tg @WzdDizzyFlasherr ##
+## Credit: @aenulrofik ##
+## Major Enhancements By: Tg @IgnoredProjectXcl ##
 
 async def animek(client, message):
     if len(message.command) > 1:
@@ -912,13 +912,13 @@ async def animek(client, message):
         nsfw_display = [f"• <code>{tag}</code> - {NSFW_TAGS[tag]}" for tag in nsfw_sample]
         nsfw_text = '\n'.join(nsfw_display)
         
-        text = f"<b>💮 Daftar Perintah Gambar Anime</b>\n\n" \
-               f"<b>❓ Cara Penggunaan:</b>\n" \
-               f"• <code>/{BotCommands.AnimekCommand[0]} [tag]</code>\n" \
-               f"• <code>/{BotCommands.AnimekCommand[0]} random</code> - Gambar acak\n\n" \
-               f"<b>🌸 Tag SFW (Sampel):</b>\n{sfw_text}\n\n" \
-               f"<b>🔞 Tag NSFW (Sampel):</b>\n{nsfw_text}\n\n" \
-               f"<b>ℹ️ Catatan:</b> Gunakan <code>random</code> untuk gambar acak. Beberapa tag mungkin tidak bekerja dengan semua API."
+        text =  f"<b>💮 Daftar Perintah Gambar Anime</b>\n\n" \
+                f"<b>❓ Cara Penggunaan:</b>\n" \
+                f"• <code>/{BotCommands.AnimekCommand[0]} [tag]</code>\n" \
+                f"• <code>/{BotCommands.AnimekCommand[0]} random</code> - Gambar acak\n\n" \
+                f"<b>🌸 Tag SFW (Sampel):</b>\n{sfw_text}\n\n" \
+                f"<b>🔞 Tag NSFW (Sampel):</b>\n{nsfw_text}\n\n" \
+                f"<b>ℹ️ Catatan:</b> Gunakan <code>random</code> untuk gambar acak. Beberapa tag mungkin tidak bekerja dengan semua API."
         
         await editMessage(mess, text, button.build_menu(1))
         return
@@ -1019,9 +1019,13 @@ async def animek(client, message):
         LOGGER.error(f"Error mengirim gambar: {str(e)}")
         await editMessage(mess, f"<b>❌ Error mengirim gambar: {str(e)}</b>")
 
-#######################################################
-## Save Image HD In Server | By Tg @WzdDizzyFlasherr ##
-#######################################################
+################################
+## Function Download Anime HD ##
+################################
+
+## Credit: Tg @IgnoredProjectXcl ##
+## Major Enhancements By: Tg @IgnoredProjectXcl ##
+## Features: HD Image Retrieval, Interactive Messages, Full Resolution Delivery, Metadata Display, 12h Storage System ##
 
 async def download_anime_hd(client, message, mess=None, file_id=None):
     try:
@@ -1183,9 +1187,9 @@ def cleanup_old_anime_images():
     except Exception as e:
         LOGGER.error(f"Error cleaning up old anime images: {str(e)}")
 
-############################
-## Waifu Command Handler  ##
-############################
+###########################
+## Waifu Command Handler ##
+###########################
 
 bot.add_handler(
     MessageHandler(
@@ -1195,3 +1199,7 @@ bot.add_handler(
         )
     )
 )
+
+## Big thanks to @aenulrofik for this awesome feature ##
+## And to me: Tg @IgnoredProjectXcl for the major enhancements ##
+## Please don’t remove the credits — respect the creator! ##

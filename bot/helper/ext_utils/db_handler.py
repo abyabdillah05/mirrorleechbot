@@ -35,6 +35,7 @@ class DbManger:
     async def db_load(self):
         if self._err:
             return
+        # Save bot settings
         try:
             await self._db.settings.config.update_one(
                 {"_id": bot_id}, {"$set": config_dict}, upsert=True
@@ -56,7 +57,7 @@ class DbManger:
         # User Data
         if await self._db.users.find_one():
             rows = self._db.users.find({})
-            #return a dict ==> {_id, is_sudo, is_auth, as_doc, thumb, yt_opt, media_group, equal_splits, split_size, rclone, rclone_path, token_pickle, gdrive_id, leech_dest, lperfix, lprefix, excluded_extensions, user_transmission, index_url, default_upload}
+            # return a dict ==> {_id, is_sudo, is_auth, as_doc, thumb, yt_opt, media_group, equal_splits, split_size, rclone, rclone_path, token_pickle, gdrive_id, leech_dest, lperfix, lprefix, excluded_extensions, user_transmission, index_url, default_upload}
             async for row in rows:
                 uid = row["_id"]
                 del row["_id"]
@@ -85,7 +86,7 @@ class DbManger:
             LOGGER.info("Users data has been imported from Database")
         # Rss Data
         if await self._db.rss[bot_id].find_one():
-            #return a dict ==> {_id, title: {link, last_feed, last_name, inf, exf, command, paused}
+            # return a dict ==> {_id, title: {link, last_feed, last_name, inf, exf, command, paused}
             rows = self._db.rss[bot_id].find({})
             async for row in rows:
                 user_id = row["_id"]
@@ -147,25 +148,14 @@ class DbManger:
     async def update_user_data(self, user_id):
         if self._err:
             return
-        
-        if user_id not in user_data:
-            await self._db.users.delete_one({"_id": user_id})
-            self._conn.close
-            return
-            
         data = user_data.get(user_id, {})
-        
-        if not (data.get("is_auth") or data.get("is_sudo") or data.get("quota", 0) > 0):
-            await self._db.users.delete_one({"_id": user_id})
-        else:
-            if data.get("thumb"):
-                del data["thumb"]
-            if data.get("rclone_config"):
-                del data["rclone_config"]
-            if data.get("token_pickle"):
-                del data["token_pickle"]
-            await self._db.users.replace_one({"_id": user_id}, data, upsert=True)
-            
+        if data.get("thumb"):
+            del data["thumb"]
+        if data.get("rclone_config"):
+            del data["rclone_config"]
+        if data.get("token_pickle"):
+            del data["token_pickle"]
+        await self._db.users.replace_one({"_id": user_id}, data, upsert=True)
         self._conn.close
 
     async def update_user_doc(self, user_id, key, path=""):
@@ -239,13 +229,6 @@ class DbManger:
         if self._err:
             return
         await self._db[name][bot_id].drop()
-        self._conn.close
-
-    async def delete_user_data(self, user_id):
-        if self._err:
-            return
-        LOGGER.info(f"Menghapus user {user_id} dari database")
-        await self._db.users.delete_one({"_id": user_id})
         self._conn.close
 
 

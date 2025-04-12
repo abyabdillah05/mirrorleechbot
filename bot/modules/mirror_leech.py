@@ -101,8 +101,6 @@ class Mirror(TaskListener):
         self.video_editor = video_editor
         self.user_id = self.message.from_user.id
         self.disable_button = user_data.get(self.user_id, {}).get("disable_button", False)
-        self.md5 = ""
-        
     @new_task
     async def newEvent(self):
         rply = self.message.reply_to_message
@@ -561,7 +559,6 @@ async def leech(client, message):
 async def qb_leech(client, message):
     Mirror(client, message, isQbit=True, isLeech=True).newEvent()
 
-
 async def auto_mirror(client, message):
     user_id = message.from_user.id
     if user_data.get(user_id, {}).get("disable_autodetect", False):
@@ -586,13 +583,6 @@ async def auto_mirror(client, message):
         return
     Mirror(client, message, auto_url=text, auto_mode=True).newEvent()
 
-async def mirror_leech(client, message):
-    cmd = message.command[0].lower()
-    if cmd in BotCommands.LeechCommand:
-        await leech(client, message)
-    else:
-        await mirror(client, message)
-
 bot.add_handler(
     MessageHandler(
         mirror, 
@@ -614,7 +604,7 @@ bot.add_handler(
         qb_mirror,
         filters=command(
             BotCommands.QbMirrorCommand
-        ) & CustomFilters.authorized,
+        ) & CustomFilters.authorized
     )
 )
 bot.add_handler(

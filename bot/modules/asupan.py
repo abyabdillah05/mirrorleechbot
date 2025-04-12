@@ -7,20 +7,31 @@ import requests
 
 from pyrogram.types import InputMediaVideo
 from pyrogram.filters import command, regex
-from pyrogram.handlers import (CallbackQueryHandler,
-                               MessageHandler)
+
+from pyrogram.handlers import (
+    CallbackQueryHandler,
+    MessageHandler
+    )
 
 ###################################
 ## Import Variables From Project ##
 ###################################
 
-from bot import bot
 from bot.helper.ext_utils.bot_utils import new_task
 from bot.helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.telegram_helper.bot_commands import BotCommands
-from bot.helper.telegram_helper.message_utils import (sendMessage,
-                                                      deleteMessage,
-                                                      editMessage)
+
+from bot import (
+    bot,
+    botname,
+    botusername,
+    LOGGER
+    )
+from bot.helper.telegram_helper.message_utils import (
+    sendMessage,
+    deleteMessage,
+    editMessage
+    )
 
 ########################
 ## Required Variables ##
@@ -47,9 +58,11 @@ async def get_url(url):
     except Exception as e:
         return ("ERROR:", e)
 
-#######################################
-## Asupan Feature Credit @aenulrofik ##
-#######################################
+###################################
+## Function For Asupan Video URL ##
+###################################
+
+## Credit @aenulrofik ##
 
 @new_task
 async def asupan(client, message, ganti=None):
@@ -74,7 +87,6 @@ async def asupan(client, message, ganti=None):
                 break
     await deleteMessage(mess)
         
-
 async def asupan_query(_, query):
     message = query.message
     edit_media = query.edit_message_media
@@ -103,9 +115,9 @@ async def asupan_query(_, query):
                     await sendMessage(message, f"Gagal mengupload asupan setelah 5x percobaan.\n\n{e}")
                     break
 
-######################################
-## Command & CallbackQuery Handlers ##
-######################################
+#######################################
+## Commands & CallbackQuery Handlers ##
+#######################################
 
 bot.add_handler(
     MessageHandler(
@@ -124,4 +136,5 @@ bot.add_handler(
     )
 )
 
-## Thanks to @aenulrofik for this feature ##
+## Big thanks to @aenulrofik for this awesome feature ##
+## Please don't remove the credits — respect the creator! ##

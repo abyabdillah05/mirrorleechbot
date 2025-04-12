@@ -32,5 +32,11 @@ async def renamefile(_, message):
     await auto_delete_message(message, reply_message)
 
 
-bot.add_handler(MessageHandler(renamefile, filters=command(
-    BotCommands.RenameCommand) & CustomFilters.authorized))
+bot.add_handler(
+    MessageHandler(
+        renamefile,
+        filters=command(
+            BotCommands.RenameCommand
+            ) & CustomFilters.authorized
+        )
+    )

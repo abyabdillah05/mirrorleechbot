@@ -1,85 +1,114 @@
-from signal import signal, SIGINT
-from aiofiles.os import path as aiopath, remove as aioremove
-from aiofiles import open as aiopen
-from os import execl as osexecl
 from time import time
-from sys import executable
-from pyrogram.handlers import MessageHandler
-from pyrogram.filters import command
-from asyncio import create_subprocess_exec, gather
-from psutil import (
-    disk_usage, 
-    cpu_percent, 
-    cpu_count, 
-    virtual_memory, 
-    net_io_counters, 
-    boot_time, 
-    cpu_freq
-)
-from subprocess import check_output
 from quoters import Quote
 from pytz import timezone
+from sys import executable
 from datetime import datetime
+from os import execl as osexecl
+from aiofiles import open as aiopen
+from subprocess import check_output
+from pyrogram.filters import command
+from pyrogram.handlers import MessageHandler
 
-from .helper.ext_utils.files_utils import clean_all, exit_clean_up
-from .helper.ext_utils.bot_utils import cmd_exec, sync_to_async, create_help_buttons
-from asyncio import create_subprocess_exec, gather, sleep as asleep
-from bot.helper.ext_utils.common_utils import (get_readable_file_size,
-                                            get_readable_time)
-from .helper.ext_utils.db_handler import DbManger
-from .helper.telegram_helper.bot_commands import BotCommands
-from .helper.telegram_helper.message_utils import sendMessage, editMessage, sendFile
-from .helper.telegram_helper.filters import CustomFilters
-from .helper.telegram_helper.button_build import ButtonMaker
-from .modules.waifu import download_anime_hd
-from bot.helper.listeners.aria2_listener import start_aria2_listener
-from bot.helper.ext_utils.quota_utils import token_verify
+from signal import (
+    signal,
+    SIGINT,
+    )
+from psutil import (
+    disk_usage,
+    cpu_percent,
+    cpu_count,
+    virtual_memory,
+    net_io_counters,
+    boot_time,
+    cpu_freq,
+    )
+from asyncio import (
+    create_subprocess_exec,
+    gather,
+    )
+from aiofiles.os import (
+    path as aiopath,
+    remove as aioremove,
+    )
+from pyrogram.types import (
+    BotCommand,
+    BotCommandScopeDefault,
+    )
+
+###################################
+## Import Variables From Project ##
+###################################
+
 from bot import (
-    bot, 
-    botStartTime, 
-    LOGGER, 
-    Interval, 
-    DATABASE_URL, 
-    QbInterval, 
-    INCOMPLETE_TASK_NOTIFIER, 
-    scheduler, 
+    bot,
+    botStartTime,
+    botname,
+    botusername,
+    config_dict,
+    DATABASE_URL,
+    INCOMPLETE_TASK_NOTIFIER,
+    Interval,
+    LOGGER,
+    QbInterval,
+    scheduler,
     user_data,
-    config_dict, 
-    Version
-)
-from .modules import (
-    authorize, 
-    bot_settings,
-    cancel_task, 
-    clone, 
-    eval, 
-    gd_count, 
-    gd_delete, 
-    gd_search, 
-    gd_rename,
-    help, 
-    shell, 
-    speedtest,
-    status, 
-    torrent_search, 
-    torrent_select, 
-    users_settings, 
-    ytdlp,
-    bypass,
-    query,
-    mediainfo,
-    pikachu_feature,
+    Version,
+    )
+from bot.modules import (
+    asupan,
+    authorize,
     auto_mirror,
+    bot_settings,
+    bypass,
+    cancel_task,
+    clone,
+    eval,
+    gd_count,
+    gd_delete,
+    gd_rename,
+    gd_search,
+    help,
+    mediainfo,
     mirror_leech,
     pickle_generator,
+    pikachu_feature,
+    query,
+    shell,
+    speedtest,
+    status,
     tiktok,
+    torrent_search,
+    torrent_select,
+    users_settings,
     waifu,
-    youtube
-)
+    youtube,
+    ytdlp
+    )
+from bot.helper.ext_utils.bot_utils import (
+    cmd_exec,
+    sync_to_async,
+    create_help_buttons,
+    )
+from bot.helper.ext_utils.files_utils import (
+    clean_all,
+    exit_clean_up,
+    )
+from bot.helper.ext_utils.status_utils import (
+    get_readable_file_size,
+    get_readable_time,
+    ) 
+from bot.helper.ext_utils.db_handler import DbManger
+from bot.helper.telegram_helper.message_utils import (
+    sendMessage,
+    editMessage,
+    sendFile,
+    )
+from bot.helper.ext_utils.quota_utils import token_verify
+from bot.helper.telegram_helper.filters import CustomFilters
+from bot.helper.telegram_helper.button_build import ButtonMaker
+from bot.helper.telegram_helper.bot_commands import BotCommands
+from bot.helper.listeners.aria2_listener import start_aria2_listener
 
-
-botname = bot.me.first_name
-botusername = f"@{bot.me.username}"
 
 def get_quotes():
     try:
@@ -216,9 +245,10 @@ async def stats(_, message):
         stats
     )
 
-##############################
+
+###########
 ## start ##
-##############################
+###########
 
 async def start(client, message):
     if message.from_user.username:
@@ -257,7 +287,7 @@ async def start(client, message):
     
     ################################
     ## Start For Authorized Group ##
-    ################################hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh
+    ################################
 
     if is_in_auth_group:
         start_string = f'''
@@ -282,10 +312,9 @@ Bot ini telah dikonfigurasi dan siap membantu Anda dengan berbagai kebutuhan mir
 <i>Jika membutuhkan bantuan lebih lanjut, jangan ragu untuk bertanya kepada admin grup!</i>
 '''
         
-    ################################
+    #####################
     ## Start For Owner ##
-    ################################
-
+    #####################
     elif user_id == config_dict['OWNER_ID']:
         start_string = f'''
 <b>Halo Boss {uname}! 👑</b>
@@ -309,9 +338,9 @@ Sebagai pemilik bot, Anda memiliki akses penuh ke semua fitur dan pengaturan. Bo
 <b>Semoga harimu menyenangkan, Boss! 🚀</b>
 '''
 
-    ################################
+    #########################
     ## Start For Sudo User ##
-    ################################
+    #########################
 
     elif user_id in user_data and user_data[user_id].get('is_sudo', False):
         start_string = f'''
@@ -336,9 +365,9 @@ Sebagai SUDO user, Anda memiliki akses ke sebagian besar fitur dan pengaturan bo
 <b>Terima kasih atas bantuan Anda dalam mengelola bot ini! 👏</b>
 '''
         
-    ################################
+    ###############################
     ## Start For Authorized User ##
-    ################################
+    ###############################
 
     elif await CustomFilters.authorized(client, message):
         start_string = f'''
@@ -390,9 +419,9 @@ Terima kasih telah menyapa {botname}. Saat ini, Anda belum memiliki akses untuk 
     
     await sendMessage(message, start_string, reply_markup)
 
-##############################
-## Donasi ##
-##############################
+############
+## Donate ##
+############
 
 async def donate(_, message):
     buttons = ButtonMaker()
@@ -477,82 +506,78 @@ async def log(_, message):
 
 help_string = f"""
 <b>Daftar Perintah</b> <code>@{bot.me.username}</code>
-
-<b>🔄 Mirror dan Leech</b>
 <code>/{BotCommands.MirrorCommand[0]}</code> atau <code>/{BotCommands.MirrorCommand[1]}</code> : Mirror ke Google Drive/Cloud.
 <code>/{BotCommands.QbMirrorCommand[0]}</code> atau <code>/{BotCommands.QbMirrorCommand[1]}</code> : Mirror ke Google Drive/Cloud menggunakan qBittorrent.
 <code>/{BotCommands.YtdlCommand[0]}</code> atau <code>/{BotCommands.YtdlCommand[1]}</code> : Mirror link yang disupport YT-DLP.
 <code>/{BotCommands.LeechCommand[0]}</code> atau <code>/{BotCommands.LeechCommand[1]}</code> : Leech ke Telegram.
 <code>/{BotCommands.QbLeechCommand[0]}</code> atau <code>/{BotCommands.QbLeechCommand[1]}</code> : Leech ke Telegram menggunakan qBittorrent.
 <code>/{BotCommands.YtdlLeechCommand[0]}</code> atau <code>/{BotCommands.YtdlLeechCommand[1]}</code> : Leech link yang disupport YT-DLP.
-
-<b>📂 Manajemen File</b>
 <code>/{BotCommands.CloneCommand[0]}</code> atau <code>/{BotCommands.CloneCommand[1]}</code> [drive_url] : Menggandakan file/folder Google Drive.
 <code>/{BotCommands.CountCommand[0]}</code> atau <code>/{BotCommands.CountCommand[1]}</code> [drive_url] : Menghitung file/folder Google Drive.
 <code>/{BotCommands.DeleteCommand[0]}</code> atau <code>/{BotCommands.DeleteCommand[1]}</code> [drive_url] : Menghapus file/folder Google Drive (Hanya Owner & Sudo).
-<code>/{BotCommands.RenameCommand[0]}</code> atau <code>/{BotCommands.RenameCommand[1]}</code> : Mengganti nama file.
-
-<b>🔍 Pencarian</b>
-<code>/{BotCommands.ListCommand[0]}</code> atau <code>/{BotCommands.ListCommand[1]}</code> [query] : Mencari file/folder di Google Drive.
-<code>/{BotCommands.SearchCommand[0]}</code> atau <code>/{BotCommands.SearchCommand[1]}</code> [query] : Mencari torrent menggunakan API.
-
-<b>⚙️ Pengaturan & Manajemen</b>
 <code>/{BotCommands.UserSetCommand[0]}</code> atau <code>/{BotCommands.UserSetCommand[1]}</code> : Pengaturan User.
 <code>/{BotCommands.BotSetCommand[0]}</code> atau <code>/{BotCommands.BotSetCommand[1]}</code> : Pengaturan Bot (Hanya Owner & Sudo).
 <code>/{BotCommands.BtSelectCommand[0]}</code> atau <code>/{BotCommands.BtSelectCommand[1]}</code> : Memilih file dari torrent.
 <code>/{BotCommands.CancelTaskCommand[0]}</code> atau <code>/{BotCommands.CancelTaskCommand[1]}</code> : Membatalkan tugas.
 <code>/{BotCommands.CancelAllCommand[0]}</code> atau <code>/{BotCommands.CancelAllCommand[1]}</code> : Membatalkan semua tugas.
-
-<b>📊 Status & Statistik</b>
+<code>/{BotCommands.ListCommand[0]}</code> atau <code>/{BotCommands.ListCommand[1]}</code> [query] : Mencari file/folder di Google Drive.
+<code>/{BotCommands.SearchCommand[0]}</code> atau <code>/{BotCommands.SearchCommand[1]}</code> [query] : Mencari torrent menggunakan API.
 <code>/{BotCommands.StatusCommand[0]}</code> atau <code>/{BotCommands.StatusCommand[1]}</code> : Menampilkan status dari semua tugas yang sedang berjalan.
-- Di PM: Menampilkan status dari tugas pribadi
-- Di Grup: Menampilkan status semua tugas dalam grup
-- <code>/{BotCommands.StatusCommand[0]} help</code> : Menampilkan bantuan status
-- <code>/{BotCommands.StatusCommand[0]} me</code> : Menampilkan hanya status tugas Anda
-- <code>/{BotCommands.StatusCommand[0]} all</code> : Menampilkan semua tugas (Hanya Owner)
 <code>/{BotCommands.StatsCommand[0]}</code> atau <code>/{BotCommands.StatsCommand[1]}</code> : Menampilan statistik dari mesin bot.
 <code>/{BotCommands.PingCommand[0]}</code> atau <code>/{BotCommands.PingCommand[1]}</code> : Mengetes respon bot (Hanya Owner & Sudo).
-<code>/{BotCommands.SpeedCommand[0]}</code> atau <code>/{BotCommands.SpeedCommand[1]}</code> : Menjalankan speedtest server.
-
-<b>👥 Manajemen Pengguna</b>
-<code>/{BotCommands.AuthorizeCommand[0]}</code> atau <code>/{BotCommands.AuthorizeCommand[1]}</code> : Memberikan izin chat/user untuk menggunakan bot (Hanya Owner & Sudo).
-<code>/{BotCommands.UnAuthorizeCommand[0]}</code> atau <code>/{BotCommands.UnAuthorizeCommand[1]}</code> : Menghapus izin chat/user (Hanya Owner & Sudo).
+<code>/{BotCommands.AuthorizeCommand[0]}</code> atau <code>/{BotCommands.AuthorizeCommand[1]}</code> : Memberikan izin chat atau user untuk menggunakan bot (Hanya Owner & Sudo).
+<code>/{BotCommands.UnAuthorizeCommand[0]}</code> atau <code>/{BotCommands.UnAuthorizeCommand[1]}</code> : Menghapus izin chat atau user untuk menggunakan bot (Hanya Owner & Sudo).
 <code>/{BotCommands.UsersCommand[0]}</code> atau <code>/{BotCommands.UsersCommand[1]}</code> : Menampilan pengaturan User (Hanya Owner & Sudo).
-<code>/{BotCommands.AddSudoCommand[0]}</code> atau <code>/{BotCommands.AddSudoCommand[1]}</code> : Menambahkan User Sudo (Owner).
-<code>/{BotCommands.RmSudoCommand[0]}</code> atau <code>/{BotCommands.RmSudoCommand[1]}</code> : Menghapus User Sudo (Owner).
-
-<b>📱 Media & Konten</b>
-<code>/{BotCommands.MediaInfoCommand[0]}</code> atau <code>/{BotCommands.MediaInfoCommand[1]}</code> : Mendapatkan info media.
-<code>/{BotCommands.UploadCommand[0]}</code> atau <code>/{BotCommands.UploadCommand[1]}</code> : Upload ke telegra.ph.
-<code>/{BotCommands.TiktokCommand[0]}</code> atau <code>/{BotCommands.TiktokCommand[1]}</code> : Download video TikTok.
-<code>/{BotCommands.AsupanCommand[0]}</code> atau <code>/{BotCommands.AsupanCommand[1]}</code> : Mendapatkan asupan.
-<code>/{BotCommands.AnimekCommand[0]}</code> atau <code>/{BotCommands.AnimekCommand[1]}</code> : Download anime HD.
-<code>/{BotCommands.Yt_searchCommand[0]}</code> atau <code>/{BotCommands.Yt_searchCommand[1]}</code> : Mencari video di YouTube.
-<code>/{BotCommands.DirectCommand[0]}</code> atau <code>/{BotCommands.DirectCommand[1]}</code> : Bypass shortlink.
-
-<b>🔄 Upload Options</b>
-<code>/{BotCommands.GallerydlCommand[0]}</code> atau <code>/{BotCommands.GallerydlCommand[1]}</code> : Download gallery.
-<code>/{BotCommands.Upload_gofileCommand[0]}</code> atau <code>/{BotCommands.Upload_gofileCommand[1]}</code> : Upload ke Gofile.
-<code>/{BotCommands.Upload_buzzCommand[0]}</code> atau <code>/{BotCommands.Upload_buzzCommand[1]}</code> : Upload ke Buzzheavier.
-<code>/{BotCommands.Upload_pixelCommand[0]}</code> atau <code>/{BotCommands.Upload_pixelCommand[1]}</code> : Upload ke Pixeldrain.
-
-<b>🔐 Token Management</b>
-<code>/{BotCommands.CekQuotaCommand}</code> : Cek kuota.
-<code>/{BotCommands.GenTokenCommand[0]}</code> atau <code>/{BotCommands.GenTokenCommand[1]}</code> : Generate token.
-<code>/{BotCommands.GetTokenCommand[0]}</code> atau <code>/{BotCommands.GetTokenCommand[1]}</code> : Mendapatkan token.
-
-<b>⚙️ System Commands</b>
-<code>/{BotCommands.RestartCommand[0]}</code> atau <code>/{BotCommands.RestartCommand[1]}</code> : Memulai ulang bot (Hanya Owner & Sudo).
+<code>/{BotCommands.AddSudoCommand[0]}</code> atau <code>/{BotCommands.AddSudoCommand[1]}</code> : Menambahkan User Sudo (Hanya Owner).
+<code>/{BotCommands.RmSudoCommand[0]}</code> atau <code>/{BotCommands.RmSudoCommand[1]}</code> : Menghapus User Sudo (Hanya Owner).
+<code>/{BotCommands.RestartCommand[0]}</code> atau <code>/{BotCommands.RestartCommand[1]}</code> : Memulai ulang dan memperbarui bot (Hanya Owner & Sudo).
 <code>/{BotCommands.LogCommand[0]}</code> atau <code>/{BotCommands.LogCommand[1]}</code> : Mengambil log file dari bot (Hanya Owner & Sudo).
-<code>/{BotCommands.ShellCommand[0]}</code> atau <code>/{BotCommands.ShellCommand[1]}</code> : Menjalankan perintah Shell (Owner).
-<code>/{BotCommands.EvalCommand[0]}</code> atau <code>/{BotCommands.EvalCommand[1]}</code> : Menjalankan perintah Kode Python (Owner).
-<code>/{BotCommands.ExecCommand[0]}</code> atau <code>/{BotCommands.ExecCommand[1]}</code> : Menjalankan perintah Exec (Owner).
-<code>/{BotCommands.ClearLocalsCommand[0]}</code> atau <code>/{BotCommands.ClearLocalsCommand[1]}</code> : Menghapus penyimpanan lokal (Owner).
+<code>/{BotCommands.ShellCommand[0]}</code> atau <code>/{BotCommands.ShellCommand[1]}</code> : Menjalankan perintah Shell (Hanya Owner).
+<code>/{BotCommands.EvalCommand[0]}</code> atau <code>/{BotCommands.EvalCommand[1]}</code> : Menjalankan perintah Kode Python (Hanya Owner).
+<code>/{BotCommands.ExecCommand[0]}</code> atau <code>/{BotCommands.ExecCommand[1]}</code> : Menjalankan perintah Exec (Hanya Owner).
+<code>/{BotCommands.ClearLocalsCommand[0]}</code> atau <code>/{BotCommands.ClearLocalsCommand[1]}</code> : Menghapus penyimpanan lokal (Hanya Owner)
 <code>/{BotCommands.RssCommand}</code> : Menu RSS.
-<code>/{BotCommands.DonateCommand}</code> : Mendukung pengembangan bot.
 
 <b>NOTE :</b> Kirim perintah tanpa argument untuk melihat perintah secara detail!
 """
+
+# Set bot commands
+bot.set_bot_commands([
+    BotCommand(f"{BotCommands.StartCommand}", "Mulai bot"),
+    BotCommand(f"{BotCommands.HelpCommand[0]}", "Tampilkan daftar perintah"),
+    BotCommand(f"{BotCommands.MirrorCommand[0]}", "Mirror ke Cloud"),
+    BotCommand(f"{BotCommands.QbMirrorCommand[0]}", "Mirror ke Cloud menggunakan qBittorrent"),
+    BotCommand(f"{BotCommands.YtdlCommand[0]}", "Mirror link yang disupport YT-DLP"),
+    BotCommand(f"{BotCommands.LeechCommand[0]}", "Leech ke Telegram"),
+    BotCommand(f"{BotCommands.QbLeechCommand[0]}", "Leech ke Telegram menggunakan qBittorrent"),
+    BotCommand(f"{BotCommands.YtdlLeechCommand[0]}", "Leech link yang disupport YT-DLP"),
+    BotCommand(f"{BotCommands.CloneCommand[0]}", "Menggandakan file/folder Google Drive"),
+    BotCommand(f"{BotCommands.CountCommand[0]}", "Menghitung file/folder Google Drive"),
+    BotCommand(f"{BotCommands.DeleteCommand[0]}", "Menghapus file/folder Google Drive"),
+    BotCommand(f"{BotCommands.UserSetCommand[0]}", "Pengaturan User"),
+    BotCommand(f"{BotCommands.BotSetCommand[0]}", "Pengaturan Bot"),
+    BotCommand(f"{BotCommands.RenameCommand[0]}", "Mengganti nama file/folder Google Drive"),
+    BotCommand(f"{BotCommands.ListCommand[0]}", "Mencari file/folder di Google Drive"),
+    BotCommand(f"{BotCommands.SearchCommand[0]}", "Mencari torrent menggunakan API"),
+    BotCommand(f"{BotCommands.GenTokenCommand}", "Authorize Google Drive"),
+    BotCommand(f"{BotCommands.GetTokenCommand}", "Get Google Drive Token"),
+    BotCommand(f"{BotCommands.StatusCommand[0]}", "Menampilkan status dari semua tugas yang sedang berjalan"),
+    BotCommand(f"{BotCommands.StatsCommand[0]}", "Menampilan statistik dari mesin bot"),
+    BotCommand(f"{BotCommands.PingCommand[0]}", "Mengetes respon bot"),
+    BotCommand(f"{BotCommands.CekQuotaCommand}", "Cek Quota Mirror atau Leech"),
+    BotCommand(f"{BotCommands.Upload_gofileCommand[0]}", "Upload ke Gofile"),
+    BotCommand(f"{BotCommands.Upload_buzzCommand[0]}", "Upload ke BuzzHeavier"),
+    BotCommand(f"{BotCommands.Upload_pixelCommand[0]}", "Upload ke PixelDrain"),
+    BotCommand(f"{BotCommands.GallerydlCommand[0]}", "Download dengan Gallery-DL"),
+    BotCommand(f"{BotCommands.Yt_searchCommand[0]}", "Cari dan download Video Youtube"),
+    BotCommand(f"{BotCommands.TiktokCommand[0]}", "Cari video random di Tiktok"),
+    BotCommand(f"{BotCommands.AsupanCommand[0]}", "Dapatkan asupan random"),
+    BotCommand(f"{BotCommands.AnimekCommand[0]}", "Dapatkan waifu random"),
+    BotCommand(f"{BotCommands.MediaInfoCommand[0]}", "Cek mediainfo dari file"),
+    BotCommand(f"{BotCommands.DirectCommand[0]}", "Bypass Shortlink"),
+    BotCommand(f"{BotCommands.TebakangkaCommand}", "Tebak Angka berhadiah quota"),
+    BotCommand(f"{BotCommands.DonateCommand}", "Donasi untuk bot ini"),
+], scope=BotCommandScopeDefault())
 
 async def bot_help(client, message):
     buttons = ButtonMaker()
@@ -563,7 +588,7 @@ async def bot_help(client, message):
     buttons.ibutton('Ytdlp', f'pika {user_id} guide ytdlp')
     buttons.ibutton('Lainnya', f'pika {user_id} guide other')
     buttons.ibutton('⬇️ Tutup', f'pika {user_id} close', 'footer')
-    await sendMessage(message, help_string + f"\n\nAtau pilih jenis bantuan yang anda perlukan !", buttons.build_menu(2))
+    await sendMessage(message, f"Silahkan pilih jenis bantuan yang anda perlukan !", buttons.build_menu(2))
 
 
 async def restart_notification():
@@ -573,6 +598,7 @@ async def restart_notification():
     else:
         chat_id, msg_id = 0, 0
     
+    # Get thread_id from AUTHORIZED_CHATS
     if chat_id == 0:
         chat_id = None
         thread_id = None
@@ -663,6 +689,7 @@ async def restart_notification():
 
 
 async def main():
+    #jdownloader.initiate()
     await gather(
         clean_all(),
         torrent_search.initiate_search_tools(), 
@@ -694,7 +721,7 @@ async def main():
             log, 
             filters=command(
                 BotCommands.LogCommand
-            ) & CustomFilters.owner
+            ) & CustomFilters.sudo
         )
     )
     bot.add_handler(
@@ -702,7 +729,7 @@ async def main():
             restart, 
             filters=command(
                 BotCommands.RestartCommand
-            ) & CustomFilters.owner
+            ) & CustomFilters.sudo
         )
     )
     bot.add_handler(

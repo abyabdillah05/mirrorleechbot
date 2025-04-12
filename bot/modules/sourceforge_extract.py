@@ -1,21 +1,41 @@
-from aiohttp import ClientSession
+from time import time
+from asyncio import (
+    wait_for,
+    Event,
+    wrap_future
+    )
 from re import findall
+from functools import partial
 from bs4 import BeautifulSoup
-from pyrogram.filters import regex, user
+from aiohttp import ClientSession
+
+from pyrogram.filters import (
+    regex,
+    user
+    )
 from pyrogram.handlers import CallbackQueryHandler
+
+###################################
+## Import Variables From Project ##
+###################################
+
+from bot import botname
+from bot.helper.ext_utils.status_utils import get_readable_time
 from bot.helper.telegram_helper.button_build import ButtonMaker
-from bot.helper.telegram_helper.message_utils import sendMessage, deleteMessage, editMessage
+from bot.helper.ext_utils.exceptions import DirectDownloadLinkException
+
 from bot.helper.ext_utils.bot_utils import (
     new_task,
-    new_thread,
-    sync_to_async,
-)
-from functools import partial
-from time import time
-from asyncio import wait_for, Event, wrap_future
-from bot.helper.ext_utils.status_utils import get_readable_time
-from bot.helper.ext_utils.exceptions import DirectDownloadLinkException
-from bot import bot
+    new_thread
+    )
+from bot.helper.telegram_helper.message_utils import (
+    sendMessage,
+    deleteMessage,
+    editMessage
+    )
+
+## Credit @aenulrofik ##
+## Minor Modifications By Tg @IgnoredProjectXcl ##
 
 @new_task
 async def main_select(_, query, obj):
@@ -70,7 +90,6 @@ async def sourceforge_extract(url):
             return servers
         except Exception as e:
             raise DirectDownloadLinkException(f"⚠️ ERROR: {str(e)}")
-
 
 class sourceforgeExtract:
     def __init__(self, listener):
@@ -128,7 +147,7 @@ class sourceforgeExtract:
             msg += f"<b>🌐 Silahkan pilih salah satu server mirror yang tersedia:</b>\n"
             msg += f"<i>Tip: Pilih server yang terdekat dengan lokasi Anda untuk kecepatan optimal</i>\n\n"
             msg += f"<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
-            msg += f"\n\n<b>Powered By {bot.me.first_name}</b>"
+            msg += f"\n\n<b>Powered By {botname}</b>"
             
             self._reply_to = await sendMessage(self._listener.message, msg, butts)
         else:
@@ -160,3 +179,6 @@ class sourceforgeExtract:
             await editMessage(self._reply_to, f"<b>⚠️ Error memproses server:</b> <code>{str(e)}</code>")
             self.is_cancelled = True
             self.event.set()
+
+## Big thanks to @aenulrofik for this awesome feature ##
+## Please don't remove the credits — respect the creator! ##

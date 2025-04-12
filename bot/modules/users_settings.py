@@ -969,22 +969,28 @@ Check all yt-dlp api options from this <a href='https://github.com/yt-dlp/yt-dlp
 
 async def send_users_settings(bot, message):
     if user_data:
+        # msg = ""
+        # for u, d in user_data.items():
+        #     kmsg = f"\n<b>{u}:</b>\n"
+        #     if vmsg := "".join(
+        #         f"{k}: <code>{v}</code>\n" for k, v in d.items() if f"{v}"
+        #     ):
+        #         msg += kmsg + vmsg
         no = 0
         msg = "<b>Pengaturan Users/Groups</b>"
         for item, value in (user_data or {}).items():
-            if value.get("is_auth") or value.get("is_sudo"):
-                no += 1
-                try:
-                    user = await bot.get_users(item)
-                except:
-                    user = None
-                if user:
-                    msg += f"\n<b>{no}. User :</b> <a href='tg://user?id={item}'>{(user.first_name or '')} {(user.last_name or '')}</a>"
-                else:
-                    msg += f"\n<b>{no}. Chat :</b> {item}"
-                for iset, vset in (value or {}).items():
-                    msg += f"\n   - <b>{iset}</b> : <code>{vset}</code>"
-                msg += "\n"
+            no += 1
+            try:
+                user = await bot.get_users(item)
+            except:
+                user = None
+            if user:
+                msg += f"\n<b>{no}. User :</b> <a href='tg://user?id={item}'>{(user.first_name or '')} {(user.last_name or '')}</a>"
+            else:
+                msg += f"\n<b>{no}. Chat :</b> {item}"
+            for iset, vset in (value or {}).items():
+                msg += f"\n   - <b>{iset}</b> : <code>{vset}</code>"
+            msg += "\n"
 
         msg_ecd = msg.encode()
         if len(msg_ecd) > 4000:
@@ -1026,13 +1032,17 @@ async def generate_caption_message(user_dict, user_id):
 bot.add_handler(
     MessageHandler(
         send_users_settings,
-        filters=command(BotCommands.UsersCommand) & CustomFilters.owner,
+        filters=command(
+            BotCommands.UsersCommand
+        ) & CustomFilters.owner
     )
 )
 bot.add_handler(
     MessageHandler(
         user_settings,
-        filters=command(BotCommands.UserSetCommand) & CustomFilters.authorized,
+        filters=command(
+            BotCommands.UserSetCommand
+        ) & CustomFilters.authorized
     )
 )
 bot.add_handler(

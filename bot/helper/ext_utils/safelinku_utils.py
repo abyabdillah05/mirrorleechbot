@@ -3,7 +3,7 @@ from bot import LOGGER
 
 ## SafelinkU Short Link Generator Use Rest API ##
 
-## Created by Tg @WzdDizzyFlasher ##
+## Created by Tg @IgnoredProjectXcl ##
 ## You can edit API_TOKEN and API_URL if you have your own API ##
 ## Credit https://safelinku.com ##
 

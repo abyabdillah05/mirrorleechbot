@@ -8,7 +8,7 @@ from os import path as ospath, getcwd
 from pyrogram.handlers import MessageHandler 
 from pyrogram.filters import command
 
-from bot import LOGGER, bot, config_dict
+from bot import LOGGER, bot, config_dict, botname
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.telegram_helper.message_utils import editMessage, sendMessage
@@ -16,7 +16,6 @@ from bot.helper.ext_utils.bot_utils import cmd_exec
 from bot.helper.ext_utils.telegraph_helper import telegraph
 from bot.helper.telegram_helper.button_build import ButtonMaker
 
-botnname = bot.me.first_name
 
 async def gen_mediainfo(message, link=None, media=None, mmsg=None):
     temp_send = await sendMessage(message, '<i>⏳ Membuat media info...</i>')
@@ -51,7 +50,7 @@ async def gen_mediainfo(message, link=None, media=None, mmsg=None):
         await editMessage(temp_send, f"MediaInfo Stopped due to {str(e)}")
     finally:
         await aioremove(des_path)
-    link_id = (await telegraph.create_page(title='{botnname} MediaInfo', content=tc))["path"]
+    link_id = (await telegraph.create_page(title=f'{botname} MediaInfo', content=tc))["path"]
     link_end = f"https://telegra.ph/{link_id}"
     buttons = ButtonMaker()
     buttons.ubutton("👁️ Lihat MediaInfo", f"{link_end}", "footer")
@@ -112,4 +111,11 @@ async def mediainfo(_, message):
     else:
         return await sendMessage(message, help_msg)
 
-bot.add_handler(MessageHandler(mediainfo, filters=command(BotCommands.MediaInfoCommand) & CustomFilters.authorized))
+bot.add_handler(
+    MessageHandler(
+        mediainfo,
+        filters=command(
+            BotCommands.MediaInfoCommand
+            ) & CustomFilters.authorized
+        )
+    )

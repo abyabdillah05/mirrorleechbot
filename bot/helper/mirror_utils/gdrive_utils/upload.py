@@ -10,13 +10,13 @@ from tenacity import (
     RetryError,
 )
 
-from bot import config_dict, bot
+from bot import config_dict, botname
 from bot.helper.ext_utils.files_utils import get_mime_type
 from bot.helper.ext_utils.bot_utils import async_to_sync, setInterval
 from bot.helper.mirror_utils.gdrive_utils.helper import GoogleDriveHelper
 
 LOGGER = getLogger(__name__)
-botnname = bot.me.first_name
+
 
 class gdUpload(GoogleDriveHelper):
     def __init__(self, listener, path):
@@ -138,7 +138,7 @@ class gdUpload(GoogleDriveHelper):
         # File body description
         file_metadata = {
             "name": file_name,
-            "description": "Uploaded by {botnname}",
+            "description": f"Uploaded by {botname}",
             "mimeType": mime_type,
         }
         if dest_id is not None:

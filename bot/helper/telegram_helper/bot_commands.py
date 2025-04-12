@@ -49,6 +49,7 @@ class _BotCommands:
         self.AsupanCommand = [f"asupan{CMD_SUFFIX}", f"asu{CMD_SUFFIX}"]
         self.AnimekCommand = [f"waifu{CMD_SUFFIX}", f"wf{CMD_SUFFIX}"]
         self.Yt_searchCommand = [f"youtube{CMD_SUFFIX}", f"yt{CMD_SUFFIX}"]
+        self.SubdlCommand = f"subdl{CMD_SUFFIX}"
         self.DonateCommand = f"donate{CMD_SUFFIX}"
         self.GallerydlCommand = [f"gallerydl{CMD_SUFFIX}", f"gdl{CMD_SUFFIX}"]
         self.Upload_gofileCommand = [f"gofile{CMD_SUFFIX}", f"gf{CMD_SUFFIX}"]
@@ -57,5 +58,6 @@ class _BotCommands:
         self.CekQuotaCommand = f"cek{CMD_SUFFIX}"
         self.GenTokenCommand = [f"gentoken{CMD_SUFFIX}", f"gnt{CMD_SUFFIX}"]
         self.GetTokenCommand = [f"gettoken{CMD_SUFFIX}", f"gtt{CMD_SUFFIX}"]
+        self.TebakangkaCommand = f"tebakangka{CMD_SUFFIX}"
 
 BotCommands = _BotCommands()

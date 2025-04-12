@@ -1,7 +1,6 @@
 from bot import LOGGER
-from bot.helper.ext_utils.status_utils import MirrorStatus
-from bot.helper.ext_utils.common_utils import (get_readable_file_size,
-                                            get_readable_time)
+from bot.helper.ext_utils.status_utils import get_readable_file_size, MirrorStatus
+
 
 class VideoEditorStatus:
     def __init__(self, listener, size, gid):

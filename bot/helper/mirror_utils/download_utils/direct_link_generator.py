@@ -26,6 +26,7 @@ from bot.helper.ext_utils.status_utils import speed_string_to_bytes, get_readabl
 from bot.helper.ext_utils.links_utils import is_share_link
 from bot.helper.ext_utils.exceptions import DirectDownloadLinkException
 from bot.helper.ext_utils.help_messages import PASSWORD_ERROR_MESSAGE
+from bot.helper.ext_utils.terabox_scraper import CariFile, CariLink
 
 user_agent  = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0"
 
@@ -123,7 +124,7 @@ def direct_link_generator(link: str):
     elif any(
         x in domain
         for x in [
-             "dood.watch",
+            "dood.watch",
             "doodstream.com",
             "dood.to",
             "dood.so",
@@ -188,7 +189,8 @@ def direct_link_generator(link: str):
             "teraboxlink.com",
             "freeterabox.com",
             "1024terabox.com",
-            "teraboxshare.com"
+            "teraboxshare.com",
+            "terasharelink.com",
         ]
     ):
         return terabox(link)
@@ -911,71 +913,43 @@ def uploadee(url):
         raise DirectDownloadLinkException("ERROR: Link File tidak ditemukan!")
 
 
-def terabox(url, video_quality="HD Video", save_dir="HD_Video"):
-    """Terabox direct link generator
-    https://github.com/Dawn-India/Z-Mirror"""
-
-    pattern = r"/s/(\w+)|surl=(\w+)"
-    if not search(pattern, url):
-        raise DirectDownloadLinkException("ERROR: Link terabox salah")
-
-    netloc = urlparse(url).netloc
-    terabox_url = url.replace(netloc, "1024tera.com")
-
-    urls = [
-        "https://ytshorts.savetube.me/api/v1/terabox-downloader",
-        f"https://teraboxvideodownloader.nepcoderdevs.workers.dev/?url={terabox_url}",
-        f"https://terabox.udayscriptsx.workers.dev/?url={terabox_url}",
-        f"https://mavimods.serv00.net/Mavialt.php?url={terabox_url}",
-        f"https://mavimods.serv00.net/Mavitera.php?url={terabox_url}",
-    ]
-
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:126.0) Gecko/20100101 Firefox/126.0",
-        "Accept": "application/json, text/plain, */*",
-        "Accept-Language": "en-US,en;q=0.5",
-        "Content-Type": "application/json",
-        "Origin": "https://ytshorts.savetube.me",
-        "Alt-Used": "ytshorts.savetube.me",
-        "Sec-Fetch-Dest": "empty",
-        "Sec-Fetch-Mode": "cors",
-        "Sec-Fetch-Site": "same-origin",
-    }
-
-    for base_url in urls:
-        try:
-            if "api/v1" in base_url:
-                response = post(base_url, headers=headers, json={"url": terabox_url})
-            else:
-                response = get(base_url)
-
-            if response.status_code == 200:
-                break
-        except RequestException as e:
-            raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}") from e
-    else:
-        raise DirectDownloadLinkException("ERROR: Gagal ambil data Json")
-
-    data = response.json()
+def terabox(url):
     details = {"contents": [], "title": "", "total_size": 0}
-
-    for item in data["response"]:
-        title = item["title"]
-        resolutions = item.get("resolutions", {})
-        if zlink := resolutions.get(video_quality):
-            details["contents"].append(
-                {"url": zlink, "filename": title, "path": path.join(title, save_dir)}
-            )
-        details["title"] = title
-
+    def process_files(file_list):
+        for file_info in file_list:
+            if file_info['is_dir'] == '1':
+                process_files(file_info['list'])
+            else:
+                name = file_info['name']
+                Size = file_info['size']
+                path = file_info['path']
+                terabox_link = CariLink(
+                    shareid=terabox_file.result['shareid'],
+                    uk=terabox_file.result['uk'],
+                    sign=terabox_file.result['sign'],
+                    timestamp=terabox_file.result['timestamp'],
+                    fs_id=file_info['fs_id']
+                )
+                terabox_link.generate()
+                link = terabox_link.result['download_link'].get('url')
+                details["contents"].append(
+                    {"url": link, "filename": name, "path": path}
+                )
+                if isinstance(Size, str) and Size.isdigit():
+                    size = float(Size)
+                    details["total_size"] += size
+    terabox_file = CariFile()
+    terabox_file.search(url)
+    if terabox_file.result['status'] == 'success':
+        process_files(terabox_file.result['list'])
+        details["title"] = terabox_file.result['list'][0]['name']     
+    else:
+        raise DirectDownloadLinkException("ERROR: Link File tidak ditemukan!")
     if not details["contents"]:
         raise DirectDownloadLinkException("ERROR: Link sepertinya tidak valid")
-
     if len(details["contents"]) == 1:
         return details["contents"][0]["url"]
-
     return details
-
 
 def filepress(url):
     with create_scraper() as session:

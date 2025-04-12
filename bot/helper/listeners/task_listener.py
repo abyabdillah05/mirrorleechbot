@@ -37,8 +37,7 @@ from bot.helper.telegram_helper.message_utils import (
     update_status_message,
     customSendMessage,
 )
-from bot.helper.ext_utils.common_utils import (get_readable_file_size,
-                                            get_readable_time)
+from bot.helper.ext_utils.status_utils import get_readable_file_size, get_readable_time
 from bot.helper.ext_utils.bot_utils import sync_to_async
 from bot.helper.ext_utils.links_utils import is_gdrive_id
 from bot.helper.ext_utils.task_manager import start_from_queued
@@ -344,8 +343,8 @@ class TaskListener(TaskConfig):
             else:
                 fmsg = ""
                 buttons = ButtonMaker()
-                buttons.ubutton("♻️ Leech Dump Channel", "https://t.me/+bzqjzHqeO8xjM2E1")
-                buttons.ubutton("❤️ 𝚂𝚞𝚙𝚙𝚘𝚛𝚝 𝙼𝚎", "https://telegra.ph/Donate-and-Support-Us-03-21", "footer")
+                buttons.ubutton("♻️ Leech Dump Channel", "https://t.me/+nJ5wkU5xdh1mOTll")
+                #buttons.ubutton("❤️ Support For Pikabot", "https://telegra.ph/Pikabot-Donate-10-01", "footer")
                 button = buttons.build_menu(1)
                 for index, (link, name) in enumerate(files.items(), start=1):
                     fmsg += f"<b>{index:02d}.</b> <a href='{link}'>{name}</a>\n"
@@ -371,8 +370,8 @@ class TaskListener(TaskConfig):
             #if mime_type != "Folder" and not self.isClone:
                 #if self.md5:
                 #    msg += f"\n<b>🛡️ MD5 Checksum:</b> <code>{self.md5}</code>"
-                #else:
-                #    msg += f"\n<b>🛡️ MD5 Checksum:</b> <code>{self.md5}</code>"
+            #    else:
+            #        msg += f"\n<b>🛡️ MD5 Checksum:</b> <code>{self.md5}</code>"
             if mime_type == "Folder":
                 msg += f"\n<b>📂 Jumlah Folder :</b> <code>{folders}</code>"
                 msg += f"\n<b>📄 Jumlah File :</b> <code>{files}</code>"

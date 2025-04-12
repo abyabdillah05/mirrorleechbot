@@ -10,12 +10,12 @@ import re
 import os
 from secrets import token_hex
 
-from bot import DOWNLOAD_DIR, bot, config_dict, LOGGER, OWNER_ID
+from bot import DOWNLOAD_DIR, bot, config_dict, LOGGER
 from bot.helper.telegram_helper.message_utils import (
     sendMessage,
     editMessage,
     deleteMessage,
-    customSendVideo,
+    customSendVideo
 )
 from bot.helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.ext_utils.bot_utils import (
@@ -30,24 +30,10 @@ from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.listeners.task_listener import TaskListener
-from bot.helper.ext_utils.common_utils import (get_readable_file_size,
-                                            get_readable_time)
+from bot.helper.ext_utils.status_utils import get_readable_file_size, get_readable_time
 from bot.helper.ext_utils.links_utils import is_url
 
 pika = []
-banned_link = [
-    "indihometv",
-    "youporn",
-    "pornhub",
-    "xnxx",
-    "tube8",
-    "xvideos",
-    "youjizz",
-    ]
-
-banned_id = [
-    6256585360
-    ]
 
 @new_task
 async def select_format(_, query, obj):
@@ -74,50 +60,6 @@ async def select_format(_, query, obj):
         obj.qual = None
         obj.is_cancelled = True
         obj.event.set()
-
-    ## Added Preview Button | @WzdDizzyFlasherr ##
-
-    elif data[1] == "preview":
-        await query.answer("Generating preview...")
-        preview_msg = await sendMessage(message, "<b>⏳ Generating preview...</b>")
-        try:
-            # Generate 5-second preview
-            preview_opts = obj._listener.opts.copy()
-            preview_opts.update({
-                "format": "worst[height>=144]",
-                "postprocessor_args": {
-                    "ffmpeg": ["-ss", "30", "-t", "5"]
-                },
-                "outtmpl": f"{DOWNLOAD_DIR}/preview_{token_hex(5)}.%(ext)s"
-            })
-            
-            with YoutubeDL(preview_opts) as ydl:
-                info = ydl.extract_info(obj._listener.link, download=True)
-                filename = ydl.prepare_filename(info)
-            
-            # Send preview as video
-            await customSendVideo(message, filename, caption="Video preview (5 seconds)")
-            await deleteMessage(preview_msg)
-            # Clean up
-            os.remove(filename)
-        except Exception as e:
-            await editMessage(preview_msg, f"<b>Error generating preview:</b> <code>{e}</code>")
-
-    elif data[1] == "format_info":
-        format_info = """
-<b>Penjelasan Format:</b>
-
-<b>MP3</b> - Audio dalam format MP3 (pilih bitrate)
-<b>Format Audio</b> - Audio dalam berbagai format (AAC, FLAC, dll)
-<b>Video Terbaik</b> - Video dengan kualitas terbaik + audio
-<b>Audio Terbaik</b> - Audio dengan kualitas terbaik
-
-<b>144p-2160p</b> - Resolusi video (semakin tinggi semakin besar ukuran)
-"""
-        await editMessage(message, format_info, obj._main_buttons)
-    
-        ## End Code | @WzdDizzyFlasherr ##
-
     else:
         if data[1] == "sub":
             obj.qual = obj.formats[data[2]][data[3]][1]
@@ -164,22 +106,6 @@ class YtSelection:
     async def get_quality(self, result):
         future = self._event_handler()
         buttons = ButtonMaker()
-        
-        ## Added Info Message | @WzdDizzyFlasherr ##
-
-        info_text = "<b>Video Information:</b>\n"
-        if result.get('title'):
-            info_text += f"<b>Title:</b> <code>{result['title']}</code>\n"
-        if result.get('channel') or result.get('uploader'):
-            info_text += f"<b>Channel:</b> <code>{result['channel'] or result.get('uploader')}</code>\n"
-        if result.get('duration'):
-            duration = get_readable_time(result['duration'])
-            info_text += f"<b>Duration:</b> <code>{duration}</code>\n"
-        if result.get('view_count'):
-            info_text += f"<b>Views:</b> <code>{result['view_count']:,}</code>\n"
-
-        ## End Code | @WzdDizzyFlasherr ##
-
         if "entries" in result:
             self._is_playlist = True
             for i in ["144", "240", "360", "480", "720", "1080", "1440", "2160"]:
@@ -196,15 +122,8 @@ class YtSelection:
             buttons.ibutton("Videos Terbaik", "ytq bv*+ba/b")
             buttons.ibutton("Audios Terbaik", "ytq ba/b")
             buttons.ibutton("Batalkan", "ytq cancel", "footer")
-
-            ## Added Preview Button | @WzdDizzyFlasherr ##
-
-            buttons.ibutton("🎬 Preview", f"ytq preview")
-
-            ## End Code | @WzdDizzyFlasherr ##
-            
             self._main_buttons = buttons.build_menu(3)
-            msg = f"{info_text}\n<b>Pilih kualitas video playlist :</b>\n<b>Waktu Habis :</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
+            msg = f"<b>Pilih kualitas video playlist :</b>\n<b>Waktu Habis :</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
         else:
             format_dict = result.get("formats")
             if format_dict is not None:
@@ -256,15 +175,8 @@ class YtSelection:
             buttons.ibutton("Video Terbaik (HD)", "ytq bv*+ba/b")
             buttons.ibutton("Audio Terbaik (HQ)", "ytq ba/b")
             buttons.ibutton("Batalkan", "ytq cancel", "footer")
-            ## Added Preview Button | @WzdDizzyFlasherr ##
-            buttons.ibutton("🎬 Preview", f"ytq preview")
-            ## End Code | @WzdDizzyFlasherr ##
-            ## Added Help Button | @WzdDizzyFlasherr ##
-            buttons.ibutton("ℹ️ Format Info", "ytq format_info")
-            ## End Code | @WzdDizzyFlasherr ##
             self._main_buttons = buttons.build_menu(2)
-            ## Adjustment | @WzdDizzyFlasherr ##
-            msg = f"{info_text}\n<b>Pilih kualitas video :</b>\n<b>Waktu habis :</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
+            msg = f"<b>Pilih kualitas video :</b>\n<b>Waktu habis :</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
         self._reply_to = await sendMessage(
             self._listener.message, msg, self._main_buttons
         )
@@ -404,16 +316,15 @@ class YtDlp(TaskListener):
             "-up": "",
             "-rcf": "",
             "-t": "",
-            "-trim": "",
         }
-
+        
         args = arg_parser(input_list[1:], arg_base)
-
+        
         try:
             self.multi = int(args["-i"])
         except:
             self.multi = 0
-
+            
         self.select = args["-s"]
         self.name = args["-n"]
         self.upDest = args["-up"]
@@ -427,23 +338,13 @@ class YtDlp(TaskListener):
         self.splitSize = args["-sp"]
         self.sampleVideo = args["-sv"]
         self.screenShots = args["-ss"]
-
+        
         isBulk = args["-b"]
         folder_name = args["-m"]
-
         bulk_start = 0
         bulk_end = 0
         reply_to = None
         opt = args["-opt"]
-
-        if self.message.from_user.id in banned_id:
-            await sendMessage(self.message, "USER BANNED, Anda tidak diizinkan menggunakan bot ini !!!")
-            self.removeFromSameDir()
-            return
-        if any(bl in self.link for bl in banned_link):
-            await sendMessage(self.message, "Link ini tidak diizinkan !!!")
-            self.removeFromSameDir()
-            return
         
         if not isinstance(isBulk, bool):
             dargs = isBulk.split(":")
@@ -451,7 +352,7 @@ class YtDlp(TaskListener):
             if len(dargs) == 2:
                 bulk_end = dargs[1] or None
             isBulk = True
-
+            
         if not isBulk:
             if folder_name:
                 folder_name = f"/{folder_name}"
@@ -467,16 +368,16 @@ class YtDlp(TaskListener):
         else:
             await self.initBulk(input_list, bulk_start, bulk_end, YtDlp)
             return
-
+        
         if len(self.bulk) != 0:
             del self.bulk[0]
-
+            
         path = f"{DOWNLOAD_DIR}{self.mid}{folder_name}"
-
+        
         await self.getTag(text)
-
+        
         opt = opt or self.user_dict.get("yt_opt") or config_dict["YT_DLP_OPTIONS"]
-
+        
         if not self.link and (reply_to := self.message.reply_to_message):
             if reply_text := reply_to.text:
                 self.link = reply_text.split("\n", 1)[0].strip()
@@ -544,55 +445,9 @@ class YtDlp(TaskListener):
 
         options["playlist_items"] = "0"
 
-        trim = args["-trim"]
-        if trim:
-            try:
-                if "-" in trim:
-                    start, end = trim.split("-")
-                    # Convert to seconds if in MM:SS format
-                    if ":" in start:
-                        m, s = start.split(":")
-                        start = int(m) * 60 + int(s)
-                    if ":" in end:
-                        m, s = end.split(":")
-                        end = int(m) * 60 + int(s)
-                        
-                    # Add to options
-                    options["download_ranges"] = {
-                        "fragments": [{"start_time": float(start), "end_time": float(end)}]
-                    }
-                    options["force_keyframes_at_cuts"] = True
-            except Exception as e:
-                LOGGER.error(f"Error parsing trim times: {e}")
-
-        ## Added Progress Message | @WzdDizzyFlasherr ##
-        progress_msg = await sendMessage(self.message, "<b>⏳ Mengekstrak informasi video...</b>")
-        
-        # Add a function to detect platform and set appropriate options
-        def set_platform_options(link, options):
-            if "tiktok.com" in link:
-                # TikTok specific options
-                options["extractor_args"] = {"tiktok": {"embed": True}}
-            elif "instagram.com" in link:
-                # Instagram specific options
-                options["add_header"] = [f"User-Agent: Mozilla/5.0"]
-                options["cookiefile"] = "instagram.txt"
-            elif "twitter.com" in link or "x.com" in link:
-                # Twitter specific options
-                options["add_header"] = [f"User-Agent: Mozilla/5.0"]
-            return options
-
-        # Call this in newEvent
-        options = set_platform_options(self.link, options)
-
-        ## End Code | @WzdDizzyFlasherr ##
-
         try:
             result = await sync_to_async(extract_info, self.link, options)
-            await deleteMessage(progress_msg)
         except Exception as e:
-            await deleteMessage(progress_msg)
-            ## End Code | @WzdDizzyFlasherr ##
             error = str(e).replace("<", " ").replace(">", " ")
             await sendMessage(
                 self.message, 
@@ -644,7 +499,7 @@ async def auto_yt(client, message):
     if text_before_url:
             return None
     
-    msg = f"<b>📥 Link media ytdlp terdeteksi!</b>\n<b>Silahkan pilih tindakan yang Anda diinginkan:</b>"
+    msg = f"<b>Link Media YT-Dlp terdeteksi, silahkan pilih opsi dibawah...</b>"
     butt = ButtonMaker()
     butt.ibutton("☁️ Mirror", f"pikayt mirror {user_id}")
     butt.ibutton("☀️ Leech", f"pikayt leech {user_id}")
@@ -662,12 +517,12 @@ async def yt_query(_, query):
         if uid in isi:
             msgs = isi
             msg = msgs[uid]
-            text = msg.text
+            text = msg.text or msg.caption
             urls = re.findall(r"https?://[^\s]+", text)
             if urls:
                 yturl = urls[0]
-    if user_id != uid or OWNER_ID:
-        return await query.answer(text="Anda tidak diizinkan mengklik tombol ini", show_alert=True)
+    if user_id != uid:
+        return await query.answer(text="Anda tidak diizinkan mengklik tombol ini !", show_alert=True)
     elif data[1] == "mirror":
         await deleteMessage(message)
         del msgs[uid]     
@@ -724,7 +579,7 @@ bot.add_handler(
         ytdlleech,
         filters=command(
             BotCommands.YtdlLeechCommand
-        ) & CustomFilters.authorized,
+        ) & CustomFilters.authorized
     )
 )
 

@@ -12,7 +12,7 @@ from functools import partial, wraps
 from concurrent.futures import ThreadPoolExecutor
 from aiohttp import ClientSession
 
-from bot import user_data, config_dict, bot_loop, active_sessions, TELEGRAM_API, TELEGRAM_HASH, LOGGER, bot
+from bot import user_data, config_dict, bot_loop, active_sessions, TELEGRAM_API, TELEGRAM_HASH, LOGGER, botname
 from bot.helper.ext_utils.help_messages import YT_HELP_DICT, MIRROR_HELP_DICT
 from bot.helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.ext_utils.telegraph_helper import telegraph
@@ -23,7 +23,6 @@ THREADPOOL = ThreadPoolExecutor(max_workers=1000)
 
 COMMAND_USAGE = {}
 
-botnname = bot.me.first_name
 
 class setInterval:
     def __init__(self, interval, action, *args, **kwargs):
@@ -74,7 +73,7 @@ async def get_telegraph_list(telegraph_content):
     path = [
         (
             await telegraph.create_page(
-                title="Pencarian oleh {botnname}", content=content
+                title=f"Pencarian oleh {botname}", content=content
             )
         )["path"]
         for content in telegraph_content

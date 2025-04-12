@@ -2,17 +2,20 @@ import os
 import pickle
 
 from asyncio import sleep as asleep
-from aiofiles.os import remove as aioremove, path as aiopath, mkdir, makedirs
+from aiofiles.os import (
+    remove as aioremove,
+    path as aiopath, mkdir, makedirs
+    )
 
 ######################################################
 ## Import Main Libraries From Pyrogram & Google API ##
 ######################################################
 
 from google_auth_oauthlib.flow import Flow
-from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
+from google.auth.transport.requests import Request
 
-from pyrogram import (filters)
+from pyrogram import filters
 from pyrogram.enums import ChatType
 from pyrogram.filters import command
 from pyrogram.handlers import MessageHandler
@@ -21,34 +24,45 @@ from pyrogram.handlers import MessageHandler
 ## Imports Variables From Project ##
 ####################################
 
-from bot import LOGGER, DATABASE_URL, bot
 from bot.helper.ext_utils.db_handler import DbManger
-from bot.helper.ext_utils.bot_utils import update_user_ldata, new_task
-from bot.helper.telegram_helper.bot_commands import BotCommands
-from bot.helper.telegram_helper.message_utils import (sendMessage,
-                                                      deleteMessage,
-                                                      editMessage)
+from bot.helper.ext_utils.safelinku_utils import SafeLinkU
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.button_build import ButtonMaker
-from bot.helper.ext_utils.safelinku_utils import SafeLinkU
+from bot.helper.telegram_helper.bot_commands import BotCommands
+
+from bot import (
+    LOGGER,
+    DATABASE_URL,
+    bot
+    )
+from bot.helper.ext_utils.bot_utils import (
+    update_user_ldata,
+    new_task
+    )
+from bot.helper.telegram_helper.message_utils import (
+    sendMessage,
+    deleteMessage,
+    editMessage
+    )
 
 ########################
 ## Required Variables ##
 ########################
 
-## You can change client_id and client_secret to your own ##
-## You can get client_id and client_secret from https://console.cloud.google.com/apis/credentials?project=drive-api-quickstart ##
-## Make sure to enable Google Drive API in your project ##
+## You can change the client_id and client_secret to your own ##
+## You can get the client_id and client_secret from: https://console.cloud.google.com/apis/credentials?project=drive-api-quickstart ##
+## Make sure the Google Drive API is enabled in your project ##
 
 OAUTH_SCOPE = ['https://www.googleapis.com/auth/drive']
 client_id = "281074057431-i80g6t8u4mce5khh1bhlqjd0b3sssfvg.apps.googleusercontent.com"
 client_secret = "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"
 
-#######################################
-## Get Token | Credit By @aenulrofik ##
-#######################################
+########################
+## Function Get Token ##
+########################
 
-## Modified By Tg @WzdDizzyFlasherr ##
+## Credit: @aenulrofik ##
+## Modified by: Tg @IgnoredProjectXcl ##
 ## This is a modified version of the original code to improve readability and maintainability. ##
 
 @new_task
@@ -140,11 +154,12 @@ async def get_token(client, message):
         if os.path.exists(pickle_path):
             os.remove(pickle_path)
 
-#######################################
-## Gen Token | Credit By @aenulrofik ##
-#######################################
+########################
+## Function Gen Token ##
+########################
 
-## Modified By Tg @WzdDizzyFlasherr ##
+## Credit: @aenulrofik ##
+## Modified by: Tg @IgnoredProjectXcl ##
 ## This is a modified version of the original code to improve readability and maintainability. ##
 
 async def gen_token(client, message):
@@ -167,6 +182,7 @@ async def gen_token(client, message):
                 if credentials and credentials.expired and credentials.refresh_token:
                     credentials.refresh(Request())
                 return None, "Token google drive anda sudah ada dan sudah diperbaharui. \n\nUntuk hapus token yang ada, silahkan gunakan Usetting - Gdrive Tools - token.pickle"
+        
         else:
             client_config = {
                 "installed": {
@@ -211,6 +227,7 @@ async def gen_token(client, message):
                 return None, "Format URL tidak valid. Pastikan Anda menyalin seluruh URL."
             await respon.delete()
             await editMessage(ask, f"Memferifikasi kode anda...")
+            
             try:
                 flow.fetch_token(code=code)
                 credentials = flow.credentials
@@ -221,6 +238,7 @@ async def gen_token(client, message):
             except Exception as e:
                 await deleteMessage(ask)
                 return None, f"Gagal saat memverifikasi kode: {str(e)}"
+    
     try:
         credentials, error_message = await generate_token(message)
         
@@ -262,6 +280,7 @@ async def gen_token(client, message):
             update_user_ldata(uid, "token_pickle", f"tokens/{uid}.pickle")
             if DATABASE_URL:
                 await DbManger().update_user_doc(uid, "token_pickle", pickle_path)
+            
             if folder_id := create_folder():
                 update_user_ldata(uid, "gdrive_id", f"mtp:{folder_id}")
                 update_user_ldata(uid, "default_upload", "gd")
@@ -276,6 +295,7 @@ async def gen_token(client, message):
             else:
                 msg += f"❌ <b>Terjadi kesalahan, saat setup folder di akun anda, silahkan setup manual dengan mengisi gdrive_id di usetting dengan format:<blockquote><code>mtp:gdrive_id</code></blockquote> !</b>"
             await editMessage(wait, msg)
+        
         else:
             await sendMessage(message, f"❌ <b>Token google drive anda gagal dibuat, silahkan coba lagi</b>")
     except Exception as e:
@@ -301,3 +321,6 @@ bot.add_handler(
         ) & CustomFilters.authorized
     )
 )
+
+## Big thanks to @aenulrofik for this awesome feature ##
+## Please don't remove the credits — respect the creator! ##

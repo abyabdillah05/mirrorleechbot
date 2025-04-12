@@ -205,7 +205,7 @@ bot.add_handler(
         gdrive_search,
         filters=command(
             BotCommands.ListCommand
-        ) & CustomFilters.authorized,
+        ) & CustomFilters.authorized
     )
 )
 bot.add_handler(

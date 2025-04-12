@@ -16,17 +16,9 @@ from bot.helper.mirror_utils.status_utils.direct_status import DirectStatus
 from bot.helper.mirror_utils.status_utils.queue_status import QueueStatus
 from bot.helper.telegram_helper.message_utils import sendMessage, sendStatusMessage
 from bot.helper.ext_utils.quota_utils import quota_check
-from bot.helper.ext_utils.exceptions import DirectDownloadLinkException
-
-import base64
-import aiohttp
-import urllib.parse
-from urllib.parse import urlparse
-from random import choice
 
 
-
-async def add_direct_download(link, path, listener, filename):
+async def add_direct_download(listener, path):
     details = listener.link
     if not (contents := details.get("contents")):
         await sendMessage(listener.message, "<b>Tidak ada file untuk diunduh!</b>")

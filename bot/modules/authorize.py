@@ -1,15 +1,25 @@
-from pyrogram.handlers import MessageHandler
-from pyrogram.filters import command
 from asyncio import sleep as asleep
+from pyrogram.filters import command
+from pyrogram.handlers import MessageHandler
 
-from bot import user_data, DATABASE_URL, bot, LOGGER, OWNER_ID
-from bot.helper.telegram_helper.message_utils import sendMessage, deleteMessage
-from bot.helper.telegram_helper.filters import CustomFilters
-from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.ext_utils.db_handler import DbManger
-from bot.helper.ext_utils.bot_utils import update_user_ldata
-from bot.helper.ext_utils.common_utils import get_readable_file_size
 from bot.helper.ext_utils.quota_utils import create_token
+from bot.helper.ext_utils.bot_utils import update_user_ldata
+from bot.helper.telegram_helper.filters import CustomFilters
+from bot.helper.ext_utils.status_utils import get_readable_file_size
+from bot.helper.telegram_helper.bot_commands import BotCommands
+
+from bot import (
+    user_data,
+    DATABASE_URL,
+    bot,
+    LOGGER,
+    OWNER_ID,
+    )
+from bot.helper.telegram_helper.message_utils import (
+    sendMessage,
+    deleteMessage,
+    )
 
 
 async def authorize(_, message):
@@ -38,20 +48,13 @@ async def unauthorize(_, message):
         id_ = reply_to.from_user.id if reply_to.from_user else reply_to.sender_chat.id
     else:
         id_ = message.chat.id
-    
-    if id_ not in user_data:
-        msg = "🙃 <b>Sudah diunautorisasi!</b>"
-    else:
-        if id_ in user_data:
-            if "quota" in user_data[id_]:
-                del user_data[id_]["quota"]
-            user_data.pop(id_, None)
-        
-        msg = "😉 <b>Berhasil diunautorisasi dan dihapus dari database!</b>"
-             
+    if id_ not in user_data or user_data[id_].get("is_auth"):
+        update_user_ldata(id_, "is_auth", False)
         if DATABASE_URL:
-            await DbManger().delete_user_data(id_)
-            
+            await DbManger().update_user_data(id_)
+        msg = "😉 <b>Berhasil diunautorisasi!</b>"
+    else:
+        msg = "🙃 <b>Sudah diunautorisasi!</b>"
     await sendMessage(message, msg)
 
 
@@ -82,25 +85,21 @@ async def removeSudo(_, message):
         id_ = int(msg[1].strip())
     elif reply_to := message.reply_to_message:
         id_ = reply_to.from_user.id if reply_to.from_user else reply_to.sender_chat.id
-    
-    if id_ == "":
-        msg = "<b>Berikan ID atau balas pesan dari User yang ingin diturunkan dari Sudo User!</b>"
-    elif id_ not in user_data:
-        msg = "🙃 <b>Pengguna tidak ditemukan dalam database!</b>"
-    elif not user_data[id_].get("is_sudo"):
-        msg = "🙃 <b>Pengguna bukan sudo user!</b>"
-    else:
-        user_data.pop(id_, None)
-        msg = "😉 <b>Berhasil diturunkan dari Sudo User dan dihapus dari database!</b>"
-            
+    if id_ and id_ not in user_data or user_data[id_].get("is_sudo"):
+        update_user_ldata(id_, "is_sudo", False)
         if DATABASE_URL:
-            await DbManger().delete_user_data(id_)
-            
+            await DbManger().update_user_data(id_)
+        msg = "😉 <b>Berhasil diturunkan dari Sudo User!</b>"
+    else:
+        msg = "<b>Berikan ID atau balas pesan dari User yang ingin diturunkan dari Sudo User!</b>"
     await sendMessage(message, msg)
 
-#########################
-## Check QUota Command ##
-#########################
+###########################
+## Functionn Check Quota ##
+###########################
+
+## Credit: @aenulrofik  
+## Enhancement by: Tg @IgnoredProjectXcl
 
 async def check_quota(_, message):
     self = False
@@ -193,8 +192,6 @@ async def check_quota(_, message):
             base_msg += f"<b>📈 Setara:</b> <code>{quota_rounded}x</code> paket standard (20GB)\n"
     
     base_msg += divider
-    
-    # Initialize mess to None
     mess = None
     
     if sudo:
@@ -384,16 +381,16 @@ async def check_quota(_, message):
         await asleep(120)
         await deleteMessage(mess)
 
-#######################
-## Commands Handlers ##
-#######################
+######################
+## Commands Handler ##
+######################
 
 bot.add_handler(
     MessageHandler(
         authorize, 
         filters=command(
             BotCommands.AuthorizeCommand
-        ) & CustomFilters.owner
+        ) & CustomFilters.sudo
     )
 )
 bot.add_handler(
@@ -401,7 +398,7 @@ bot.add_handler(
         unauthorize,
         filters=command(
             BotCommands.UnAuthorizeCommand
-        ) & CustomFilters.owner,
+        ) & CustomFilters.sudo,
     )
 )
 bot.add_handler(
@@ -409,7 +406,7 @@ bot.add_handler(
         addSudo, 
         filters=command(
             BotCommands.AddSudoCommand
-        ) & CustomFilters.owner
+        ) & CustomFilters.sudo
     )
 )
 bot.add_handler(
@@ -417,7 +414,7 @@ bot.add_handler(
         removeSudo, 
         filters=command(
             BotCommands.RmSudoCommand
-        ) & CustomFilters.owner
+        ) & CustomFilters.sudo
     )
 )
 bot.add_handler(
@@ -428,3 +425,4 @@ bot.add_handler(
         ) & CustomFilters.authorized
     )
 )
+

@@ -1,45 +1,52 @@
-import asyncio
-import httpx
-import niquests
+import os
 import re
 import json
 import time
-import os
+import httpx
 import random
+import asyncio
+import niquests
+
+from json import loads
+from random import randint
 from datetime import datetime
+from http.cookiejar import MozillaCookieJar
 
 ###############################
 ## Import Libraries Pyrogram ##
 ###############################
 
 from pyrogram import filters
-from pyrogram.filters import (command,
-                              regex)
-from pyrogram.handlers import (MessageHandler,
-                               CallbackQueryHandler)
-from pyrogram.types import (InputMediaPhoto,
-                            InputMediaVideo)
+from pyrogram.types import InputMediaPhoto
 
-####################################################
-
-from json import loads
-from random import randint
-from http.cookiejar import MozillaCookieJar
+from pyrogram.filters import (
+    command,
+    regex
+    )
+from pyrogram.handlers import (
+    MessageHandler,
+    CallbackQueryHandler
+    )
 
 ###################################
-## Import Libraries From Project ##
+## Import Variables From Project ##
 ###################################
 
-from bot import (bot,
-                 LOGGER)
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.telegram_helper.button_build import ButtonMaker
-from bot.helper.telegram_helper.message_utils import (sendMessage,
-                                                      deleteMessage,
-                                                      editMessage,
-                                                      customSendAudio,
-                                                      customSendVideo)
+
+from bot import (
+    bot,
+    LOGGER
+    )
+from bot.helper.telegram_helper.message_utils import (
+    sendMessage,
+    deleteMessage,
+    editMessage,
+    customSendAudio,
+    customSendVideo
+    )
 
 ########################
 ## Required Variables ##
@@ -49,9 +56,11 @@ tiktok = []
 user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0"
 tiktokregex = r"(https?://(?:www\.)?[a-zA-Z0-9.-]*tiktok\.com/)"
 
-############################################
-## Tiktok Downloader | Credit @aenulrofik ##
-############################################
+################################
+## Function Tiktok Downloader ##
+################################
+
+## Credit: @aenulrofik ##
 
 async def tiktokdl(client, message, url, audio=False):
     url = url
@@ -125,15 +134,17 @@ async def tiktokdl(client, message, url, audio=False):
                         await message.reply_media_group([InputMediaPhoto(photo_url) for photo_url in photo_group])
                 else:
                     await customSendAudio(message, music, m_capt, None, None, None, None, None)
-               
+                
         except Exception as e:
                 await sendMessage(message, f"ERROR: Gagal mengupload media {e}")
         finally:
             await deleteMessage(mess)
 
-################################################
-## Tiktok Auto Detection | Credit @aenulrofik ##
-################################################
+################################
+## Fuction Auto Tiktok Detect ##
+################################
+
+## Credit: @aenulrofik ##
 
 async def auto_tk(client, message):
     user_id = message.from_user.id
@@ -177,9 +188,11 @@ async def auto_tk_query(_, query):
         del msgs[uid]
         await editMessage(message, "Tugas Dibatalkan.")
 
-#######################################
-# TikTok Search | Credit @aenulrofik ##
-#######################################
+############################
+## Function Tiktok Search ##
+############################
+
+## Credit: @aenulrofik ##
 
 async def tiktok_search(_, message):
     if message.from_user.username:
@@ -255,9 +268,9 @@ async def tiktok_search(_, message):
                     params=params,
                     cookies=cookies
                 )
-
+                
                 search += r.text
-
+                
             data = loads(search)
         except httpx.HTTPStatusError as e:
             await sendMessage(mess, f"Hai {uname}, Terjadi kesalahan saat mencoba mengakses url, silahkan coba kembali.\n\n<blockquote>{e}</blockquote>")
@@ -267,13 +280,13 @@ async def tiktok_search(_, message):
             await sendMessage(mess, f"Hai {uname}, Respon dari url terlalu lama, silahkan coba kembali.\n\n<blockquote>{e}</blockquote>")
             await deleteMessage(mess)
             return None
-        #try:
-        #    id = (f"{data['item_list'][randint(0, len(data['item_list']) - 1)]['id']}")
-        #except Exception as e:
-        #    await editMessage(mess, f"ERROR: {e}")
-        #    return None
-        #await deleteMessage(mess)
-        #await tiktokdl(_, message, id=id)
+        try:
+            id = (f"{data['item_list'][randint(0, len(data['item_list']) - 1)]['id']}")
+        except Exception as e:
+            await editMessage(mess, f"ERROR: {e}")
+            return None
+        await deleteMessage(mess)
+        await tiktokdl(_, message, id=id)
     async with niquests.AsyncSession() as client:
         video = ""
         try:
@@ -300,9 +313,9 @@ async def tiktok_search(_, message):
         finally:
             await deleteMessage(mess)
 
-############################################
-## Tiktok Handler And Command ##
-############################################
+#########################################
+## Commands And CallbackQuery Handlers ##
+#########################################
 
 bot.add_handler(
     MessageHandler(
@@ -331,4 +344,5 @@ bot.add_handler(
     )
 )
 
-## Thanks to @aenulrofik for this feature ##
+## Big thanks to @aenulrofik for this awesome feature ##
+## Please don't remove the credits — respect the creator! ##

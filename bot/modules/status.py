@@ -1,9 +1,3 @@
-from time import time
-
-####################################
-## Import Libraries From Pyrogram ##
-####################################
-
 from pyrogram.handlers import MessageHandler, CallbackQueryHandler
 from pyrogram.filters import command, regex
 from psutil import (
@@ -12,10 +6,7 @@ from psutil import (
     disk_usage, 
     net_io_counters
 )
-
-######################################
-## Importing Variabels From Project ##
-######################################
+from time import time
 
 from bot import (
     task_dict_lock,
@@ -23,9 +14,10 @@ from bot import (
     task_dict,
     botStartTime,
     DOWNLOAD_DIR,
+    Interval,
     bot,
     OWNER_ID,
-    LOGGER
+    SUDO_USERS,
 )
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.bot_commands import BotCommands
@@ -35,60 +27,67 @@ from bot.helper.telegram_helper.message_utils import (
     auto_delete_message,
     sendStatusMessage,
     update_status_message,
+    edit_status,
     edit_single_status,
 )
 from bot.helper.ext_utils.bot_utils import new_task
 from bot.helper.ext_utils.status_utils import (
     MirrorStatus,
+    StatusType,
+    StatusPermission,
+    get_readable_file_size,
+    get_readable_time,
     speed_string_to_bytes,
-    STATUS_VALUES
 )
-from bot.helper.ext_utils.common_utils import (get_readable_file_size,
-                                            get_readable_time)
-
-#############################
-## Status Task Manager Bot ##
-#############################
 
 @new_task
 async def mirror_status(_, message):
+    """Handle status command with different arguments"""
     async with task_dict_lock:
         count = len(task_dict)
     
-    user_id = message.from_user.id
-    chat_type = message.chat.type
-    chat_id = message.chat.id
-    is_owner = user_id == OWNER_ID
+    cmd_args = message.text.split()
     
-    text = message.text.split()
-    cmd_type = text[1].lower() if len(text) > 1 else None
-    
-    if cmd_type == "help":
-        help_text = (
-            "<b>📋 BANTUAN PERINTAH STATUS</b>\n\n"
-            "<b>Perintah Dasar:</b>\n"
-            "• <code>[/status]</code>: Menampilkan status tugas berdasarkan konteks\n"
-            "  - Di grup: Menampilkan tugas grup tersebut\n"
-            "  - Di PM: Menampilkan tugas pribadi Anda\n\n"
-            "<b>Perintah Khusus:</b>\n"
-            "• <code>[/status me]</code>: Menampilkan hanya tugas Anda (pribadi)\n"
-            "• <code>[/status all]</code>: Menampilkan semua tugas (khusus Owner)\n"
-            "• <code>[/status help]</code>: Menampilkan bantuan ini\n\n"
-            "<b>Informasi Tombol:</b>\n"
-            "• ◀️ Prev / ▶️ Next: Navigasi antar halaman\n"
-            "• 🔄 Refresh: Memperbarui status terbaru\n"
-            "• Help: Menampilkan bantuan singkat\n"
-            "• Info: Informasi tentang status saat ini\n"
-            "• Tutup: Menutup pesan status\n\n"
-            "<b>Catatan Penting:</b>\n"
-            "• Tombol-tombol hanya dapat digunakan oleh pengguna yang meminta status atau Owner\n"
-            "• Status diperbarui otomatis setiap beberapa detik\n"
-            "• Gunakan filter untuk melihat tugas berdasarkan statusnya"
-        )
-        reply = await sendMessage(message, help_text)
-        await auto_delete_message(message, reply)
+    # Check if help argument is provided
+    if len(cmd_args) > 1 and cmd_args[1].lower() == "help":
+        help_msg = """<b>🔍 PANDUAN PENGGUNAAN STATUS</b>
+
+<b>Perintah Dasar:</b>
+<code>/{cmd}</code> : Menampilkan status tugas di chat saat ini
+<code>/{cmd} me</code> : Menampilkan status tugas pribadi anda
+<code>/{cmd} all</code> : Menampilkan status global semua tugas (hanya owner)
+<code>/{cmd} [user_id]</code> : Menampilkan status pengguna tertentu (hanya admin)
+
+<b>Fitur Tombol:</b>
+• <b>Navigasi</b>: Gunakan tombol Prev/Next untuk berpindah halaman
+• <b>Filter</b>: Filter berdasarkan jenis tugas (DL, UP, QU, dll)
+• <b>Refresh</b>: Memperbarui status secara manual
+• <b>Page Step</b>: Mengatur jumlah langkah saat navigasi halaman
+
+<b>Status Tugas:</b>
+• 🟢 <b>Download</b>: Unduhan sedang berlangsung
+• 🔵 <b>Upload</b>: Pengunggahan sedang berlangsung
+• 🟡 <b>Antrian</b>: Tugas sedang dalam antrian
+• 🟠 <b>Arsip</b>: File sedang diarsipkan
+• 🟣 <b>Extract</b>: Ekstraksi arsip sedang berlangsung
+• ⚪ <b>Cloning</b>: Kloning file dari cloud storage
+• 🟤 <b>Seeding</b>: Seeding torrent aktif
+
+<b>Akses & Izin:</b>
+• Pengguna biasa hanya dapat melihat tugas mereka sendiri
+• Admin dapat melihat tugas semua pengguna
+• Owner dapat melihat dan mengelola semua tugas
+
+<b>Tips:</b>
+• Gunakan opsi Overview untuk melihat ringkasan semua tugas
+• Cancel tugas dengan perintah yang ditampilkan di status
+• Status pribadi tidak diperbarui otomatis, gunakan tombol Refresh
+""".format(cmd=BotCommands.StatusCommand[0])
+
+        reply_message = await sendMessage(message, help_msg)
+        await auto_delete_message(message, reply_message)
         return
-    
+        
     if count == 0:
         currentTime = get_readable_time(time() - botStartTime)
         free = get_readable_file_size(disk_usage(DOWNLOAD_DIR).free)
@@ -100,275 +99,209 @@ async def mirror_status(_, message):
             recv = get_readable_file_size(net_io_counters().bytes_recv)
         except:
             recv = "NaN"
-        
-        if cmd_type == "all":
-            if not is_owner:
-                msg = "<b>⚠️ Anda Tidak Dapat Menggunakan Perintah Ini!!</b>\n\n<code>[/status all]</code> hanya dapat digunakan oleh Owner bot!"
-                reply = await sendMessage(message, msg)
-                await auto_delete_message(message, reply)
-                return
-            context_type = "Global"
-        elif cmd_type == "me":
-            context_type = "Private"
-        elif chat_type == "private" or chat_type == "bot":
-            context_type = "Private"
-        elif chat_id:
-            context_type = "Group"
-            
-        msg = f"<b>Tidak ada tugas aktif ({context_type})</b>\n─────────────────────────────"
-        
+        msg = "Tidak ada Tugas Aktif!\n___________________________"
         msg += (
-            f"\n<b>Type:</b> <code>{context_type}</code>"
-            f"\n<b>CPU:</b> <code>{cpu_percent()}%</code> | <b>FREE:</b> <code>{free}</code>" \
-            f"\n<b>RAM:</b> <code>{virtual_memory().percent}%</code> | <b>UPTIME:</b> <code>{currentTime}</code>" \
-            f"\n<b>T.Unduh:</b> <code>{recv}</code> | <b>T.Unggah:</b> <code>{sent}</code>"
+            f"\n<b>CPU :</b> <code>{cpu_percent()}%</code> | <b>FREE :</b> <code>{free}</code>" \
+            f"\n<b>RAM :</b> <code>{virtual_memory().percent}%</code> | <b>UPTIME :</b> <code>{currentTime}</code>" \
+            f"\n<b>T.Unduh :</b> <code>{sent}</code> | <b>T.Unggah :</b> <code>{recv}</code>" 
         )
         reply_message = await sendMessage(message, msg)
         await auto_delete_message(message, reply_message)
-        return
-    
-    if cmd_type == "all":
-        if not is_owner:
-            msg = "<b>⚠️ AKSES DITOLAK</b>\n\n<code>[/status all]</code> hanya dapat digunakan oleh Owner bot!"
-            reply = await sendMessage(message, msg)
-            await auto_delete_message(message, reply)
-            return
-        await sendStatusMessage(message, 0, is_all=True, cmd_user_id=user_id)
+    else:
+        # Handle different status modes
+        if len(cmd_args) > 1:
+            arg = cmd_args[1].lower()
+            if arg == "me":
+                # User's own status
+                await sendStatusMessage(message, message.from_user.id, is_user=True)
+            elif arg == "all" and message.from_user.id == OWNER_ID:
+                # Global status (owner only)
+                await sendStatusMessage(message, is_all=True)
+            elif arg.isdigit() and (message.from_user.id == OWNER_ID or message.from_user.id in SUDO_USERS):
+                # Specific user's status (admin only)
+                await sendStatusMessage(message, int(arg), is_user=True)
+            else:
+                # Invalid argument
+                await sendStatusMessage(message)
+        else:
+            # Default: show chat-appropriate status
+            await sendStatusMessage(message)
+            
+        # Clean up command message
         await deleteMessage(message)
-        return
-    
-    if cmd_type == "me":
-        await sendStatusMessage(message, user_id, is_user=True, cmd_user_id=user_id)
-        await deleteMessage(message)
-        return
-    
-    if chat_type in ["private", "bot"]:
-        await sendStatusMessage(message, user_id, is_user=True, cmd_user_id=user_id)
-        await deleteMessage(message)
-        return
-    
-    await sendStatusMessage(message, 0, chat_id=chat_id, cmd_user_id=user_id)
-    await deleteMessage(message)
-
-##################
-## Status Pages ##
-##################
 
 @new_task
 async def status_pages(_, query):
     data = query.data.split()
-    
-    raw_sid = data[1]
-    action = data[2]
-    
-    if raw_sid.startswith("user_"):
-        actual_sid = int(raw_sid.split("_")[1])
-        is_user = True
-        chat_id = None
-    elif raw_sid.startswith("group_"):
-        group_id = int(raw_sid.split("_")[1])
-        actual_sid = -group_id
-        is_user = False
-        chat_id = actual_sid
-    elif raw_sid == "global_status":
-        actual_sid = 0
-        is_user = False
-        chat_id = None
-    else:
-        try:
-            actual_sid = int(raw_sid)
-            if actual_sid > 0:
-                is_user = True
-                chat_id = None
-                raw_sid = f"user_{actual_sid}"
-            else:
-                is_user = False
-                chat_id = actual_sid
-                raw_sid = f"group_{abs(actual_sid)}"
-        except:
-            await query.answer("Invalid status ID!", show_alert=True)
-            return
-    
-    cmd_user_id = int(data[3]) if len(data) > 3 else None
-    
+    key = int(data[1])
+    cmd = data[2]
     user_id = query.from_user.id
-    chat_id = query.message.chat.id
-    is_owner = user_id == OWNER_ID
     
+    # Get status information
     async with task_dict_lock:
-        if raw_sid not in status_dict:
-            await query.answer("⚠️ Status message tidak ditemukan atau sudah ditutup!", show_alert=True)
+        if key not in status_dict:
+            await query.answer("Status message no longer exists", show_alert=True)
             return
             
-        status_type = status_dict[raw_sid].get("status_type", "group")
-        status_owner_id = status_dict[raw_sid].get("cmd_user_id")
-        is_all = status_dict[raw_sid].get("is_all", False)
-        status_chat_id = status_dict[raw_sid].get("chat_id")
+        status_data = status_dict[key]
+        status_type = status_data.get("type", StatusType.GROUP)
+        cmd_user_id = status_data.get("cmd_user_id", 0)
+        status_chat_id = key
+        status_owner_id = key if status_data.get("is_user", False) else 0
+        
+        # Check permissions for button action
+        if not StatusPermission.can_use_button(user_id, cmd, status_owner_id, status_type):
+            await query.answer("You don't have permission to use this button", show_alert=True)
+            return
     
-    has_permission = False
-    
-    if is_owner:
-        has_permission = True
-    elif status_owner_id and user_id == status_owner_id:
-        has_permission = True
-    elif status_type == "Group" and not is_all and status_chat_id and status_chat_id == chat_id:
-        has_permission = True
-    
-    if not has_permission:
-        await query.answer("⚠️ Anda tidak memiliki izin untuk mengakses tombol status ini!", show_alert=True)
-        return
-    
-    if action == "ref":
-        await query.answer("🔄 Sedang merefresh status...", show_alert=True)
-        LOGGER.info(f"Refreshing status {raw_sid}")
-        await update_status_message(raw_sid, force=True)
-    
-    elif action == "help":
-        help_text = (
-            "STATUS COMMANDS\n"
-            "• [/status] - Status konteks\n"
-            "• [/status me] - Tugas pribadi\n"
-            "• [/status all] - Semua tugas (Owner)\n"
-            "• Filter - Gunakan tombol filter\n"
-            "• Batalkan tugas lambat (<20KB/s)"
-        )
-        await query.answer(help_text, show_alert=True)
-    
-    elif action in ["nex", "pre"]:
+    # Handle different button actions
+    if cmd == "ref":
+        # Refresh
+        await query.answer()
+        await update_status_message(key, force=True)
+        
+    elif cmd in ["nex", "pre"]:
+        # Navigation
         await query.answer()
         async with task_dict_lock:
-            if raw_sid in status_dict:
-                if action == "nex":
-                    status_dict[raw_sid]["page_no"] += status_dict[raw_sid]["page_step"]
-                else:
-                    status_dict[raw_sid]["page_no"] -= status_dict[raw_sid]["page_step"]
-                await update_status_message(raw_sid, force=True)
-    
-    elif action == "ps":
-        page_step = int(data[3])
-        await query.answer(f"Step diubah menjadi {page_step}")
-        async with task_dict_lock:
-            if raw_sid in status_dict:
-                status_dict[raw_sid]["page_step"] = page_step
-                await update_status_message(raw_sid, force=True)
-    
-    elif action == "st":
-        new_status = data[3]
-        await query.answer(f"Filter: {new_status}")
-        async with task_dict_lock:
-            if raw_sid in status_dict:
-                status_dict[raw_sid]["status"] = new_status
-                await update_status_message(raw_sid, force=True)
-    
-    elif action == 'close':
-        await query.answer(f"Status ditutup! Ketik [/{BotCommands.StatusCommand[0]}] untuk melihat status lagi.")
-        success = await edit_single_status(raw_sid)
-        if not success:
-            LOGGER.error(f"Gagal menutup status dengan ID: {raw_sid}")
-    
-    elif action == 'info':
-        status_type = status_dict.get(raw_sid, {}).get("status_type", "")
-        is_all = status_dict.get(raw_sid, {}).get('is_all', False)
-        is_user = status_dict.get(raw_sid, {}).get('is_user', False)
-        chat_id = status_dict.get(raw_sid, {}).get('chat_id')
+            if cmd == "nex":
+                status_dict[key]["page_no"] += status_dict[key]["page_step"]
+            else:
+                status_dict[key]["page_no"] -= status_dict[key]["page_step"]
+        await update_status_message(key)
         
-        if is_all:
-            view_type = "Global"
-        elif is_user:
-            view_type = "Private" 
-        elif chat_id:
-            view_type = "Group"
-        else:
-            await query.answer("Invalid status context", show_alert=True)
-            return
-        
+    elif cmd == "ps":
+        # Change page step
+        await query.answer()
         async with task_dict_lock:
-            tasks = {
-                "Download": 0,
-                "Upload": 0,
-                "Seed": 0,
-                "Archive": 0,
-                "Extract": 0,
-                "Split": 0,
-                "QueueDl": 0,
-                "QueueUp": 0,
-                "Clone": 0,
-                "CheckUp": 0,
-                "Pause": 0,
-                "SamVid": 0,
-            }
-            dl_speed = 0
-            up_speed = 0
-            seed_speed = 0
-            
-            for download in task_dict.values():
-                task_matches = False
-                tstatus = download.status()
-                
-                if is_all:
-                    task_matches = True
-                elif is_user and download.listener.user_id == actual_sid:
-                    task_matches = True
-                elif chat_id and hasattr(download.listener, 'message') and hasattr(download.listener.message, 'chat') and download.listener.message.chat.id == chat_id:
-                    task_matches = True
-                
-                if task_matches:
-                    if tstatus == MirrorStatus.STATUS_DOWNLOADING:
-                        tasks["Download"] += 1
-                        dl_speed += speed_string_to_bytes(download.speed())
-                    elif tstatus == MirrorStatus.STATUS_UPLOADING:
-                        tasks["Upload"] += 1
-                        up_speed += speed_string_to_bytes(download.speed())
-                    elif tstatus == MirrorStatus.STATUS_SEEDING:
-                        tasks["Seed"] += 1
-                        seed_speed += speed_string_to_bytes(download.seed_speed())
-                    elif tstatus == MirrorStatus.STATUS_ARCHIVING:
-                        tasks["Archive"] += 1
-                    elif tstatus == MirrorStatus.STATUS_EXTRACTING:
-                        tasks["Extract"] += 1
-                    elif tstatus == MirrorStatus.STATUS_SPLITTING:
-                        tasks["Split"] += 1
-                    elif tstatus == MirrorStatus.STATUS_QUEUEDL:
-                        tasks["QueueDl"] += 1
-                    elif tstatus == MirrorStatus.STATUS_QUEUEUP:
-                        tasks["QueueUp"] += 1
-                    elif tstatus == MirrorStatus.STATUS_CLONING:
-                        tasks["Clone"] += 1
-                    elif tstatus == MirrorStatus.STATUS_CHECKING:
-                        tasks["CheckUp"] += 1
-                    elif tstatus == MirrorStatus.STATUS_PAUSED:
-                        tasks["Pause"] += 1
-                    elif tstatus == MirrorStatus.STATUS_SAMVID:
-                        tasks["SamVid"] += 1
+            status_dict[key]["page_step"] = int(data[3])
+        await update_status_message(key)
         
-        info_text = (
-            f"STATS INFO\n\n"
-            f"Type: {view_type}\n"
-            f"ID: {raw_sid}\n\n"
-            f"TASKS:\n"
-            f"• DL: {tasks['Download']} | UP: {tasks['Upload']} | Seed: {tasks['Seed']}\n"
-            f"• Arc: {tasks['Archive']} | Ext: {tasks['Extract']}\n"
-            f"• QDL: {tasks['QueueDl']} | QUP: {tasks['QueueUp']}\n\n"
-            f"SPEEDS:\n"
-            f"• Seed: {get_readable_file_size(seed_speed)}/s\n"
-            f"• DL: {get_readable_file_size(dl_speed)}/s\n"
-            f"• UP: {get_readable_file_size(up_speed)}/s"
+    elif cmd == "st":
+        # Change status filter
+        await query.answer()
+        async with task_dict_lock:
+            status_dict[key]["status"] = data[3]
+        await update_status_message(key, force=True)
+        
+    elif cmd == 'close':
+        # Close status message
+        await query.answer(
+            f"Anda bisa melihat status message lagi dengan perintah /{BotCommands.StatusCommand[0]}", 
+            show_alert=True
         )
-        await query.answer(info_text, show_alert=True)
+        await edit_single_status(key)
+        
+    elif cmd == 'info':
+        # Show info tooltip
+        await query.answer(
+            "⚠️ Jika speed download anda stuck atau stabil dibawah 20Kbps, "
+            "tolong dicancel dan cari link atau torrent lain, karena link itu "
+            "kemungkinan sudah limit atau lagi bermasalah.",
+            show_alert=True
+        )
+        
+    elif cmd == "ov":
+        # Show overview summary
+        tasks = {
+            "Download": 0,
+            "Upload": 0,
+            "Seed": 0,
+            "Archive": 0,
+            "Extract": 0,
+            "Split": 0,
+            "QueueDl": 0,
+            "QueueUp": 0,
+            "Clone": 0,
+            "CheckUp": 0,
+            "Pause": 0,
+            "SamVid": 0,
+        }
+        dl_speed = 0
+        up_speed = 0
+        seed_speed = 0
+        
+        async with task_dict_lock:
+            # Filter tasks based on status type
+            if status_type == StatusType.PRIVATE:
+                task_list = [tk for tk in task_dict.values() if tk.listener.user_id == key]
+            elif status_type == StatusType.GROUP:
+                task_list = [tk for tk in task_dict.values() if tk.listener.message.chat.id == key]
+            else:  # Global
+                task_list = list(task_dict.values())
+            
+            # Count tasks by status
+            for download in task_list:
+                tstatus = download.status()
+                if tstatus == MirrorStatus.STATUS_DOWNLOADING:
+                    tasks["Download"] += 1
+                    dl_speed += speed_string_to_bytes(download.speed())
+                elif tstatus == MirrorStatus.STATUS_UPLOADING:
+                    tasks["Upload"] += 1
+                    up_speed += speed_string_to_bytes(download.speed())
+                elif tstatus == MirrorStatus.STATUS_SEEDING:
+                    tasks["Seed"] += 1
+                    seed_speed += speed_string_to_bytes(download.seed_speed())
+                elif tstatus == MirrorStatus.STATUS_ARCHIVING:
+                    tasks["Archive"] += 1
+                elif tstatus == MirrorStatus.STATUS_EXTRACTING:
+                    tasks["Extract"] += 1
+                elif tstatus == MirrorStatus.STATUS_SPLITTING:
+                    tasks["Split"] += 1
+                elif tstatus == MirrorStatus.STATUS_QUEUEDL:
+                    tasks["QueueDl"] += 1
+                elif tstatus == MirrorStatus.STATUS_QUEUEUP:
+                    tasks["QueueUp"] += 1
+                elif tstatus == MirrorStatus.STATUS_CLONING:
+                    tasks["Clone"] += 1
+                elif tstatus == MirrorStatus.STATUS_CHECKING:
+                    tasks["CheckUp"] += 1
+                elif tstatus == MirrorStatus.STATUS_PAUSED:
+                    tasks["Pause"] += 1
+                elif tstatus == MirrorStatus.STATUS_SAMVID:
+                    tasks["SamVid"] += 1
 
-######################################
-## Command & CallbackQuery Handlers ##
-######################################
+        # Build overview message
+        msg = f"""DL : {tasks['Download']} | UP : {tasks['Upload']} | SD : {tasks['Seed']} | AR : {tasks['Archive']}
+EX : {tasks['Extract']} | SP : {tasks['Split']} | QD : {tasks['QueueDl']} | QU : {tasks['QueueUp']}
+CL : {tasks['Clone']} | CH : {tasks['CheckUp']} | PA : {tasks['Pause']} | SV : {tasks['SamVid']}
 
+Kec. Seed : {get_readable_file_size(seed_speed)}/s
+Kec. Unduh : {get_readable_file_size(dl_speed)}/s
+Kec. Unggah : {get_readable_file_size(up_speed)}/s
+
+@{bot.me.username}
+"""
+        await query.answer(msg, show_alert=True)
+        
+    elif cmd == "help":
+        # Show help text
+        help_text = (
+            "🔄 Refresh - Update status\n"
+            "⏪ Prev / ⏩ Next - Navigate pages\n"
+            "ALL, DL, UP, etc. - Filter by status\n"
+            "Info - Show download troubleshooting\n"
+            "Overview - Show task summary\n"
+            "Number buttons - Change page step\n"
+            "🔽 Tutup - Close status message"
+        )
+        await query.answer(help_text, show_alert=True)
+        
+    elif cmd == "cleanall" and user_id == OWNER_ID:
+        # Clean all tasks (owner only)
+        await query.answer("Cleaning all status messages", show_alert=True)
+        await edit_status()
+
+
+# Register command handlers
 bot.add_handler(
     MessageHandler(
         mirror_status,
         filters=command(
             BotCommands.StatusCommand
-        ) & CustomFilters.authorized,
+        ) & CustomFilters.authorized
     )
 )
-
 bot.add_handler(
     CallbackQueryHandler(
         status_pages, 

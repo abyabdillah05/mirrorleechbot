@@ -31,6 +31,7 @@ from bot.helper.telegram_helper.message_utils import (sendMessage,
 ############################
 ## Requirements Variables ##
 ############################
+
 ## You can change API_KEY to your own API Key ##
 ## https://developers.google.com/youtube/v3/getting-started ##
 
@@ -46,7 +47,7 @@ async def format_duration(duration):
     if not duration:
         return "Tidak diketahui"
         
-    duration = duration[2:]  # Remove PT prefix
+    duration = duration[2:]
     duration = duration.replace("H", " jam ")
     duration = duration.replace("M", " menit ")
     duration = duration.replace("S", " detik")
@@ -66,8 +67,12 @@ async def truncate_text(text, max_length=150):
     return text[:max_length].rsplit(' ', 1)[0] + "..."
 
 #####################################
-## Yt Request | Credit @aenulrofik ##
+## Function Youtube Search Request ##
 #####################################
+
+## Credit: @aenulrofik ##
+## Modified by: Tg @IgnoredProjectXcl ##
+## Added More Details ##
 
 async def yt_search_request(keyword, max_results=40):
     try:
@@ -102,9 +107,14 @@ async def yt_search_request(keyword, max_results=40):
         LOGGER.error(f"Error in YouTube search: {str(e)}")
         return []
 
-#####################################
-## Yt Extract | Credit @aenulrofik ##
-#####################################
+###################################
+## Helper Function Video Details ##
+###################################
+
+## Credit: @aenulrofik ##
+## Modified by: Tg @IgnoredProjectXcl ##
+## Added Error Handling and Improved User Experience ##
+## Added Fallback Thumbnail URL ##
 
 async def get_video_details(video_id):
     try:
@@ -150,6 +160,11 @@ async def get_video_details(video_id):
 ## Yt Search | Credit @aenulrofik ##
 ####################################
 
+## Credit: @aenulrofik ##
+## Major Enhancements by: Tg @IgnoredProjectXcl ##
+## Added Pagination, Better UI, and More Video Details ##
+## Added Error Handling and Improved User Experience ##
+
 async def yt_search(client, message):
     uid = message.from_user.id
     user_name = message.from_user.first_name
@@ -184,7 +199,6 @@ async def yt_search(client, message):
         "total_results": len(search_results)
     }
     
-    # Show first result
     await show_video_page(progress_msg, uid, user_name)
 
 async def show_video_page(message, uid, user_name=None):
@@ -345,4 +359,7 @@ bot.add_handler(
     )
 )
 
-## Enhanced by @WzdDizzyFlasherr with pagination, better UI, and more video details ##
+## Credit: @aenulrofik for this awesome feature ##
+## Enhanced by: @WzdDizzyFlasherr – added pagination, better UI, and more video details ##
+## Note: You can edit this file, but please don’t remove the credits ##
+## Thanks :) ##

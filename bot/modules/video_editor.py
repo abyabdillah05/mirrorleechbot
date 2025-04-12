@@ -297,18 +297,18 @@ class VideEditor:
             msg += f"<b>▪️ Softsub:</b> <code>Softsub ditambahkan</code>\n"
         msg += f"<b>▪️ Format video:</b> <code>{extension}</code>\n"
         s = "" if not compress else "✅"
-        butt.ibutton(f"{s} Kompres ⭐️", f"paid")
+        butt.ibutton(f"{s} Kompres", f"ve compress")
         s = "" if not rename else "✅"
         butt.ibutton(f"{s} Rename", f"ve rename")
         s = "" if not hardsub else "✅"
-        butt.ibutton(f"{s} Hardsub ⭐️", f"paid")
+        butt.ibutton(f"{s} Hardsub", f"ve hardsub")
         s = "" if not softsub else "✅"
         butt.ibutton(f"{s} Softsub", f"ve softsub")
         s = "" if not watermark else "✅"
-        butt.ibutton(f"{s} Watermark ⭐️", f"paid")
+        butt.ibutton(f"{s} Watermark", f"ve watermark")
         butt.ibutton(f"Convert: {extension}", f"ve extension")
         butt.ibutton(f"Extract", f"ve extract")
-        butt.ibutton(f"Encoding ⭐️", f"paid")
+        butt.ibutton(f"Encoding", f"ve encoding")
         s = "" if not metadata_exists else "✅"
         butt.ibutton(f"Metadata", f"ve mtdta")
         butt.ibutton(f"Merge", f"ve merge")
@@ -482,11 +482,11 @@ class VideEditor:
         msg += f"\n\n<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
 
         butt = ButtonMaker()
-        s = "🔒" if not path else "✅"
+        s = "" if not path else "✅"
         if path:
-            butt.ibutton(f"Hapus Watermark {s}", f"ve paid", position="header")
+            butt.ibutton(f"Hapus Watermark {s}", f"ve file_wm", position="header")
         else:
-            butt.ibutton(f"Tambah Watermark {s}", f"ve paid", position="header")
+            butt.ibutton(f"Tambah Watermark {s}", f"ve file_wm", position="header")
         butt.ibutton(f"Ukuran", f"ve size_wm")
         butt.ibutton(f"Posisi", f"ve position_wm")
         butt.ibutton("↩️ Kembali", f"ve back", position="footer")
@@ -606,11 +606,11 @@ class VideEditor:
             msg += f"<b>▪️ Bold:</b> <code>Mati</code>\n"
         msg += f"\n\n<b>⏰ Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
         butt = ButtonMaker()
-        s = "🔒" if not hardsub_file else "✅"
+        s = "" if not hardsub_file else "✅"
         if hardsub_file:
-            butt.ibutton(f"Hapus Subtitle {s}", f"ve paid", position="header")
+            butt.ibutton(f"Hapus Subtitle {s}", f"ve hs_file", position="header")
         else:
-            butt.ibutton(f"Tambahkan Subtitle {s}", f"ve paid", position="header")
+            butt.ibutton(f"Tambahkan Subtitle {s}", f"ve hs_file", position="header")
         butt.ibutton(f"Ukuran Teks", f"ve hs_size")
         butt.ibutton(f"Warna Teks", f"ve hs_color")
         butt.ibutton(f"Jenis Font", f"ve hs_font")

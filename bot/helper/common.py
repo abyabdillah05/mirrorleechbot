@@ -212,6 +212,36 @@ class TaskConfig:
                 self.upDest = (
                     self.user_dict.get("gdrive_id") or config_dict["GDRIVE_ID"]
                 )
+            if (
+                not self.upDest
+                and (
+                    default_upload == "gf"
+                    or not default_upload
+                    and config_dict["DEFAULT_UPLOAD"] == "gf"
+                )
+                or self.upDest == "gf"
+            ):
+                self.upDest = "gofile"
+            if (
+                not self.upDest
+                and (
+                    default_upload == "bh"
+                    or not default_upload
+                    and config_dict["DEFAULT_UPLOAD"] == "bh"
+                )
+                or self.upDest == "bh"
+            ):
+                self.upDest = "buzzheavier"
+            if (
+                not self.upDest
+                and (
+                    default_upload == "pd"
+                    or not default_upload
+                    and config_dict["DEFAULT_UPLOAD"] == "pd"
+                )
+                or self.upDest == "pd"
+            ):
+                self.upDest = "pixeldrain"
             if not self.upDest:
                 raise ValueError("<b>Tujuan upload tidak ditemukan!</b>")
                 

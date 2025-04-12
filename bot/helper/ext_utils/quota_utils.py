@@ -1,8 +1,11 @@
-from uuid import uuid4
 
-######################################
-## Importing Variabels From Project ##
-######################################
+
+
+from uuid import uuid4
+from requests import Session
+
+###################################
+## Import Variables From Project ##
 
 from bot import (bot,
                  user_generate_token,
@@ -14,13 +17,14 @@ from bot.helper.ext_utils.db_handler import DbManger
 from bot.helper.ext_utils.safelinku_utils import SafeLinkU
 from bot.helper.ext_utils.bot_utils import update_user_ldata
 from bot.helper.telegram_helper.button_build import ButtonMaker
-from bot.helper.ext_utils.common_utils import (get_readable_file_size)
+from bot.helper.ext_utils.status_utils import get_readable_file_size
+
 
 ######################################
 ## Quota Check | Credit @aenulrofik ##
 ######################################
 
-## Modified Notification By Tg @WzdDizzyFlasherr ##
+## Modified Notification By Tg @IgnoredProjectXcl ##
 
 async def quota_check(listener, size):
     id = listener.user_id
@@ -78,7 +82,7 @@ async def create_token(id):
 ## Token Verification | Credit @aenulrofik ##
 ##############################################
 
-## Modified Notification By Tg @WzdDizzyFlasherr ##
+## Modified Notification By Tg @IgnoredProjectXcl ##
 ## Modify to improve code & add more features & adjusment 25gb to 20gb ##
 
 async def token_verify(id, token):
@@ -147,7 +151,7 @@ async def token_verify(id, token):
 ## Update Quota & Send Notification To Owner | Credit @aenulrofik ##
 ####################################################################
 
-## Modified Notification By Tg @WzdDizzyFlasherr ##
+## Modified Notification By Tg @IgnoredProjectXcl ##
 
 async def update_quota(id, size):
     try:

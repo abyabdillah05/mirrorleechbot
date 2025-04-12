@@ -20,8 +20,3 @@ class TgLinkException(Exception):
     """No Access granted for this chat"""
 
     pass
-
-class NeedromException(Exception):
-    """This Feature is Beta and may not work as expected"""
-
-    pass

@@ -4,9 +4,8 @@ from asyncio import sleep
 from telegraph.aio import Telegraph
 from telegraph.exceptions import RetryAfterError
 
-from bot import LOGGER, bot_loop, bot
+from bot import (LOGGER, bot_loop, botname)
 
-botnname = bot.me.first_name
 
 class TelegraphHelper:
     def __init__(self, author_name=None, author_url=None):
@@ -85,14 +84,18 @@ class TelegraphHelper:
                     nxt_page += 1
             await self.edit_page(
                 path=path[prev_page],
-                title="Pencarian ",
+                title="Pencarian Pikabot",
                 content=content,
             )
         return
 
 
 telegraph = TelegraphHelper(
-    "{botnname}", "https://t.me/KazumaXcl_Bot"
+    botname, "https://t.me/IgnoredProjectXcl"
 )
 
-bot_loop.run_until_complete(telegraph.create_account())
+bot_loop.run_until_complete(
+    telegraph.create_account()
+)
+LOGGER.info("Telegraph account created successfully.")
+LOGGER.error(telegraph)

@@ -13,7 +13,7 @@ from bot.helper.mirror_utils.gdrive_utils.search import gdSearch
 from bot.helper.ext_utils.files_utils import get_base_name
 from bot.helper.ext_utils.bot_utils import sync_to_async, get_telegraph_list
 from bot.helper.ext_utils.links_utils import is_gdrive_id
-from bot.helper.ext_utils.common_utils import (get_readable_file_size)
+from bot.helper.ext_utils.status_utils import get_readable_file_size
 
 async def stop_duplicate_check(listener):
     if (

@@ -148,7 +148,7 @@ rss_dict = {}
 
 BOT_TOKEN = environ.get("BOT_TOKEN", "")
 if len(BOT_TOKEN) == 0:
-    log_error("BOT_TOKEN variable is missing! Exiting now")
+    log_error("BOT_TOKEN variable is missing! Exiting now (init)")
     exit(1)
 
 bot_id = BOT_TOKEN.split(":", 1)[0]
@@ -471,8 +471,6 @@ RCLONE_SERVE_PASS = environ.get("RCLONE_SERVE_PASS", "")
 if len(RCLONE_SERVE_PASS) == 0:
     RCLONE_SERVE_PASS = ""
 
-AUTO_DETECT_LINKS = environ.get("AUTO_DETECT_LINKS", "")
-AUTO_DETECT_LINKS = AUTO_DETECT_LINKS.lower() == "true"
 
 config_dict = {
     "ALLDEBRID_API": ALLDEBRID_API,
@@ -532,8 +530,7 @@ config_dict = {
     "USER_SESSION_STRING": USER_SESSION_STRING,
     "USE_SERVICE_ACCOUNTS": USE_SERVICE_ACCOUNTS,
     "WEB_PINCODE": WEB_PINCODE,
-    "YT_DLP_OPTIONS": YT_DLP_OPTIONS,
-    "AUTO_DETECT_LINKS": AUTO_DETECT_LINKS,
+    "YT_DLP_OPTIONS": YT_DLP_OPTIONS
 }
 
 if GDRIVE_ID:
@@ -646,6 +643,9 @@ bot = tgClient(
     parse_mode=enums.ParseMode.HTML, 
     max_concurrent_transmissions=10
 ).start()
+
+botname = bot.me.first_name
+botusername = f"@{bot.me.username}"
 
 bot_loop = bot.loop
 

@@ -1,19 +1,20 @@
 from time import time
 from html import escape
+from enum import Enum
 from psutil import (
     cpu_percent, 
     disk_usage, 
     net_io_counters,
     virtual_memory
 )
+from typing import Dict, List, Tuple, Optional, Union
 
-from bot.helper.ext_utils.common_utils import (get_readable_file_size,
-                                             get_readable_time)
-from bot import task_dict, task_dict_lock, botStartTime, config_dict, LOGGER, bot
+from bot import task_dict, task_dict_lock, botStartTime, config_dict, OWNER_ID, SUDO_USERS
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.telegram_helper.button_build import ButtonMaker
 
-bn = bot.me.first_name
+
+SIZE_UNITS = ["B", "KB", "MB", "GB", "TB", "PB"]
 
 class MirrorStatus:
     STATUS_DOWNLOADING = "Download.."
@@ -29,8 +30,8 @@ class MirrorStatus:
     STATUS_CHECKING = "Mengecek.."
     STATUS_SAMVID = "Sample Video"
     STATUS_DUMPING = "Dumping.."
-    STATUS_VIDEDIT = "Video Editor. ."
-     
+    STATUS_VIDEDIT = "Video Editor.."
+
 STATUS_VALUES = [
     ("ALL", "All"),
     ("DL", MirrorStatus.STATUS_DOWNLOADING),
@@ -46,22 +47,265 @@ STATUS_VALUES = [
     ("VE", MirrorStatus.STATUS_VIDEDIT),
 ]
 
-STATUS_EMOJI = {
-    MirrorStatus.STATUS_DOWNLOADING: "🟢",
-    MirrorStatus.STATUS_UPLOADING: "🟢",
-    MirrorStatus.STATUS_QUEUEDL: "🟡",
-    MirrorStatus.STATUS_QUEUEUP: "🟡",
-    MirrorStatus.STATUS_PAUSED: "🔴",
-    MirrorStatus.STATUS_ARCHIVING: "🟣",
-    MirrorStatus.STATUS_EXTRACTING: "🟣",
-    MirrorStatus.STATUS_CLONING: "🟢",
-    MirrorStatus.STATUS_SEEDING: "🔵",
-    MirrorStatus.STATUS_SPLITTING: "🟠",
-    MirrorStatus.STATUS_CHECKING: "🟡",
-    MirrorStatus.STATUS_SAMVID: "🟠",
-    MirrorStatus.STATUS_DUMPING: "🟠",
-    MirrorStatus.STATUS_VIDEDIT: "🟠",
-}
+class StatusType:
+    """Defines different status context types"""
+    PRIVATE = "private"  # Individual user statuses
+    GROUP = "group"      # Group-specific statuses 
+    GLOBAL = "global"    # All tasks across contexts
+
+class StatusPermission:
+    """Handles permission checks for status operations"""
+    
+    @staticmethod
+    def is_owner(user_id: int) -> bool:
+        """Check if user is the bot owner"""
+        return user_id == OWNER_ID
+    
+    @staticmethod
+    def is_sudo(user_id: int) -> bool:
+        """Check if user has sudo privileges"""
+        return user_id in SUDO_USERS or StatusPermission.is_owner(user_id)
+    
+    @staticmethod
+    def can_access_status(user_id: int, status_owner_id: int, status_type: str, 
+                          status_chat_id: int, current_chat_id: int) -> bool:
+        """Determine if a user can access/modify a status
+        
+        Args:
+            user_id: ID of user trying to access status
+            status_owner_id: ID of user who owns the status
+            status_type: Type of status (private/group/global)
+            status_chat_id: Chat ID where status was created
+            current_chat_id: Current chat ID where access is attempted
+        
+        Returns:
+            bool: True if user can access, False otherwise
+        """
+        # Owner can access everything
+        if StatusPermission.is_owner(user_id):
+            return True
+            
+        # Sudo users can access group status and their own status
+        if StatusPermission.is_sudo(user_id):
+            if status_type == StatusType.PRIVATE:
+                return user_id == status_owner_id
+            return True
+            
+        # Regular users can only access their own status or group status in same group
+        if status_type == StatusType.PRIVATE:
+            return user_id == status_owner_id
+        elif status_type == StatusType.GROUP:
+            return status_chat_id == current_chat_id
+            
+        # Global status is owner only
+        return False
+
+    @staticmethod
+    def can_use_button(user_id: int, button_type: str, status_owner_id: int, status_type: str) -> bool:
+        """Check if user can use a specific button type
+        
+        Args:
+            user_id: ID of user trying to use button
+            button_type: Type of button (refresh, close, etc)
+            status_owner_id: ID of user who owns the status
+            status_type: Type of status (private/group/global)
+            
+        Returns:
+            bool: True if user can use button, False otherwise
+        """
+        # For navigation, pagination, and viewing buttons
+        if button_type in ['pre', 'nex', 'ref', 'info', 'ov', 'st', 'ps']:
+            # Anyone with access to the status can use these
+            return True
+            
+        # For destructive actions like close
+        elif button_type == 'close':
+            # Owner can close any status
+            if StatusPermission.is_owner(user_id):
+                return True
+                
+            # For private status, only the owner can close
+            if status_type == StatusType.PRIVATE:
+                return user_id == status_owner_id
+                
+            # For group status, sudo users can close
+            if status_type == StatusType.GROUP:
+                return StatusPermission.is_sudo(user_id)
+                
+            # Global status is owner-only
+            return False
+            
+        # Default: deny access
+        return False
+
+class StatusButtonManager:
+    """Generates appropriate buttons based on context"""
+    
+    @staticmethod
+    def generate_buttons(status_type: str, sid: int, cmd_user_id: int, 
+                        page_no: int, pages: int, tasks_count: int, 
+                        status_filter: str = "All") -> ButtonMaker:
+        """Generate appropriate buttons based on context and task count
+        
+        Args:
+            status_type: Type of status (private/group/global)
+            sid: Status ID (usually user_id or chat_id)
+            cmd_user_id: User ID who initiated the command
+            page_no: Current page number
+            pages: Total number of pages
+            tasks_count: Number of tasks
+            status_filter: Current status filter
+            
+        Returns:
+            ButtonMaker: Button object with appropriate layout
+        """
+        buttons = ButtonMaker()
+        
+        # External link button always in header
+        buttons.ubutton("Join", "https://t.me/pikachukocak3", position="header")
+        
+        # For pages with many tasks - show pagination controls
+        if tasks_count > config_dict["STATUS_LIMIT"]:
+            buttons.ibutton("⏪ Prev", f"status {sid} pre")
+            buttons.ibutton("🔄 Refresh", f"status {sid} ref", position="header")
+            buttons.ibutton("⏩ Next", f"status {sid} nex")
+            
+            # Page step buttons (footer)
+            if tasks_count > 30:
+                for i in [1, 2, 4, 6, 8, 10, 15, 20]:
+                    buttons.ibutton(i, f"status {sid} ps {i}", position="footer")
+        else:
+            # For pages with few tasks - just refresh
+            if tasks_count > 0:
+                buttons.ibutton("🔄 Refresh", f"status {sid} ref", position="header")
+        
+        # Helper buttons
+        if status_type != StatusType.GLOBAL:
+            buttons.ibutton("Help", f"status {sid} help", position="header")
+            buttons.ibutton("Info", f"status {sid} info", position="header")
+            buttons.ibutton("Overview", f"status {sid} ov", position="header")
+        
+        # Status filter buttons - only if multiple status types exist or more than 20 tasks
+        if status_filter != "All" or tasks_count > 20:
+            for label, status_value in STATUS_VALUES:
+                if status_value != status_filter:
+                    buttons.ibutton(label, f"status {sid} st {status_value}")
+        
+        # No tasks - show special message 
+        if tasks_count == 0 and status_filter == "All":
+            buttons.ibutton("Not Exist Status", f"status {sid} null")
+        
+        # Close button always at bottom
+        buttons.ibutton("🔽 Tutup", f"status {sid} close", position="footer")
+        
+        # Global status gets more specialized buttons if owned by owner
+        if status_type == StatusType.GLOBAL and StatusPermission.is_owner(cmd_user_id):
+            buttons.ibutton("📊 Stats", f"status {sid} stats", position="header")
+            buttons.ibutton("🗑️ Clean All", f"status {sid} cleanall", position="footer")
+        
+        return buttons
+
+class StatusContext:
+    """Determines the appropriate status context"""
+    
+    @staticmethod
+    def determine_context(message, cmd_args=None) -> Tuple[str, int, int]:
+        """Determine the appropriate status context based on message and arguments
+        
+        Args:
+            message: The message object
+            cmd_args: Command arguments if any
+            
+        Returns:
+            Tuple[str, int, int]: (status_type, user_id/chat_id, cmd_user_id)
+        """
+        cmd_user_id = message.from_user.id
+        
+        # If command has arguments
+        if cmd_args:
+            # Check for specific formats
+            if cmd_args == "me":
+                # User requesting their own status privately
+                return StatusType.PRIVATE, cmd_user_id, cmd_user_id
+            elif cmd_args == "all" and StatusPermission.is_owner(cmd_user_id):
+                # Owner requesting global status
+                return StatusType.GLOBAL, 0, cmd_user_id
+            elif cmd_args.isdigit():
+                # User requesting specific user's status (sudo/owner only)
+                target_id = int(cmd_args)
+                if StatusPermission.is_sudo(cmd_user_id):
+                    return StatusType.PRIVATE, target_id, cmd_user_id
+        
+        # Default behavior based on chat type
+        is_private = message.chat.type == "private"
+        if is_private:
+            return StatusType.PRIVATE, cmd_user_id, cmd_user_id
+        else:
+            return StatusType.GROUP, message.chat.id, cmd_user_id
+
+class StatusRequest:
+    """Represents a status request with context information"""
+    
+    def __init__(self, user_id: int, chat_id: int, status_type: str, 
+                cmd_user_id: int, page_no: int = 1, status_filter: str = "All", 
+                page_step: int = 1):
+        """Initialize a status request with context information
+        
+        Args:
+            user_id: User ID requesting the status
+            chat_id: Chat ID where status is being requested
+            status_type: Type of status (private/group/global)
+            cmd_user_id: User ID who initiated the command
+            page_no: Current page number
+            status_filter: Current status filter
+            page_step: Number of items to show per page
+        """
+        self.user_id = user_id
+        self.chat_id = chat_id
+        self.status_type = status_type
+        self.cmd_user_id = cmd_user_id
+        self.page_no = page_no
+        self.status_filter = status_filter
+        self.page_step = page_step
+        
+    @property
+    def sid(self) -> int:
+        """Get the status ID based on context"""
+        if self.status_type == StatusType.PRIVATE:
+            return self.user_id
+        elif self.status_type == StatusType.GROUP:
+            return self.chat_id
+        else:  # Global
+            return 0
+            
+    def get_filtered_tasks(self) -> List:
+        """Get tasks filtered according to context and filter"""
+        if self.status_type == StatusType.PRIVATE:
+            # For private status, only show user's own tasks
+            if self.status_filter == "All":
+                return [tk for tk in task_dict.values() if tk.listener.user_id == self.user_id]
+            else:
+                return [
+                    tk for tk in task_dict.values() 
+                    if tk.status() == self.status_filter and tk.listener.user_id == self.user_id
+                ]
+        elif self.status_type == StatusType.GROUP:
+            # For group status, show tasks from that group
+            if self.status_filter == "All":
+                return [tk for tk in task_dict.values() if tk.listener.message.chat.id == self.chat_id]
+            else:
+                return [
+                    tk for tk in task_dict.values()
+                    if tk.status() == self.status_filter and tk.listener.message.chat.id == self.chat_id
+                ]
+        else:
+            # Global status shows all tasks
+            if self.status_filter == "All":
+                return list(task_dict.values())
+            else:
+                return [tk for tk in task_dict.values() if tk.status() == self.status_filter]
+
+# Original utility functions, kept for compatibility
 
 async def getTaskByGid(gid: str):
     async with task_dict_lock:
@@ -72,6 +316,30 @@ async def getAllTasks(req_status: str):
         if req_status == "all":
             return list(task_dict.values())
         return [tk for tk in task_dict.values() if tk.status() == req_status]
+
+def get_readable_file_size(size_in_bytes: int) -> str:
+    if size_in_bytes is None:
+        return "0B"
+    
+    is_negative = size_in_bytes < 0
+    size_in_bytes = abs(size_in_bytes)
+
+    index = 0
+    while size_in_bytes >= 1024 and index < len(SIZE_UNITS) - 1:
+        size_in_bytes /= 1024
+        index += 1
+
+    formatted_size = f"{size_in_bytes:.2f}{SIZE_UNITS[index]}"
+    return f"-{formatted_size}" if is_negative else formatted_size
+
+def get_readable_time(seconds: int):
+    periods = [("h", 86400), ("j", 3600), ("m", 60), ("d", 1)]
+    result = ""
+    for period_name, period_seconds in periods:
+        if seconds >= period_seconds:
+            period_value, seconds = divmod(seconds, period_seconds)
+            result += f"{int(period_value)}{period_name}"
+    return result
 
 def speed_string_to_bytes(size_text: str):
     size = 0
@@ -89,44 +357,178 @@ def speed_string_to_bytes(size_text: str):
     return size
 
 def get_progress_bar_string(pct):
-    if isinstance(pct, str):
-        pct = float(pct.strip("%"))
-    else:
-        pct = float(pct)
-        
+    pct = float(pct.strip("%"))
     p = min(max(pct, 0), 100)
-    cFull = int(p // 10)
-    p_str = "█" * cFull
-    p_str += "░" * (10 - cFull)
+    cFull = int(p // 8)
+    p_str = "■" * cFull
+    p_str += "□" * (12 - cFull)
     return f"[{p_str}]"
 
-def format_status_message(task, is_user=False, is_all=False):
-    tstatus = task.status()
+# New formatting functions for different status contexts
+
+def format_private_status_message(tasks, user_id, username, first_name, page_no, status_filter, page_step):
+    """Format status message for private context"""
+    msg = ""
     
-    msg = "╔═══════════════════════════╗\n"
+    # Header with user info
+    msg += "╔═══ PRIVATE STATUS ═══╗\n"
+    msg += f"╠ 👤 User: {first_name} (@{username})\n"
+    msg += f"╠ 🆔 ID: {user_id}\n"
+    msg += "╚════════════════════════════╝\n\n"
     
-    if task.listener.isPrivateChat:
-        msg += f"╠[ • Nama  : {escape(task.name())}\n"
+    # No tasks message
+    if not tasks:
+        msg += "No active tasks in your private list\n\n"
+        msg += "Start downloading to see tasks here\n\n"
     else:
-        msg += f"╠[ • Nama  : {escape(task.name())}\n"
+        # Pagination info
+        STATUS_LIMIT = config_dict["STATUS_LIMIT"]
+        tasks_no = len(tasks)
+        pages = (max(tasks_no, 1) + STATUS_LIMIT - 1) // STATUS_LIMIT
+        
+        msg += f"📋 Page {page_no}/{pages} | Tasks: {tasks_no}\n"
+        msg += f"🔍 Filter: {status_filter}\n\n"
+        
+        # Show tasks for current page
+        start_idx = (page_no - 1) * STATUS_LIMIT
+        for task in tasks[start_idx:start_idx + STATUS_LIMIT]:
+            msg += format_task_details(task)
     
-    view_type = "Upload" if tstatus == MirrorStatus.STATUS_UPLOADING else "Download"
+    # System stats footer
+    msg += format_system_stats()
+    
+    return msg
+
+def format_group_status_message(tasks, chat_id, chat_title, page_no, status_filter, page_step):
+    """Format status message for group context"""
+    msg = ""
+    
+    # Header with group info
+    msg += "╔═══ GROUP STATUS ═══╗\n"
+    msg += f"╠ 👥 Group: {chat_title}\n"
+    msg += f"╠ 🆔 ID: {chat_id}\n"
+    msg += "╚════════════════════════════╝\n\n"
+    
+    # No tasks message
+    if not tasks:
+        msg += "No active tasks in this group\n\n"
+        msg += "Start downloading in this group to see tasks here\n\n"
+    else:
+        # Pagination info
+        STATUS_LIMIT = config_dict["STATUS_LIMIT"]
+        tasks_no = len(tasks)
+        pages = (max(tasks_no, 1) + STATUS_LIMIT - 1) // STATUS_LIMIT
+        
+        msg += f"📋 Page {page_no}/{pages} | Tasks: {tasks_no}\n"
+        msg += f"🔍 Filter: {status_filter}\n\n"
+        
+        # Show tasks for current page
+        start_idx = (page_no - 1) * STATUS_LIMIT
+        for task in tasks[start_idx:start_idx + STATUS_LIMIT]:
+            msg += format_task_details(task, show_user=True)
+    
+    # System stats footer
+    msg += format_system_stats()
+    
+    return msg
+
+def format_global_status_message(tasks, page_no, status_filter, page_step):
+    """Format status message for global context, showing one task per page"""
+    msg = ""
+    
+    # Header with global info
+    msg += "╔═══ GLOBAL STATUS ═══╗\n"
+    msg += "╠ 🌐 Showing all tasks across all contexts\n"
+    msg += "╠ 👑 Owner access only\n"
+    msg += "╚════════════════════════════╝\n\n"
+    
+    # No tasks message
+    if not tasks:
+        msg += "No active tasks in any context\n\n"
+    else:
+        # When showing global status, only show one task per page with detailed info
+        tasks_no = len(tasks)
+        
+        msg += f"📋 Page {page_no}/{tasks_no} | Total Tasks: {tasks_no}\n"
+        msg += f"🔍 Filter: {status_filter}\n\n"
+        
+        if 1 <= page_no <= tasks_no:
+            task = tasks[page_no - 1]
+            
+            # Show user info for this task
+            msg += f"👤 User: {task.listener.user.first_name}\n"
+            msg += f"🆔 User ID: {task.listener.user_id}\n\n"
+            
+            # Show detailed task info
+            msg += format_task_details(task, detailed=True)
+            
+            # Additional details for global view
+            msg += "\nDetailed Info:\n"
+            chat_type = task.listener.message.chat.type
+            chat_title = getattr(task.listener.message.chat, 'title', 'Private Chat')
+            
+            msg += f"• Origin: {chat_title} ({chat_type})\n"
+            msg += f"• Started: {time_to_formatted_string(task.listener.extra_details['startTime'])}\n"
+            msg += f"• Original Filename: {task.listener.name}\n"
+            
+            # Add target info if available
+            if hasattr(task.listener, 'rclone_path'):
+                msg += f"• Target: {task.listener.rclone_path}\n"
+            elif hasattr(task.listener, 'upload_details'):
+                msg += f"• Target: {task.listener.upload_details.get('drive_id', 'Unknown')}\n"
+    
+    # System stats footer
+    msg += format_system_stats()
+    
+    return msg
+
+def format_task_details(task, show_user=False, detailed=False):
+    """Format details for a single task"""
+    msg = ""
+    
+    # Task header and name
+    msg += "╔═══════════════════════════╗\n"
+    if task.listener.isPrivateChat:
+        msg += "╠[ • Nama  : Private Task\n"
+    else:
+        msg += f"╠[ • Nama  : {escape(task.name())[:30]}\n"
+        
+    # Show view type
+    view_type = "Private" if task.listener.message.chat.type == "private" else "Group"
     msg += f"╠[ • View Type  : {view_type}\n"
     msg += "╚═══════════════════════════╝\n"
     
+    # Task details
     msg += "╔═══════════════════════════╗\n"
     
-    status_emoji = STATUS_EMOJI.get(tstatus, "⚪")
-    msg += f"╠[ • Status    : {status_emoji} {tstatus}\n"
+    # Status with emoji
+    status = task.status()
+    emoji = get_status_emoji(status)
+    msg += f"╠[ • Status    : {emoji} {status}\n"
     
-    if tstatus not in [MirrorStatus.STATUS_DUMPING, MirrorStatus.STATUS_VIDEDIT]:
+    # Progress
+    if status not in [
+        MirrorStatus.STATUS_SPLITTING,
+        MirrorStatus.STATUS_SEEDING,
+        MirrorStatus.STATUS_SAMVID,
+        MirrorStatus.STATUS_DUMPING,
+        MirrorStatus.STATUS_VIDEDIT,
+    ]:
         msg += f"╠[ • Progress  : {get_progress_bar_string(task.progress())} {task.progress()}\n"
     
-    time_elapsed = get_readable_time(time() - task.listener.extra_details['startTime'])
-    msg += f"╠[ • Time  : {time_elapsed}\n"
-    msg += f"╠[ • Size  : {task.size()}\n"
+    # Show user if requested (for group view)
+    if show_user:
+        msg += f"╠[ • User      : @{task.listener.user.username} ({task.listener.user_id})\n"
     
-    if tstatus not in [
+    # Time elapsed
+    time_elapsed = get_readable_time(time() - task.listener.extra_details['startTime'])
+    msg += f"╠[ • Time      : {time_elapsed}\n"
+    
+    # Size
+    msg += f"╠[ • Size      : {task.size()}\n"
+    
+    # Additional details by status type
+    if status not in [
         MirrorStatus.STATUS_SPLITTING,
         MirrorStatus.STATUS_SEEDING,
         MirrorStatus.STATUS_SAMVID,
@@ -136,347 +538,118 @@ def format_status_message(task, is_user=False, is_all=False):
         msg += f"╠[ • Diproses  : {task.processed_bytes()}\n"
         msg += f"╠[ • Estimasi  : {task.eta()}\n"
         msg += f"╠[ • Kecepatan : {task.speed()}\n"
-    
-    if tstatus == MirrorStatus.STATUS_SEEDING:
-        msg += f"╠[ • Ratio : {task.ratio()}\n"
-        msg += f"╠[ • Waktu : {task.seeding_time()}\n"
-        if not is_user:
-            msg += f"╠[ • Diupload  : {task.uploaded_bytes()}\n"
-        msg += f"╠[ • Kecepatan : {task.seed_speed()}\n"
         
-    if hasattr(task, "seeders_num") and tstatus in [MirrorStatus.STATUS_DOWNLOADING]:
-        try:
-            msg += f"╠[ • Seeders   : {task.seeders_num()}\n"
-            msg += f"╠[ • Leechers  : {task.leechers_num()}\n"
-        except:
-            pass
+        # Seeders/leechers for torrents
+        if hasattr(task, 'seeders_num'):
+            try:
+                msg += f"╠[ • Seeders   : {task.seeders_num()}\n"
+                msg += f"╠[ • Leechers  : {task.leechers_num()}\n"
+            except:
+                pass
+    elif status == MirrorStatus.STATUS_SEEDING:
+        msg += f"╠[ • Ratio     : {task.ratio()}\n"
+        msg += f"╠[ • Waktu     : {task.seeding_time()}\n"
+        msg += f"╠[ • Diupload  : {task.uploaded_bytes()}\n"
+        msg += f"╠[ • Kecepatan : {task.seed_speed()}\n"
     
+    # Engine info
     engine = ""
     ddl = task.listener
-    if hasattr(ddl, 'isGofile') and ddl.isGofile:
+    if getattr(ddl, 'isGofile', False):
         engine = "GofileAPI"
-    elif hasattr(ddl, 'isBuzzheavier') and ddl.isBuzzheavier:
+    elif getattr(ddl, 'isBuzzheavier', False):
         engine = "BuzzheavierAPI"
-    elif hasattr(ddl, 'isPixeldrain') and ddl.isPixeldrain:
+    elif getattr(ddl, 'isPixeldrain', False):
         engine = "PixeldrainAPI"
     else:
         engine = f"{getattr(task, 'engine', 'Unknown')}"
-        
     msg += f"╠[ • Engine    : {engine}\n"
+    
+    # Cancel command
     msg += f"╠[ • Cancel    : /{BotCommands.CancelTaskCommand[0]}_{task.gid()}\n"
-    msg += "╚═══════════════════════════╝\n"
+    msg += "╚═══════════════════════════╝\n\n"
     
     return msg
 
-def build_user_context_info(user_id, username=None, first_name=None, type_status="Private", chat_title=None, is_private_chat=False, chat_id=None):
-    msg = "╔═════ Info Status ═════╗\n"
-    msg += f"╠[ • Tipe     : {type_status}\n"
-    
-    if type_status == "Private" or (isinstance(user_id, int) and user_id > 0):
-        nickname = first_name or "User"
-        msg += f"╠[ • Nickname  : {nickname}\n"
-        msg += f"╠[ • ID    : {user_id}\n"
-        
-        if username:
-            msg += f"╠[ • Username  : @{username}\n"
-        else:
-            msg += f"╠[ • Username  : <a href='tg://user?id={user_id}'>User</a>\n"
-    else:
-        group_name = chat_title or "Group"
-        if chat_id is not None:
-            display_id = chat_id if chat_id < 0 else -abs(chat_id)
-        else:
-            display_id = "Unknown"
-            
-        msg += f"╠[ • Grup     : {group_name}\n"
-        msg += f"╠[ • ID       : {display_id}\n"
-        
-        if username:
-            msg += f"╠[ • Username  : @{username}\n"
-        else:
-            if is_private_chat or chat_id is None:
-                msg += f"╠[ • Username  : Group\n"
-            else:
-                msg += f"╠[ • Username  : <a href='tg://join?invite=Group_{abs(chat_id)}'>{group_name}</a>\n"
-            
-    msg += "╚═══════════════════════════╝\n"
-    return msg
-
-def get_system_info():
-    free_space = get_readable_file_size(disk_usage(config_dict['DOWNLOAD_DIR']).free)
-    uptime = get_readable_time(time() - botStartTime)
-    
-    ram_used = get_readable_file_size(virtual_memory().used)
-    ram_total = get_readable_file_size(virtual_memory().total)
-    
-    msg = f"Sistem Stats:\n"
-    msg += f"CPU: {cpu_percent()}% | RAM: {ram_used} / {ram_total}\n"
-    msg += f"FREE: {free_space} | UPT: {uptime}\n"
+def format_system_stats():
+    """Format system stats footer"""
+    msg = "Sistem Stats:\n"
+    msg += f"CPU: {cpu_percent()}% | RAM: {virtual_memory().percent}% / {get_readable_file_size(virtual_memory().total)}\n"
+    msg += f"FREE: {get_readable_file_size(disk_usage(config_dict['DOWNLOAD_DIR']).free)} | UPT: {get_readable_time(time() - botStartTime)}\n"
     
     return msg
 
-def get_readable_message(sid, is_user=False, page_no=1, status_filter="All", page_step=1, chat_id=None, is_all=False, cmd_user_id=None):
-    msg = ""
-    button = None
+def time_to_formatted_string(timestamp):
+    """Convert timestamp to readable date format"""
+    from datetime import datetime
+    dt = datetime.fromtimestamp(timestamp)
+    return dt.strftime("%Y-%m-%d %H:%M:%S")
+
+def get_status_emoji(status):
+    """Get emoji for status type"""
+    emoji_map = {
+        MirrorStatus.STATUS_DOWNLOADING: "🟢",
+        MirrorStatus.STATUS_UPLOADING: "🔵",
+        MirrorStatus.STATUS_QUEUEDL: "🟡",
+        MirrorStatus.STATUS_QUEUEUP: "🟡",
+        MirrorStatus.STATUS_PAUSED: "⚫",
+        MirrorStatus.STATUS_ARCHIVING: "🟠",
+        MirrorStatus.STATUS_EXTRACTING: "🟣",
+        MirrorStatus.STATUS_CLONING: "⚪",
+        MirrorStatus.STATUS_SEEDING: "🟤",
+        MirrorStatus.STATUS_SPLITTING: "⚪",
+        MirrorStatus.STATUS_CHECKING: "🔶",
+        MirrorStatus.STATUS_SAMVID: "🔷",
+        MirrorStatus.STATUS_DUMPING: "⚪",
+        MirrorStatus.STATUS_VIDEDIT: "🔷",
+    }
+    return emoji_map.get(status, "⚪")
+
+async def get_readable_message(sid, is_user, page_no=1, status_filter="All", page_step=1):
+    """Legacy function for compatibility, now using the new system underneath"""
+    status_type = StatusType.PRIVATE if is_user else StatusType.GROUP
     
-    actual_id = None
-    if isinstance(sid, str):
-        if sid.startswith("user_"):
-            actual_id = int(sid.split("_")[1])
-            is_user = True
-            chat_id = None
-
-        elif sid.startswith("group_"):
-            group_id = int(sid.split("_")[1])
-            actual_id = -group_id
-            is_user = False
-            chat_id = actual_id
-
-        elif sid == "global_status":
-            actual_id = 0
-            is_all = True
-
-    else:
-        actual_id = sid
-
-    if is_all:
-        private_tasks = []
-        group_tasks = []
-        
-        for task in task_dict.values():
-            if hasattr(task.listener, 'message') and hasattr(task.listener.message, 'chat') and task.listener.message.chat.id < 0:
-                group_tasks.append(task)
-            else:
-                private_tasks.append(task)
-        
-        tasks = private_tasks + group_tasks
-        header_msg = "<b>Status Global</b>\n\n"
-        type_status = "Global"
-
-    elif is_user:
-        tasks = [tk for tk in task_dict.values() if hasattr(tk.listener, 'user_id') and tk.listener.user_id == actual_id]
-        header_msg = "<b>Status Pribadi</b>\n\n"
-        type_status = "Private"
-
-    elif chat_id:
-        if chat_id > 0:
-            chat_id = -chat_id
-        
-        tasks = [tk for tk in task_dict.values() if hasattr(tk.listener, 'message') and 
-                hasattr(tk.listener.message, 'chat') and tk.listener.message.chat.id == chat_id]
-        header_msg = "<b>Status Group</b>\n\n"
-        type_status = "Group"
-
-    else:
-        LOGGER.warning(f"Invalid status context: sid={sid}, is_user={is_user}, chat_id={chat_id}")
-        return None, None
-
-    if status_filter != "All":
-        tasks = [tk for tk in tasks if tk.status() == status_filter]
-        header_msg = f"<b>STATUS {type_status.upper()} ({status_filter})</b>\n"
-    
-    msg += header_msg
-    msg += "─────────────────────────────\n\n"
-
-    STATUS_LIMIT = config_dict["STATUS_LIMIT"]
-    tasks_no = len(tasks)
-    pages = (max(tasks_no, 1) + STATUS_LIMIT - 1) // STATUS_LIMIT
-    
-    if page_no > pages:
-        page_no = (page_no - 1) % pages + 1
-
-    elif page_no < 1:
-        page_no = pages - (abs(page_no) % pages)
-        
-    start_position = (page_no - 1) * STATUS_LIMIT
-    
-    displayed_tasks = tasks[start_position : start_position + STATUS_LIMIT]
-    for index, task in enumerate(displayed_tasks, start=1):
-        msg += format_status_message(task, is_user, is_all)
-        msg += "\n"
-    
-    if is_all:
-        if cmd_user_id:
-            try:
-                user = bot.get_users(cmd_user_id)
-                user_info = build_user_context_info(
-                    cmd_user_id,
-                    user.username,
-                    user.first_name,
-                    "Global Request"
-                )
-                msg += user_info
-            except:
-                pass
-            
-    elif is_user:
-        user_info = None
-        for task in tasks:
-            if hasattr(task.listener, 'user'):
-                user = task.listener.user
-                user_info = build_user_context_info(
-                    user.id, 
-                    user.username, 
-                    user.first_name, 
-                    "Private"
-                )
-                break
-                
-        if not user_info:
-            try:
-                user = bot.get_users(actual_id)
-                user_info = build_user_context_info(
-                    actual_id,
-                    user.username,
-                    user.first_name,
-                    "Private"
-                )
-            except:
-                user_info = build_user_context_info(actual_id, None, None, "Private")
-                
-        msg += user_info
-        
-    elif chat_id and chat_id < 0:
-        group_info = None
-        is_private_group = False
-        
-        for task in tasks:
-            if hasattr(task.listener, 'message') and hasattr(task.listener, 'chat'):
-                chat = task.listener.message.chat
-                is_private_group = chat.type == "private" or not chat.username
-                group_info = build_user_context_info(
-                    chat.id,
-                    chat.username,
-                    chat.title,
-                    "Group",
-                    None,
-                    is_private_group
-                )
-                break
-                
-        if not group_info:
-            try:
-                chat = bot.get_chat(chat_id)
-                is_private_group = chat.type == "private" or not chat.username
-                group_info = build_user_context_info(
-                    chat_id,
-                    chat.username,
-                    chat.title,
-                    None,
-                    is_private_group
-                )
-            except:
-                group_info = build_user_context_info(chat_id, None, None, None, True)
-                
-        msg += group_info
-    
-    if len(msg) == 0 or tasks_no == 0:
-        if is_user:
-            context_type = "Status Private"
-        elif chat_id:
-            context_type = "Status Group"
-        else:
-            context_type = "Status Global"
-            
+    async with task_dict_lock:
         if status_filter == "All":
-            msg = f"{header_msg}<b>Tidak ada tugas aktif untuk tampilan {context_type}!</b>\n"
+            tasks = (
+                [tk for tk in task_dict.values() if tk.listener.user_id == sid]
+                if is_user
+                else list(task_dict.values())
+            )
+        elif is_user:
+            tasks = [
+                tk for tk in task_dict.values() 
+                if tk.status() == status_filter and tk.listener.user_id == sid
+            ]
         else:
-            msg = f"{header_msg}<b>Tidak ada tugas {status_filter} untuk tampilan {context_type}!</b>\n"
+            tasks = [tk for tk in task_dict.values() if tk.status() == status_filter]
         
-        msg += "─────────────────────────────\n"
+        if len(tasks) == 0 and status_filter == "All":
+            return None, None
+            
+        STATUS_LIMIT = config_dict["STATUS_LIMIT"]
+        tasks_no = len(tasks)
+        pages = (max(tasks_no, 1) + STATUS_LIMIT - 1) // STATUS_LIMIT
         
+        if page_no > pages:
+            page_no = (page_no - 1) % pages + 1
+        elif page_no < 1:
+            page_no = pages - (abs(page_no) % pages)
+            
         if is_user:
-            try:
-                user = bot.get_users(actual_id)
-                user_info = build_user_context_info(
-                    actual_id,
-                    user.username,
-                    user.first_name,
-                    "Private"
-                )
-                msg += user_info
-            except:
-                user_info = build_user_context_info(actual_id, None, None, "Private")
-                msg += user_info
-                
-        elif chat_id and chat_id < 0:
-            try:
-                chat = bot.get_chat(chat_id)
-                is_private_group = chat.type == "private" or not chat.username
-                group_info = build_user_context_info(
-                    chat_id,
-                    chat.username,
-                    chat.title,
-                    "Group",
-                    chat.title,
-                    is_private_group,
-                    chat_id
-                )
-                msg += group_info
-            except Exception as e:
-                LOGGER.error(f"Error saat mendapatkan info grup {chat_id}: {str(e)}")
-                group_info = build_user_context_info(
-                    chat_id,
-                    None, 
-                    "Group",
-                    "Group",
-                    None,
-                    True,
-                    chat_id
-                )
-                msg += group_info
-        elif is_all and cmd_user_id:
-            try:
-                user = bot.get_users(cmd_user_id)
-                user_info = build_user_context_info(
-                    cmd_user_id,
-                    user.username,
-                    user.first_name,
-                    "Global Request"
-                )
-                msg += user_info
-            except:
-                pass
-
-    msg += get_system_info()
-    
-    if tasks_no > STATUS_LIMIT:
-        msg += f"Halaman: {page_no}/{pages} | Step: {page_step} | Total: {tasks_no}\n"
-    
-    msg += f"Powered by: {bn}"
-    
-    if is_all:
-        sid_str = "global_status"
-    elif is_user:
-        sid_str = f"user_{actual_id}"
-    elif chat_id:
-        sid_str = f"group_{chat_id}"
-    else:
-        sid_str = str(actual_id)
-    
-    buttons = ButtonMaker()
-    
-    if tasks_no > STATUS_LIMIT:
-        buttons.ibutton("◀️ Prev", f"status {sid_str} pre {cmd_user_id}", position="header")
-        buttons.ibutton("🔄 Refresh", f"status {sid_str} ref {cmd_user_id}", position="header")
-        buttons.ibutton("Next ▶️", f"status {sid_str} nex {cmd_user_id}", position="header")
-    else:
-        buttons.ibutton("🔄 Refresh", f"status {sid_str} ref {cmd_user_id}", position="header")
-    
-    buttons.ibutton("Help", f"status {sid_str} help {cmd_user_id}")
-    buttons.ubutton("Join", "https://t.me/DizzyStuffProject")
-    buttons.ibutton("Info", f"status {sid_str} info {cmd_user_id}")
-    
-    buttons.ibutton("Tutup", f"status {sid_str} close {cmd_user_id}", position="footer")
-    
-    if status_filter != "All" or tasks_no > 20:
-        for label, status_value in STATUS_VALUES:
-            if status_value != status_filter:
-                buttons.ibutton(label, f"status {sid_str} st {status_value} {cmd_user_id}")
-    
-    if tasks_no > STATUS_LIMIT and tasks_no > 30:
-        for i in [1, 2, 4, 6, 8, 10, 15, 20]:
-            buttons.ibutton(i, f"status {sid_str} ps {i} {cmd_user_id}")
-    
-    button = buttons.build_menu(3)
-    return msg, button
+            # Format as private status
+            user = next((tk.listener.user for tk in tasks), None) if tasks else None
+            username = getattr(user, 'username', 'Unknown')
+            first_name = getattr(user, 'first_name', 'User')
+            msg = format_private_status_message(tasks, sid, username, first_name, page_no, status_filter, page_step)
+        else:
+            # Format as group status
+            chat_title = getattr(next((tk.listener.message.chat for tk in tasks), None) if tasks else None, 'title', 'Group')
+            msg = format_group_status_message(tasks, sid, chat_title, page_no, status_filter, page_step)
+        
+        # Generate buttons
+        buttons = StatusButtonManager.generate_buttons(
+            status_type, sid, sid, page_no, pages, tasks_no, status_filter
+        )
+        
+        return msg, buttons.build_menu(3)

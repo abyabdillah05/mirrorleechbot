@@ -123,7 +123,8 @@ bot.add_handler(
     MessageHandler(
         cancel_task,
         filters=regex(
-    rf"^/{BotCommands.CancelTaskCommand[0]}(_\w+)?(?!all)") & CustomFilters.authorized,
+    rf"^/{BotCommands.CancelTaskCommand[0]}(_\w+)?(?!all)"
+        ) & CustomFilters.authorized
     )
 )
 bot.add_handler(
