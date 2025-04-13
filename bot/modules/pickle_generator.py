@@ -54,8 +54,8 @@ from bot.helper.telegram_helper.message_utils import (
 ## Make sure the Google Drive API is enabled in your project ##
 
 OAUTH_SCOPE = ['https://www.googleapis.com/auth/drive']
-client_id = "281074057431-i80g6t8u4mce5khh1bhlqjd0b3sssfvg.apps.googleusercontent.com"
-client_secret = "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"
+client_id = "836440940751-lgk8m9ip71b7qlda4qo4g9frhgsumgph.apps.googleusercontent.com"
+client_secret = "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"
 
 ########################
 ## Function Get Token ##
