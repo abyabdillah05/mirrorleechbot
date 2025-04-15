@@ -16,7 +16,6 @@ from uuid import uuid4
 from bs4 import BeautifulSoup
 from cloudscraper import create_scraper
 from lxml.etree import HTML
-from requests import Session, post
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
@@ -190,7 +189,7 @@ def direct_link_generator(link: str):
             "freeterabox.com",
             "1024terabox.com",
             "teraboxshare.com",
-            "terasharelink.com",
+            "terasharelink.com"
         ]
     ):
         return terabox(link)
@@ -469,24 +468,11 @@ def mediafire(url, session=None):
     if "/folder/" in url:
         return mediafireFolder(url)
     
-    def req_url(url):
-        session = create_scraper()
-        coba = 0
-        max_coba = 5
-        while coba < max_coba:
-            try:
-                req = session.get(url)
-                if req.status_code == 200:
-                    return req.text
-            except:
-                coba += 1
-        if coba == max_coba:
-            return None
     if final_link := findall(r"https?:\/\/download\d+\.mediafire\.com\/\S+\/\S+\/\S+", url):
         try:
             c = async_to_sync(get_content_type, final_link[0])
             if c is None or re.match(r"text/html|text/plain", c):
-                html = HTML(req_url(url))
+                html = HTML(cf_bypass(url))
                 if html is None:
                     raise DirectDownloadLinkException(f"ERROR: Error saat coba request url {e.__class__.__name__}")
                 if new_link := html.xpath('//a[@id="continue-btn"]/@href'):
@@ -498,7 +484,7 @@ def mediafire(url, session=None):
             raise DirectDownloadLinkException (f"ERROR: Error saat cek ddl mediafire {e}")
         
     def _repair_download(url):
-        html = HTML(req_url(url))
+        html = HTML(cf_bypass(url))
         if html is None:
             raise DirectDownloadLinkException(f"ERROR: Error saat coba request url {e.__class__.__name__}")
         if new_link := html.xpath('//a[@id="continue-btn"]/@href'):
@@ -513,7 +499,7 @@ def mediafire(url, session=None):
     #except Exception as e:
     #    session.close()
     #    raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}")
-    html = HTML(req_url(url))
+    html = HTML(cf_bypass(url))
     if html is None:
         raise DirectDownloadLinkException(f"ERROR: Error saat coba request url {e.__class__.__name__}")
     if error:= html.xpath("//p[@class='notranslate']/text()"):
@@ -538,12 +524,12 @@ def mediafireFolder(url):
         folderkey = folderkey[0]
     details = {"contents": [], "title": "", "total_size": 0, "header": ""}
     
-    session = create_scraper()
+    session = Session()
     adapter = HTTPAdapter(max_retries=Retry(
         total=10, read=10, connect=10, backoff_factor=0.3))
     session.mount("http://", adapter)
     session.mount("https://", adapter)
-    session = create_scraper(
+    session = Session(
         browser={"browser": "firefox", "platform": "windows", "mobile": False},
         delay=10,
         sess=session,
@@ -578,34 +564,19 @@ def mediafireFolder(url):
         raise DirectDownloadLinkException(e)
 
     details["title"] = folder_infos[0]["name"]
-
-    def req_url(url):
-        session = create_scraper()
-        coba = 0
-        max_coba = 10
-        while coba < max_coba:
-            try:
-                req = session.get(url)
-                if req.status_code == 200:
-                    return req.text
-            except:
-                pass
-            coba += 1
-        if coba == max_coba:
-            return None
         
     def __scraper(url):
         parsed_url = urlparse(url)
         url = f"{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}"
         def __repair_download(url):
             try:
-                html = HTML(req_url(url))
+                html = HTML(cf_bypass(url))
             except :
                 return
             if new_link := html.xpath('//a[@id="continue-btn"]/@href'):
                 return __scraper(f"https://mediafire.com/{new_link[0]}")
         try:
-            html = HTML(req_url(url))
+            html = HTML(cf_bypass(url))
         except:
             return
         if final_link := html.xpath('//a[@aria-label="Download file"]/@href'):
@@ -912,7 +883,6 @@ def uploadee(url):
     else:
         raise DirectDownloadLinkException("ERROR: Link File tidak ditemukan!")
 
-
 def terabox(url):
     details = {"contents": [], "title": "", "total_size": 0}
     def process_files(file_list):
@@ -1061,12 +1031,12 @@ def sharer_scraper(url):
 
 
 def wetransfer(url):
-    with create_scraper() as session:
+    with Session() as session:
         try:
             url = session.get(url).url
             splited_url = url.split("/")
             json_data = {
-                "security_hash": splited_url[-1],
+                "security_hash": splited_url[-2],
                 "intent": "entire_transfer"
             }
             res = session.post(f"https://wetransfer.com/api/v4/transfers/{splited_url[-2]}/download", json=json_data).json()
@@ -1314,19 +1284,20 @@ def gofile(url):
 
 
 def cf_bypass(url):
-    "DO NOT ABUSE THIS"
-    try:
-        data = {
-            "cmd": "request.get",
-            "url": url,
-            "maxTimeout": 60000
-        }
-        _json = post("https://cf.jmdkh.eu.org/v1", headers={"Content-Type": "application/json"}, json=data).json()
-        if _json["status"] == "ok":
-            return _json["solution"]["response"]
-    except Exception as e:
-        e
-    raise DirectDownloadLinkException("ERROR: Tidak bisa bypass CloudFlare!")
+    "PIKACHU CF BYPASS"
+    with Session() as session:
+        try:
+            data = {
+                "cmd": "request.get",
+                "url": url,
+                "maxTimeout": 60000
+            }
+            _json = session.post("http://bejir.pika.web.id:8191/v1", headers={"Content-Type": "application/json"}, json=data).json()
+            if _json["status"] == "ok":
+                return _json["solution"]["response"]
+        except Exception as e:
+            e
+        raise DirectDownloadLinkException("ERROR: Tidak bisa bypass CloudFlare!")
 
 
 def send_cm_file(url, file_id=None):

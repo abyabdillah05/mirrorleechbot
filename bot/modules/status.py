@@ -16,6 +16,7 @@ from bot import (
     DOWNLOAD_DIR,
     Interval,
     bot,
+    botusername
 )
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.bot_commands import BotCommands
@@ -160,7 +161,7 @@ Kec. Seed : {get_readable_file_size(seed_speed)}/s
 Kec. Unduh : {get_readable_file_size(dl_speed)}/s
 Kec. Unggah : {get_readable_file_size(up_speed)}/s
 
-@{bot.me.username}
+{botusername}
 """
         await query.answer(msg, show_alert=True)
 

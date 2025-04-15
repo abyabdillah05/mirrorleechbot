@@ -1,12 +1,10 @@
-FROM arakurumi/mltb:heroku
+FROM pikachuproject/mltbpika:beta
 
 WORKDIR /usr/src/app
-
-RUN pip3 install curl_cffi
-RUN pip3 install httpx[http2]
-
 RUN chmod 777 /usr/src/app
 
 COPY . .
+
+RUN pip install --break-system-packages --ignore-installed --force-reinstall -r requirements.txt
 
 CMD ["bash", "start.sh"]

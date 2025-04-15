@@ -32,6 +32,7 @@ from bot.helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.ext_utils.db_handler import DbManger
 from bot.helper.ext_utils.bot_utils import update_user_ldata, new_thread
 from bot.helper.ext_utils.media_utils import createThumb, getSplitSizeBytes
+from bot.helper.ext_utils.translator import TranslationManager
 
 handler_dict = {}
 
@@ -214,6 +215,9 @@ async def get_user_settings(from_user):
         metadata = user_dict["metadata"]
     else:
         metadata = "Not Exist"
+    buttons.ibutton("Language/Bahasa", f"userset {user_id} language")
+    lang_code = user_dict.get("language", config_dict.get("DEFAULT_LANGUAGE", "en"))
+    lang_name = TranslationManager.get_supported_languages().get(lang_code, "English")
     if user_dict:
         buttons.ibutton("Reset All", f"userset {user_id} reset")
     buttons.ibutton("Close", f"userset {user_id} close", position="footer")
@@ -250,6 +254,7 @@ async def get_user_settings(from_user):
 <b>String Session   :</b> <code>{string_session}</code>
 <b>User Cookies     :</b> <code>{user_cookies}</code>
 <b>Metadata         :</b> <code>{metadata}</code>
+<b>Language/Bahasa  :</b> <code>{lang_name}</code>
 </pre>
 """
     if not ospath.exists(thumbpath):
@@ -961,6 +966,40 @@ Check all yt-dlp api options from this <a href='https://github.com/yt-dlp/yt-dlp
         await update_user_settings(query)
         if DATABASE_URL:
             await DbManger().update_user_data(user_id)
+    elif data[2] == "language":
+        await query.answer()
+        buttons = ButtonMaker()
+        supported_langs = TranslationManager.get_supported_languages()
+        current_lang = user_dict.get("language", config_dict.get("DEFAULT_LANGUAGE", "en"))
+        
+        for lang_code, lang_name in supported_langs.items():
+            check = "✅ " if current_lang == lang_code else ""
+            buttons.ibutton(f"{check}{lang_name}", f"userset {user_id} setlang {lang_code}")
+        
+        buttons.ibutton("Back", f"userset {user_id} back")
+        buttons.ibutton("Close", f"userset {user_id} close")
+        
+        await editMessage(
+            message,
+            "Select your preferred language / Pilih bahasa yang Anda inginkan:",
+            buttons.build_menu(2)
+        )
+    elif data[2] == "setlang" and len(data) == 4:
+        lang_code = data[3]
+        if lang_code in TranslationManager.get_supported_languages():
+            TranslationManager.set_user_language(user_id, lang_code)
+            update_user_ldata(user_id, "language", lang_code)
+            if DATABASE_URL:
+                await DbManger().update_user_data(user_id)
+            
+            lang_name = TranslationManager.get_supported_languages()[lang_code]
+            confirm_msg = f"Language has been set to {lang_name}"
+            translated_msg = TranslationManager.translate_text(confirm_msg, target_lang=lang_code)
+            await query.answer(translated_msg, show_alert=True)
+        else:
+            await query.answer("Invalid language code!", show_alert=True)
+        
+        await update_user_settings(query)
     else:
         await query.answer()
         await deleteMessage(message.reply_to_message)

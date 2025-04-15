@@ -29,7 +29,7 @@ class MirrorStatus:
     STATUS_SAMVID = "Sample Video"
     STATUS_DUMPING = "Dumping.."
     STATUS_VIDEDIT = "Video Editor. ."
-     
+    
 STATUS_VALUES = [
     ("ALL", "All"),
     ("DL", MirrorStatus.STATUS_DOWNLOADING),
@@ -50,13 +50,11 @@ async def getTaskByGid(gid: str):
     async with task_dict_lock:
         return next((tk for tk in task_dict.values() if tk.gid() == gid), None)
 
-
 async def getAllTasks(req_status: str):
     async with task_dict_lock:
         if req_status == "all":
             return list(task_dict.values())
         return [tk for tk in task_dict.values() if tk.status() == req_status]
-
 
 def get_readable_file_size(size_in_bytes: int) -> str:
     if size_in_bytes is None:
@@ -182,8 +180,7 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1):
             msg += f"\n<b>├ Ukuran :</b> <code>{task.size()}</code>"
             msg += f"\n<b>├ Diupload :</b> <code>{task.uploaded_bytes()}</code>"
             msg += f"\n<b>├ Kecepatan :</b> <code>{task.seed_speed()}</code>"
-        #else:
-        #    msg += f"\n<b>├ Ukuran :</b> <code>{task.size()}</code>"
+
         engine = ""
         ddl = task.listener
         if ddl.isGofile:
@@ -217,7 +214,7 @@ def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1):
         for label, status_value in STATUS_VALUES:
             if status_value != status:
                 buttons.ibutton(label, f"status {sid} st {status_value}")
-    buttons.ubutton("Join", "https://t.me/pikachukocak2", position="header")
+    buttons.ubutton("Join", "https://t.me/IgnoredProjectXcl")
     buttons.ibutton("🔄 Refresh", f"status {sid} ref", position="header")
     buttons.ibutton("🔽 Tutup", f"status {sid} close", position="footer")
     button = buttons.build_menu(3)

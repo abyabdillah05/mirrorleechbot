@@ -195,7 +195,7 @@ class gdSearch(GoogleDriveHelper):
         if self._stopDup and contents_count <= 6 and contents_count != 0:
             stop_msg += f"<b>❗️ File atau folder ini sudah ada di google drive !</b>\n\n"
             stop_msg += smsg
-            buttons.ubutton("❤️ Support For Pikabot", "https://telegra.ph/Pikabot-Donate-10-01")
+            buttons.ubutton("❤️ 𝚂𝚞𝚙𝚙𝚘𝚛𝚝 𝙼𝚎", "https://telegra.ph/Donate-and-Support-Us-03-21")
             return stop_msg, buttons.build_menu(2)
         return stop_msg, False
 

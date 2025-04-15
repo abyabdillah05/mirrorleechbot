@@ -343,8 +343,8 @@ class TaskListener(TaskConfig):
             else:
                 fmsg = ""
                 buttons = ButtonMaker()
-                buttons.ubutton("♻️ Leech Dump Channel", "https://t.me/+nJ5wkU5xdh1mOTll")
-                #buttons.ubutton("❤️ Support For Pikabot", "https://telegra.ph/Pikabot-Donate-10-01", "footer")
+                buttons.ubutton("♻️ Leech Dump Channel", "https://t.me/TranssionCore6")
+                buttons.ubutton("❤️ 𝚂𝚞𝚙𝚙𝚘𝚛𝚝 𝙼𝚎", "https://telegra.ph/Donate-and-Support-Us-03-21", "footer")
                 button = buttons.build_menu(1)
                 for index, (link, name) in enumerate(files.items(), start=1):
                     fmsg += f"<b>{index:02d}.</b> <a href='{link}'>{name}</a>\n"
@@ -367,11 +367,7 @@ class TaskListener(TaskConfig):
         else:
             msg += f"\n<b>🏷️ Tipe :</b> <code>{mime_type}</code>"
             msg += f'\n<b>⏱ Waktu:</b> {get_readable_time(time() - self.extra_details["startTime"])}'
-            #if mime_type != "Folder" and not self.isClone:
-                #if self.md5:
-                #    msg += f"\n<b>🛡️ MD5 Checksum:</b> <code>{self.md5}</code>"
-            #    else:
-            #        msg += f"\n<b>🛡️ MD5 Checksum:</b> <code>{self.md5}</code>"
+
             if mime_type == "Folder":
                 msg += f"\n<b>📂 Jumlah Folder :</b> <code>{folders}</code>"
                 msg += f"\n<b>📄 Jumlah File :</b> <code>{files}</code>"

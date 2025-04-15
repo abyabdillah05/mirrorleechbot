@@ -509,7 +509,7 @@ async def direct(_, message):
                 cc = f'\n<b>🙎🏻‍♂️ Tugas_Oleh :</b> {uname}'
             mess3 = f"<b>🌐 <u>Link Sumber</u>: </b>\n<code>{link}</code>\n\n<b>🔄 <u>Hasil Bypass</u>: </b>\n{res}\n\n<b>🕐 Waktu: </b> <code>{ms}s</code>" 
             buttons = ButtonMaker()
-            buttons.ubutton("❤️ Donate For Pikabot", "https://telegra.ph/Pikabot-Donate-10-01", "footer")
+            buttons.ubutton("❤️ 𝚂𝚞𝚙𝚙𝚘𝚛𝚝 𝙼𝚎", "https://telegra.ph/Donate-and-Support-Us-03-21", "footer")
             button = buttons.build_menu(1)
             await editMessage(ray, mess3 + cc, button)
         except Exception as e:

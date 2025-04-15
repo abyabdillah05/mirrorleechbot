@@ -59,5 +59,6 @@ class _BotCommands:
         self.GenTokenCommand = [f"gentoken{CMD_SUFFIX}", f"gnt{CMD_SUFFIX}"]
         self.GetTokenCommand = [f"gettoken{CMD_SUFFIX}", f"gtt{CMD_SUFFIX}"]
         self.TebakangkaCommand = f"tebakangka{CMD_SUFFIX}"
+        self.LanguageCommand = [f"language{CMD_SUFFIX}", f"lang{CMD_SUFFIX}"]
 
 BotCommands = _BotCommands()

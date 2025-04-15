@@ -73,7 +73,7 @@ async def create_token(id):
     
     butt = ButtonMaker()
     butt.ubutton("➕ TAMBAH KUOTA", shortened_url, "header")
-    butt.ubutton("❓ TUTORIAL", "https://t.me/DizzyStuffProject/67")
+    butt.ubutton("❓ TUTORIAL", "https://t.me/IgnoredProjectXcl/67")
     butt.ubutton("💰 DONATE", "https://telegra.ph/Donate-and-Support-Us-03-21")
     butt.ubutton("🔧 REPORT", "tg://user?id=7146954165", "footer")
     return butt

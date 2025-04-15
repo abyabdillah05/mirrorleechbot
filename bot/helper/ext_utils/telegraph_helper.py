@@ -84,7 +84,7 @@ class TelegraphHelper:
                     nxt_page += 1
             await self.edit_page(
                 path=path[prev_page],
-                title="Pencarian Pikabot",
+                title=f"Pencarian {botname}",
                 content=content,
             )
         return
