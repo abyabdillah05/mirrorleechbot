@@ -1,4 +1,5 @@
-from bot import bot, DATABASE_URL, user_data, config_dict
+from bot import bot, DATABASE_URL, user_data, config_dict, LOGGER, bot_loop
+import inspect
 
 from bot.helper.telegram_helper.message_utils import (
     sendMessage,
@@ -7,7 +8,7 @@ from bot.helper.telegram_helper.message_utils import (
 from bot.helper.ext_utils.bot_utils import update_user_ldata
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.telegram_helper.button_build import ButtonMaker
-from bot.helper.ext_utils.translator import TranslationManager
+from bot.helper.ext_utils.translator import TranslationManager, register_command_translations
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.ext_utils.db_handler import DbManger
 from pyrogram.filters import command, regex
@@ -73,19 +74,61 @@ async def language_callback(client, callback_query):
     else:
         await editMessage(message, "Invalid language selection.")
 
+async def list_commands_handler(client, message):
+    user_id = message.from_user.id
+    lang_code = TranslationManager.get_user_language(user_id)
+    
+    if lang_code == 'en':
+        await sendMessage(message, "You're using the default English language.\nNo command translations available.")
+        return
+    
+    msg = f"<b>Available command translations for {TranslationManager.get_supported_languages()[lang_code]}:</b>\n\n"
+    
+    for name, attr in inspect.getmembers(BotCommands):
+        if not name.startswith('_') and isinstance(attr, (str, list)):
+            commands = [attr] if isinstance(attr, str) else attr
+            for cmd in commands:
+                if config_dict.get("CMD_SUFFIX"):
+                    base_cmd = cmd.split(config_dict["CMD_SUFFIX"])[0]
+                else:
+                    base_cmd = cmd
+                
+                translated = TranslationManager.translate_command(base_cmd, lang_code)
+                if translated and translated != base_cmd:
+                    suffix = config_dict.get("CMD_SUFFIX", "")
+                    msg += f"/{base_cmd}{suffix} → /{translated}{suffix}\n"
+    
+    await sendMessage(message, msg)
+
 bot.add_handler(
     MessageHandler(
         language_handler,
         filters=command(
             BotCommands.LanguageCommand
-            ) & CustomFilters.authorized
-        )
+        ) & CustomFilters.authorized
     )
+)
+
 bot.add_handler(
     CallbackQueryHandler(
         language_callback,
         filters=regex(
-            '^lang'
-            )
+            "^lang"
         )
     )
+)
+
+bot.add_handler(
+    MessageHandler(
+        list_commands_handler,
+        filters=command(
+            "commands"
+        ) & CustomFilters.authorized
+    )
+)
+
+bot_loop.create_task(
+    register_command_translations(
+        bot
+    )
+)

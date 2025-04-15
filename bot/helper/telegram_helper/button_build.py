@@ -13,7 +13,7 @@ class ButtonMaker:
             return text
         
         try:
-            translated = TranslationManager.translate_text(text, user_id=self.user_id)
+            translated = TranslationManager.translate_button_text(text, user_id=self.user_id)
             return translated if translated else text
         except Exception:
             return text

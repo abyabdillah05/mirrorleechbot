@@ -381,7 +381,7 @@ LOG_CHAT_ID = "" if len(LOG_CHAT_ID) == 0 else LOG_CHAT_ID
 STATUS_LIMIT = environ.get("STATUS_LIMIT", "")
 STATUS_LIMIT = 10 if len(STATUS_LIMIT) == 0 else int(STATUS_LIMIT)
 
-CMD_SUFFIX = environ.get("CMD_SUFFIX", "")
+CMD_SUFFIX = environ.get("CMD_SUFFIX", "")                                  
 
 RSS_CHAT_ID = environ.get("RSS_CHAT_ID", "")
 RSS_CHAT_ID = "" if len(RSS_CHAT_ID) == 0 else int(RSS_CHAT_ID)
