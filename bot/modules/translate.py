@@ -75,11 +75,12 @@ async def language_callback(client, callback_query):
         await editMessage(message, "Invalid language selection.")
 
 async def list_commands_handler(client, message):
+    """List all available command translations for a user's language"""
     user_id = message.from_user.id
     lang_code = TranslationManager.get_user_language(user_id)
     
     if lang_code == 'en':
-        await sendMessage(message, "You're using the default English language.\nNo command translations available.")
+        await sendMessage(message, "You're using the default language (English).\nNo command translations available.")
         return
     
     msg = f"<b>Available command translations for {TranslationManager.get_supported_languages()[lang_code]}:</b>\n\n"
@@ -88,10 +89,21 @@ async def list_commands_handler(client, message):
         if not name.startswith('_') and isinstance(attr, (str, list)):
             commands = [attr] if isinstance(attr, str) else attr
             for cmd in commands:
-                if config_dict.get("CMD_SUFFIX"):
-                    base_cmd = cmd.split(config_dict["CMD_SUFFIX"])[0]
-                else:
-                    base_cmd = cmd
+                base_cmd = cmd
+                if config_dict.get(
+                    "CMD_SUFFIX"
+                    ) and cmd.endswith(
+                        config_dict[
+                            "CMD_SUFFIX"
+                        ]
+                    ):
+                    base_cmd = cmd[
+                        :-len(
+                            config_dict[
+                                "CMD_SUFFIX"
+                            ]
+                        )
+                    ]
                 
                 translated = TranslationManager.translate_command(base_cmd, lang_code)
                 if translated and translated != base_cmd:
@@ -99,6 +111,65 @@ async def list_commands_handler(client, message):
                     msg += f"/{base_cmd}{suffix} → /{translated}{suffix}\n"
     
     await sendMessage(message, msg)
+
+async def register_command_translations(client):
+    LOGGER.info("Starting to register translated commands for all languages...")
+    
+    command_handlers = {}
+    all_commands = []
+    
+    for name, attr in inspect.getmembers(BotCommands):
+        if not name.startswith('_') and isinstance(attr, (str, list)):
+            commands = [attr] if isinstance(attr, str) else attr
+            for cmd in commands:
+                base_cmd = cmd
+                if config_dict.get("CMD_SUFFIX") and cmd.endswith(config_dict["CMD_SUFFIX"]):
+                    base_cmd = cmd[:-len(config_dict["CMD_SUFFIX"])]
+                
+                try:
+                    for handler in client.dispatcher.handlers.get(0, []):
+                        if isinstance(handler, MessageHandler) and hasattr(handler, 'filters') and hasattr(handler.filters, 'commands'):
+                            if base_cmd in handler.filters.commands:
+                                command_handlers[base_cmd] = handler.callback
+                                all_commands.append(base_cmd)
+                                break
+                except Exception as e:
+                    LOGGER.error(f"Error getting handler for {base_cmd}: {e}")
+    
+    registered_commands = set()
+    for lang_code in TranslationManager.get_supported_languages():
+        if lang_code == 'en':  
+            continue
+        
+        LOGGER.info(f"Registering command translations for language: {lang_code}")
+        
+        for base_cmd in all_commands:
+            translated = TranslationManager.translate_command(base_cmd, lang_code)
+            
+            if translated == base_cmd:
+                continue
+                
+            if config_dict.get("CMD_SUFFIX"):
+                translated_cmd = f"{translated}{config_dict['CMD_SUFFIX']}"
+            else:
+                translated_cmd = translated
+            
+            if translated_cmd in registered_commands:
+                continue
+            
+            if base_cmd in command_handlers:
+                try:
+                    handler_func = command_handlers[base_cmd]
+                    client.add_handler(
+                        MessageHandler(
+                            handler_func,
+                            filters=command(translated_cmd)
+                        )
+                    )
+                    registered_commands.add(translated_cmd)
+                    LOGGER.info(f"Registered translated command: /{translated_cmd} → /{base_cmd}")
+                except Exception as e:
+                    LOGGER.error(f"Error registering translated command {translated_cmd}: {e}")
 
 bot.add_handler(
     MessageHandler(

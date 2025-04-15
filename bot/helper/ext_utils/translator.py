@@ -60,7 +60,7 @@ class TranslationManager:
         if target_lang == 'en' or target_lang not in SUPPORTED_LANGUAGES:
             return command
         
-        cache_key = f"{command}_{target_lang}"
+        cache_key = f"cmd_{command}_{target_lang}"
         if cache_key in COMMAND_CACHE:
             return COMMAND_CACHE[cache_key]
             
@@ -92,8 +92,8 @@ class TranslationManager:
             
         if target_lang == 'en' or target_lang not in SUPPORTED_LANGUAGES:
             return text
-            
-        prefix_match = re.match(r'^([^\w\s]+\s*)', text)
+        
+        prefix_match = re.match(r'^([✓✅❌☑️⬇️➕🔄◽️▫️📁📂🗂️📊📈📉🔍🔎🔑🔒🔓♻️⚠️⛔️✴️❇️💠🔰⭕️✅❌➰➿〰️💲💱©®™🔴🟠🟡🟢🔵🟣⚫️⚪️🟤🔘🔸🔹🔶🔷🔺🔻💠🔆]\s*)', text)
         prefix = prefix_match.group(1) if prefix_match else ""
         
         if prefix:
@@ -101,12 +101,12 @@ class TranslationManager:
         else:
             main_text = text
             
-        suffix_match = re.search(r'([^\w\s]+)$', main_text)
+        suffix_match = re.search(r'([:\-→⟶⇒⇨⇾➡️➤▶️★☆⭐️✨🌟✯✰\s]+)$', main_text)
         suffix = suffix_match.group(1) if suffix_match else ""
         
         if suffix:
             main_text = main_text[:-len(suffix)]
-            
+        
         if main_text.strip():
             try:
                 cache_key = f"btn_{main_text}_{target_lang}"
@@ -186,8 +186,8 @@ class TranslationManager:
                 detected_lang = detect(protected_text[:100].strip())
                 if detected_lang == target_lang:
                     return text
-            except Exception:
-                pass 
+            except:
+                pass
                 
             translator = GoogleTranslator(source='auto', target=target_lang)
             translated_text = translator.translate(protected_text)
@@ -208,55 +208,3 @@ class TranslationManager:
     @staticmethod
     def get_supported_languages():
         return SUPPORTED_LANGUAGES
-
-async def register_command_translations(bot):
-    LOGGER.info("Starting to register translated commands for all languages...")
-    
-    command_handlers = {}
-    for handler in bot.handlers.get(MessageHandler, []):
-        if hasattr(handler, 'filters') and hasattr(handler.filters, 'commands'):
-            for cmd in handler.filters.commands:
-                command_handlers[cmd] = handler.callback
-    
-    all_commands = []
-    for name, attr in inspect.getmembers(BotCommands):
-        if not name.startswith('_') and isinstance(attr, (str, list)):
-            if isinstance(attr, str):
-                all_commands.append(attr)
-            else:
-                all_commands.extend(attr)
-    
-    for lang_code in SUPPORTED_LANGUAGES:
-        
-        LOGGER.info(f"Registering command translations for language: {lang_code}")
-        
-        for cmd in all_commands:
-            base_cmd = cmd
-            if config_dict.get("CMD_SUFFIX") and cmd.endswith(config_dict["CMD_SUFFIX"]):
-                base_cmd = cmd[:-len(config_dict["CMD_SUFFIX"])]
-            
-            translated = TranslationManager.translate_command(base_cmd, lang_code)
-            
-            if translated == base_cmd:
-                continue
-                
-            if cmd in command_handlers:
-                translated_cmd = translated
-                if config_dict.get("CMD_SUFFIX"):
-                    translated_cmd = f"{translated}{config_dict['CMD_SUFFIX']}"
-                
-                if translated_cmd in REGISTERED_COMMANDS:
-                    continue
-                
-                try:
-                    handler_func = command_handlers[cmd]
-                    bot.add_handler(
-                        MessageHandler(
-                            handler_func,
-                            filters=command(translated_cmd)
-                        )
-                    )
-                    REGISTERED_COMMANDS.add(translated_cmd)
-                    LOGGER.info(f"Registered translated command: /{translated_cmd} → /{cmd}")
-                except Exception as e:
-                    LOGGER.error(f"Error registering translated command {translated_cmd}: {e}")
