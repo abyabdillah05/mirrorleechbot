@@ -146,18 +146,16 @@ class TranslationManager:
         try:
             html_placeholders = {}
             counter = 0
-            html_regex = r'__html_\d+__'
-            html_matches = re.findall(
-                html_regex,
-                text
-            )
+            
+            html_regex = r'(__[hH]tml_\d+__)'
+            html_matches = re.findall(html_regex, text)
             
             for match in html_matches:
                 html_placeholders[match] = match
             
             def protect_html_element(match):
                 nonlocal counter
-                placeholder = f"__HTML_{counter}__"
+                placeholder = f"__PROTECTED_HTML_{counter}__"
                 html_placeholders[placeholder] = match.group(0)
                 counter += 1
                 return placeholder
@@ -180,7 +178,7 @@ class TranslationManager:
             
             def protect_standalone_tag(match):
                 nonlocal counter
-                placeholder = f"__TAG_{counter}__"
+                placeholder = f"__PROTECTED_TAG_{counter}__"
                 html_placeholders[placeholder] = match.group(0)
                 counter += 1
                 return placeholder
@@ -203,7 +201,8 @@ class TranslationManager:
             if not translated_text:
                 return text
                 
-            for placeholder, original in html_placeholders.items():
+            # Restore all placeholders in order of specificity
+            for placeholder, original in sorted(html_placeholders.items(), key=lambda x: len(x[0]), reverse=True):
                 translated_text = translated_text.replace(placeholder, original)
                 
             TEXT_CACHE[cache_key] = translated_text
