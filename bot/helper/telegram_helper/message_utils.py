@@ -14,18 +14,23 @@ from bot.helper.ext_utils.translator import TranslationManager
 ## Helper Function For Translation ##
 
 def _get_user_id_from_message(message):
-    if hasattr(message, 'from_user') and message.from_user and hasattr(message.from_user, 'id'):
+    if hasattr(
+        message,
+        'from_user'
+        ) and message.from_user and hasattr(
+            message.from_user,
+            'id'
+            ):
         return message.from_user.id
-    return None
+    return None             
 
 def _translate_text(text, message=None, user_id=None):
     if user_id is None and message is not None:
         user_id = _get_user_id_from_message(message)
-    
-    if not text or len(text) < 3:
-        return text
-        
-    return TranslationManager.translate_text(text, user_id=user_id)
+    return TranslationManager.translate_text(
+        text,
+        user_id=user_id
+        )
 
 ## Send Message ##
 
