@@ -132,7 +132,6 @@ class TranslationManager:
         if len(text.strip()) < 3:
             return text
         
-        # Get target language
         if target_lang is None:
             target_lang = TranslationManager.get_user_language(user_id)
         
@@ -147,34 +146,29 @@ class TranslationManager:
             html_placeholders = {}
             counter = 0
             
-            html_regex = r'(__[hH]tml_\d+__)'
-            html_matches = re.findall(html_regex, text)
-            
-            for match in html_matches:
-                html_placeholders[match] = match
-            
-            def protect_html_element(match):
-                nonlocal counter
-                placeholder = f"__PROTECTED_HTML_{counter}__"
-                html_placeholders[placeholder] = match.group(0)
-                counter += 1
-                return placeholder
-            
             patterns = [
-                r'<code>.*?</code>',
-                r'<pre.*?>.*?</pre>',
-                r'<b>.*?</b>',
-                r'<i>.*?</i>',
-                r'<a href=.*?</a>',
-                r'<u>.*?</u>',
-                r'<s>.*?</s>',
-                r'<blockquote>.*?</blockquote>',
-                r'<spoiler>.*?</spoiler>'
+                (r'<b>.*?</b>', 'bold_tag'),
+                (r'<i>.*?</i>', 'italic_tag'),
+                (r'<code>.*?</code>', 'code_tag'),
+                (r'<pre.*?>.*?</pre>', 'pre_tag'),
+                (r'<a href=.*?</a>', 'url_tag'),
+                (r'<u>.*?</u>', 'underline_tag'),
+                (r'<s>.*?</s>', 'strikethrough_tag'),
+                (r'<blockquote>.*?</blockquote>', 'quote_tag'),
+                (r'<spoiler>.*?</spoiler>', 'spoiler_tag'),
             ]
             
             protected_text = text
-            for pattern in patterns:
-                protected_text = re.sub(pattern, protect_html_element, protected_text, flags=re.DOTALL)
+            
+            for pattern, tag_type in patterns:
+                def replace_tag(match):
+                    nonlocal counter
+                    placeholder = f"__PROTECTED_TAG_{counter}__"
+                    html_placeholders[placeholder] = match.group(0)
+                    counter += 1
+                    return placeholder
+                    
+                protected_text = re.sub(pattern, replace_tag, protected_text, flags=re.DOTALL)
             
             def protect_standalone_tag(match):
                 nonlocal counter
@@ -185,11 +179,11 @@ class TranslationManager:
                 
             protected_text = re.sub(r'<[^<>]+?>', protect_standalone_tag, protected_text)
             
-            if not protected_text.strip():
+            if not protected_text.strip() or all(x in html_placeholders for x in protected_text.split()):
                 return text
             
             try:
-                detected_lang = detect(protected_text[:100].strip())
+                detected_lang = detect(protected_text.strip())
                 if detected_lang == target_lang:
                     return text
             except:
@@ -201,7 +195,6 @@ class TranslationManager:
             if not translated_text:
                 return text
                 
-            # Restore all placeholders in order of specificity
             for placeholder, original in sorted(html_placeholders.items(), key=lambda x: len(x[0]), reverse=True):
                 translated_text = translated_text.replace(placeholder, original)
                 
