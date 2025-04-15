@@ -146,6 +146,14 @@ class TranslationManager:
         try:
             html_placeholders = {}
             counter = 0
+            html_regex = r'__html_\d+__'
+            html_matches = re.findall(
+                html_regex,
+                text
+            )
+            
+            for match in html_matches:
+                html_placeholders[match] = match
             
             def protect_html_element(match):
                 nonlocal counter
