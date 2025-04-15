@@ -129,80 +129,59 @@ class TranslationManager:
         if not text or not isinstance(text, str):
             return text
         
-        if len(text.strip()) < 3:
+        if len(text) <= 2 and not text.isalpha():
             return text
+            
+        html_entities = {}
+        count = 0
+        
+        def replace_tag(match):
+            nonlocal count
+            placeholder = f"<HTMLTAG{count}>"
+            html_entities[placeholder] = match.group(0)
+            count += 1
+            return placeholder
+            
+        text_without_html = re.sub(r'<[^<>]*?>', replace_tag, text)
         
         if target_lang is None:
             target_lang = TranslationManager.get_user_language(user_id)
         
-        if not target_lang or target_lang not in SUPPORTED_LANGUAGES or target_lang == 'en':
+        if not target_lang or target_lang not in SUPPORTED_LANGUAGES:
+            target_lang = DEFAULT_LANGUAGE
+            if not DEFAULT_LANGUAGE or DEFAULT_LANGUAGE not in SUPPORTED_LANGUAGES:
+                return text 
+        
+        if not text_without_html.strip():
             return text
-                
-        cache_key = f"txt_{text[:100]}_{target_lang}"
-        if cache_key in TEXT_CACHE:
-            return TEXT_CACHE[cache_key]
-                
+        
         try:
-            html_placeholders = {}
-            counter = 0
-            
-            patterns = [
-                (r'<b>.*?</b>', 'bold_tag'),
-                (r'<i>.*?</i>', 'italic_tag'),
-                (r'<code>.*?</code>', 'code_tag'),
-                (r'<pre.*?>.*?</pre>', 'pre_tag'),
-                (r'<a href=.*?</a>', 'url_tag'),
-                (r'<u>.*?</u>', 'underline_tag'),
-                (r'<s>.*?</s>', 'strikethrough_tag'),
-                (r'<blockquote>.*?</blockquote>', 'quote_tag'),
-                (r'<spoiler>.*?</spoiler>', 'spoiler_tag'),
-            ]
-            
-            protected_text = text
-            
-            for pattern, tag_type in patterns:
-                def replace_tag(match):
-                    nonlocal counter
-                    placeholder = f"__PROTECTED_TAG_{counter}__"
-                    html_placeholders[placeholder] = match.group(0)
-                    counter += 1
-                    return placeholder
-                    
-                protected_text = re.sub(pattern, replace_tag, protected_text, flags=re.DOTALL)
-            
-            def protect_standalone_tag(match):
-                nonlocal counter
-                placeholder = f"__PROTECTED_TAG_{counter}__"
-                html_placeholders[placeholder] = match.group(0)
-                counter += 1
-                return placeholder
-                
-            protected_text = re.sub(r'<[^<>]+?>', protect_standalone_tag, protected_text)
-            
-            if not protected_text.strip() or all(x in html_placeholders for x in protected_text.split()):
-                return text
-            
             try:
-                detected_lang = detect(protected_text.strip())
+                detected_lang = detect(text_without_html)
                 if detected_lang == target_lang:
                     return text
-            except:
-                pass
+            except Exception as e:
+                LOGGER.error(f"Language detection error: {e}")
+        
+            try:
+                translator = GoogleTranslator(source='auto', target=target_lang)
+                translated_text = translator.translate(text_without_html)
                 
-            translator = GoogleTranslator(source='auto', target=target_lang)
-            translated_text = translator.translate(protected_text)
-            
-            if not translated_text:
+                if not translated_text:
+                    return text
+                
+                for placeholder, tag in html_entities.items():
+                    if placeholder in translated_text:
+                        translated_text = translated_text.replace(placeholder, tag)
+                    else:
+                        translated_text += tag
+                        
+                return translated_text
+            except Exception as e:
+                LOGGER.error(f"Translation error: {e} --> Invalid source or target language!")
                 return text
-                
-            for placeholder, original in sorted(html_placeholders.items(), key=lambda x: len(x[0]), reverse=True):
-                translated_text = translated_text.replace(placeholder, original)
-                
-            TEXT_CACHE[cache_key] = translated_text
-            
-            return translated_text
         except Exception as e:
-            LOGGER.error(f"Text translation error: {e}")
+            LOGGER.error(f"General translation error: {e}")
             return text
     
     @staticmethod
