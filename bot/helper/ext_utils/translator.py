@@ -57,16 +57,20 @@ class TranslationManager:
             count += 1
             return placeholder
             
-        text_without_html = re.sub(r'<.*?>', replace_tag, text)
+        text_without_html = re.sub(r'<[^<>]*?>', replace_tag, text)
         
         if target_lang is None:
             target_lang = TranslationManager.get_user_language(user_id)
-            
+        
+        if not target_lang or target_lang not in SUPPORTED_LANGUAGES:
+            target_lang = DEFAULT_LANGUAGE
+        
         try:
             detected_lang = detect(text_without_html)
             if detected_lang == target_lang:
                 return text
-        except:
+        except Exception as e:
+            LOGGER.error(f"Language detection error: {e}")
             pass
             
         try:
@@ -74,8 +78,11 @@ class TranslationManager:
             translated_text = translator.translate(text_without_html)
             
             for placeholder, tag in html_entities.items():
-                translated_text = translated_text.replace(placeholder, tag)
-                
+                if placeholder in translated_text:
+                    translated_text = translated_text.replace(placeholder, tag)
+                else:
+                    translated_text += tag
+                    
             return translated_text
         except Exception as e:
             LOGGER.error(f"Translation error: {e}")
