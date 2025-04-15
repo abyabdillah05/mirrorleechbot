@@ -10,7 +10,7 @@ from bot.helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.ext_utils.translator import TranslationManager
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.ext_utils.db_handler import DbManger
-from pyrogram.filters import command, callback_query
+from pyrogram.filters import command, regex
 from pyrogram.handlers import MessageHandler, CallbackQueryHandler
 
 @new_thread
@@ -86,7 +86,7 @@ bot.add_handler(
 bot.add_handler(
     CallbackQueryHandler(
         language_callback,
-        filters=callback_query(
+        filters=regex(
             '^lang'
             )
         )
