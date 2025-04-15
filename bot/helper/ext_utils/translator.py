@@ -62,31 +62,48 @@ class TranslationManager:
         if target_lang is None:
             target_lang = TranslationManager.get_user_language(user_id)
         
+        # Ensure target language is valid
         if not target_lang or target_lang not in SUPPORTED_LANGUAGES:
             target_lang = DEFAULT_LANGUAGE
+            if not DEFAULT_LANGUAGE or DEFAULT_LANGUAGE not in SUPPORTED_LANGUAGES:
+                return text  # Return original text if no valid language is available
+        
+        # Skip translation if text is too short or empty after removing HTML
+        if not text_without_html.strip():
+            return text
         
         try:
-            detected_lang = detect(text_without_html)
-            if detected_lang == target_lang:
+            # Try to detect language, but don't fail if it doesn't work
+            try:
+                detected_lang = detect(text_without_html)
+                if detected_lang == target_lang:
+                    return text
+            except Exception as e:
+                LOGGER.error(f"Language detection error: {e}")
+                # Continue with translation anyway
+        
+            # Perform translation
+            try:
+                translator = GoogleTranslator(source='auto', target=target_lang)
+                translated_text = translator.translate(text_without_html)
+                
+                # If translation failed or returned None, return original
+                if not translated_text:
+                    return text
+                
+                # Restore HTML tags
+                for placeholder, tag in html_entities.items():
+                    if placeholder in translated_text:
+                        translated_text = translated_text.replace(placeholder, tag)
+                    else:
+                        translated_text += tag
+                        
+                return translated_text
+            except Exception as e:
+                LOGGER.error(f"Translation error: {e} --> Invalid source or target language!")
                 return text
         except Exception as e:
-            LOGGER.error(f"Language detection error: {e}")
-            pass
-            
-        try:
-            translator = GoogleTranslator(source='auto', target=target_lang)
-            translated_text = translator.translate(text_without_html)
-            
-            # Restore HTML tags
-            for placeholder, tag in html_entities.items():
-                if placeholder in translated_text:
-                    translated_text = translated_text.replace(placeholder, tag)
-                else:
-                    translated_text += tag
-                    
-            return translated_text
-        except Exception as e:
-            LOGGER.error(f"Translation error: {e}")
+            LOGGER.error(f"General translation error: {e}")
             return text
             
     @staticmethod

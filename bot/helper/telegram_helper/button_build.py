@@ -12,9 +12,11 @@ class ButtonMaker:
         if self.user_id is None:
             return text
         
-        translated = TranslationManager.translate_text(text, user_id=self.user_id)
-        
-        return translated if translated else text
+        try:
+            translated = TranslationManager.translate_text(text, user_id=self.user_id)
+            return translated if translated else text
+        except Exception:
+            return text
 
     def ubutton(self, key, link, position=None):
         translated_key = self._translate_text(key)

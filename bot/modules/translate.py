@@ -4,7 +4,7 @@ from bot.helper.telegram_helper.message_utils import (
     sendMessage,
     editMessage
 )
-from bot.helper.ext_utils.bot_utils import update_user_ldata, new_thread
+from bot.helper.ext_utils.bot_utils import update_user_ldata
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.ext_utils.translator import TranslationManager
@@ -13,7 +13,6 @@ from bot.helper.ext_utils.db_handler import DbManger
 from pyrogram.filters import command, regex
 from pyrogram.handlers import MessageHandler, CallbackQueryHandler
 
-@new_thread
 async def language_handler(client, message):
     args = message.text.split()
     user_id = message.from_user.id
@@ -50,7 +49,6 @@ async def language_handler(client, message):
             buttons.build_menu(2)
         )
 
-@new_thread
 async def language_callback(client, callback_query):
     data = callback_query.data.split()
     user_id = callback_query.from_user.id
