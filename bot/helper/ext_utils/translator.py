@@ -52,7 +52,7 @@ class TranslationManager:
         
         def replace_tag(match):
             nonlocal count
-            placeholder = f"__HTML_TAG_{count}__"
+            placeholder = f"<HTMLTAG{count}>"
             html_entities[placeholder] = match.group(0)
             count += 1
             return placeholder
@@ -77,6 +77,7 @@ class TranslationManager:
             translator = GoogleTranslator(source='auto', target=target_lang)
             translated_text = translator.translate(text_without_html)
             
+            # Restore HTML tags
             for placeholder, tag in html_entities.items():
                 if placeholder in translated_text:
                     translated_text = translated_text.replace(placeholder, tag)
