@@ -125,20 +125,25 @@ async def register_command_translations(client):
                 base_cmd = cmd
                 if config_dict.get("CMD_SUFFIX") and cmd.endswith(config_dict["CMD_SUFFIX"]):
                     base_cmd = cmd[:-len(config_dict["CMD_SUFFIX"])]
-                
-                try:
-                    for handler in client.dispatcher.handlers.get(0, []):
-                        if isinstance(handler, MessageHandler) and hasattr(handler, 'filters') and hasattr(handler.filters, 'commands'):
-                            if base_cmd in handler.filters.commands:
-                                command_handlers[base_cmd] = handler.callback
-                                all_commands.append(base_cmd)
-                                break
-                except Exception as e:
-                    LOGGER.error(f"Error getting handler for {base_cmd}: {e}")
+                all_commands.append(base_cmd)
+    
+    try:
+        for group_id in client.dispatcher.groups:
+            for handler in client.dispatcher.groups[group_id]:
+                if isinstance(handler, MessageHandler) and hasattr(handler, 'filters'):
+                    if hasattr(handler.filters, 'commands') and handler.filters.commands:
+                        for cmd in handler.filters.commands:
+                            base_cmd = cmd
+                            if config_dict.get("CMD_SUFFIX") and cmd.endswith(config_dict["CMD_SUFFIX"]):
+                                base_cmd = cmd[:-len(config_dict["CMD_SUFFIX"])]
+                            command_handlers[base_cmd] = handler.callback
+    except Exception as e:
+        LOGGER.error(f"Error accessing handlers: {e}")
     
     registered_commands = set()
+    
     for lang_code in TranslationManager.get_supported_languages():
-        if lang_code == 'en':  
+        if lang_code == 'en': 
             continue
         
         LOGGER.info(f"Registering command translations for language: {lang_code}")
@@ -158,6 +163,7 @@ async def register_command_translations(client):
                 continue
             
             if base_cmd in command_handlers:
+                
                 try:
                     handler_func = command_handlers[base_cmd]
                     client.add_handler(
