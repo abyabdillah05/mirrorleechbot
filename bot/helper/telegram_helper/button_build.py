@@ -1,48 +1,30 @@
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from bot.helper.ext_utils.translator import TranslationManager
-import re
-from bot import LOGGER
+
 
 class ButtonMaker:
-    def __init__(self, user_id=None):
+    def __init__(self):
         self._button = []
         self._header_button = []
         self._footer_button = []
-        self.user_id = user_id
-
-    def _translate_text(self, text):
-        if self.user_id is None:
-            return text
-        
-        try:
-            translated = TranslationManager.translate_button_text(text, user_id=self.user_id)
-            if translated and translated != text:
-                return translated
-            
-        except Exception as e:
-            LOGGER.error(f"Button translation error: {e}")
-            return text
 
     def ubutton(self, key, link, position=None):
-        translated_key = self._translate_text(key)
         if not position:
-            self._button.append(InlineKeyboardButton(text=translated_key, url=link))
+            self._button.append(InlineKeyboardButton(text=key, url=link))
         elif position == "header":
-            self._header_button.append(InlineKeyboardButton(text=translated_key, url=link))
+            self._header_button.append(InlineKeyboardButton(text=key, url=link))
         elif position == "footer":
-            self._footer_button.append(InlineKeyboardButton(text=translated_key, url=link))
+            self._footer_button.append(InlineKeyboardButton(text=key, url=link))
 
     def ibutton(self, key, data, position=None):
-        translated_key = self._translate_text(key)
         if not position:
-            self._button.append(InlineKeyboardButton(text=translated_key, callback_data=data))
+            self._button.append(InlineKeyboardButton(text=key, callback_data=data))
         elif position == "header":
             self._header_button.append(
-                InlineKeyboardButton(text=translated_key, callback_data=data)
+                InlineKeyboardButton(text=key, callback_data=data)
             )
         elif position == "footer":
             self._footer_button.append(
-                InlineKeyboardButton(text=translated_key, callback_data=data)
+                InlineKeyboardButton(text=key, callback_data=data)
             )
 
     def build_menu(self, b_cols=1, h_cols=8, f_cols=8):

@@ -75,7 +75,7 @@ from bot.modules import (
     tiktok,
     torrent_search,
     torrent_select,
-    translate,
+    #translate,
     users_settings,
     waifu,
     youtube,
