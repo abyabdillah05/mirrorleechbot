@@ -22,7 +22,7 @@ def _translate_text(text, message=None, user_id=None):
     if user_id is None and message is not None:
         user_id = _get_user_id_from_message(message)
     
-    if not text or len(text) < 3:
+    if not text or not isinstance(text, str):
         return text
         
     return TranslationManager.translate_text(text, user_id=user_id)

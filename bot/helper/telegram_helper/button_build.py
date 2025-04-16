@@ -1,6 +1,7 @@
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from bot.helper.ext_utils.translator import TranslationManager
 import re
+from bot import LOGGER
 
 class ButtonMaker:
     def __init__(self, user_id=None):
@@ -14,18 +15,12 @@ class ButtonMaker:
             return text
         
         try:
-            clean_text = text
-            emoji_match = re.match(r'^([✓✅❌☑️⬇️➕🔄◽️▫️📁📂🗂️📊📈📉🔍🔎🔑🔒🔓♻️⚠️⛔️✴️❇️💠🔰⭕️✅❌➰➿〰️💲💱©®™🔴🟠🟡🟢🔵🟣⚫️⚪️🟤🔘🔸🔹🔶🔷🔺🔻💠🔆]\s*)', text)
-            prefix = emoji_match.group(1) if emoji_match else ""
+            translated = TranslationManager.translate_button_text(text, user_id=self.user_id)
+            if translated and translated != text:
+                return translated
             
-            if prefix:
-                clean_text = text[len(prefix):]
-            
-            translated = TranslationManager.translate_text(clean_text, user_id=self.user_id)
-            if translated:
-                return prefix + translated
-            return text
-        except Exception:
+        except Exception as e:
+            LOGGER.error(f"Button translation error: {e}")
             return text
 
     def ubutton(self, key, link, position=None):
