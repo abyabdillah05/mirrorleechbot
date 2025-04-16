@@ -593,8 +593,6 @@ async def PerformVideoEditor(
     rename = listener.video_editor.get("rename")
     if rename:
         output_file = f"{dir}/{rename}{resolution_label}"
-        if not resolution:
-            output_file = f"{dir}/{rename}"
 
     # Watermark
     watermark = listener.video_editor.get("watermark", {})
@@ -785,47 +783,41 @@ async def PerformVideoEditor(
         return True
     
 async def extract_all_streams(video_file):
-    LOGGER.info(f"Extracting all streams from {video_file}")
     dir = ospath.dirname(video_file)
     output_dir = f"{dir}/extracted_streams"
     await makedirs(output_dir, exist_ok=True)
     
-    cmd_detect = ["ffprobe", "-v", "error", "-show_entries", "stream=index,codec_type,codec_name", "-of", "csv=p=0", video_file]
+    cmd_detect = ["ffprobe", "-v", "error", "-show_entries", "stream=index,codec_type,codec_name", "-of", "json", video_file]
     process = await create_subprocess_exec(*cmd_detect, stdout=PIPE, stderr=PIPE)
     stdout, _ = await process.communicate()
 
-    streams = stdout.decode().strip().splitlines()
-    video_streams = [s.split(',')[0] for s in streams if s.split(',')[2] == 'video']
-    audio_streams = [s.split(',')[0] for s in streams if s.split(',')[2] == 'audio']
+    streams_info = json.loads(stdout.decode())
+    streams = streams_info.get('streams', [])
+
+    video_streams = [s['index'] for s in streams if s['codec_type'] == 'video']
+    audio_streams = [s['index'] for s in streams if s['codec_type'] == 'audio']
     
     cmd = ["opera", "-i", video_file]
     for i, stream_index in enumerate(video_streams):
-        stream_data = next(s for s in streams if s.split(',')[0] == stream_index)
-        codec_name = stream_data.split(',')[1]
-        if codec_name == "av1":
-            ext = ".av1"
-        elif codec_name == "vp9":
-            ext = ".webm"
-        elif codec_name == "hevc":
-            ext = ".mkv"
-        elif codec_name == "h264":
+        stream_data = next(s for s in streams if s['index'] == stream_index)
+        codec_name = stream_data['codec_name']
+        if codec_name == "h264":
             ext = ".mp4"
         else:
-            ext = f".{codec_name}"
+            ext = f".mkv"
         cmd.extend(["-map", f"0:v:{i}", "-c:v", "copy", f"{output_dir}/video_{i}{ext}"])
 
     for i, stream_index in enumerate(audio_streams):
-        stream_data = next(s for s in streams if s.split(',')[0] == stream_index)
-        codec_name = stream_data.split(',')[1]
-        if codec_name not in ["ac3", "dts", "mp3", "eac3"]:
-            cmd.extend(["-map", f"0:a:{i}", "-c:a", "copy", f"{output_dir}/audio_{i}.aac"])
-        else:
-            cmd.extend(["-map", f"0:a:{i}", "-c:a", "copy", f"{output_dir}/audio_{i}.{codec_name}"])
+        stream_data = next(s for s in streams if s['index'] == stream_index)
+        codec_name = stream_data['codec_name']
+        cmd.extend(["-map", f"0:a:{i}", "-c:a", "copy", f"{output_dir}/audio_{i}.{codec_name}"])
     
     subtitle_streams = await detect_subtitle_streams(video_file)
     for index, (stream, subtitle_type) in enumerate(subtitle_streams):
         if subtitle_type == "pgs":
             cmd.extend(["-map", f"0:s:{index}", "-c:s", "copy", f"{output_dir}/subtitle_{index}.sup"])
+        elif subtitle_type == "ass":
+            cmd.extend(["-map", f"0:s:{index}", "-c:s", "copy", f"{output_dir}/subtitle_{index}.ass"])
         else:
             cmd.extend(["-map", f"0:s:{index}", "-c:s", "copy", f"{output_dir}/subtitle_{index}.srt"])
     
@@ -834,16 +826,22 @@ async def extract_all_streams(video_file):
     return output_dir
 
 async def detect_subtitle_streams(video_file):
-    command = ["ffprobe", "-v", "error", "-show_entries", "stream=index,codec_type,codec_name", "-of", "csv=p=0", video_file]
+    command = ["ffprobe", "-v", "error", "-show_entries", "stream=index,codec_type,codec_name", "-of", "json", video_file]
     process = await create_subprocess_exec(*command, stdout=PIPE, stderr=PIPE)
     stdout, _ = await process.communicate()
+    
     subtitle_streams = []
-    for line in stdout.decode().strip().splitlines():
-        if 'subtitle' in line:
-            stream_index = line.split(',')[0]
-            codec_name = line.split(',')[1]
+    streams_info = json.loads(stdout.decode())
+    streams = streams_info.get('streams', [])
+    
+    for stream in streams:
+        if stream['codec_type'] == 'subtitle':
+            stream_index = stream['index']
+            codec_name = stream['codec_name']
             if codec_name == "hdmv_pgs_subtitle":
                 subtitle_streams.append((stream_index, "pgs"))
+            elif codec_name == "ass":
+                subtitle_streams.append((stream_index, "ass"))
             else:
                 subtitle_streams.append((stream_index, "text"))
     return subtitle_streams
