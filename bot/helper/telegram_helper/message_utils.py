@@ -14,7 +14,7 @@ from pyrogram import Client as tgClient
 
 async def sendMessage(message, text, buttons=None, block=True):
     try:
-        return await message.reply(hh
+        return await message.reply(
             text=text,
             quote=True,
             disable_web_page_preview=True,
