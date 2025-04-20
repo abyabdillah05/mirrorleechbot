@@ -2321,11 +2321,11 @@ def devuploads(url):
     return direct_link[0]
 
 def lulacloud(url):
-     """
-     Generate a direct download link for www.lulacloud.com URLs.
-     @param url: URL from www.lulacloud.com
-     @return: Direct download link
-     """
+    """
+    Generate a direct download link for www.lulacloud.com URLs.
+    @param url: URL from www.lulacloud.com
+    @return: Direct download link
+    """
     session = Session()
     try:
         res = session.post(url, headers={'Referer': url}, allow_redirects=False)
