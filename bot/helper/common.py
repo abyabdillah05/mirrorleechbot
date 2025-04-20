@@ -844,7 +844,8 @@ class TaskConfig:
 
             elif await aiopath.isfile(dl_path):
                 mime_type = get_mime_type(dl_path)
-                if mime_type not in ("video/mp4", "video/x-matroska", "video/webm"):
+                if mime_type not in ("video/mp4", "video/x-matroska", "video/webm", "video/avi", "video/MP2T", "application/octet-stream"):
+                    LOGGER.info(f"Not supported file type: {mime_type}")
                     return dl_path
                 #if (await get_document_type(dl_path))[0]:
                 #    if not checked:
@@ -864,7 +865,7 @@ class TaskConfig:
                     for file_ in files:
                         f_path = ospath.join(dirpath, file_)
                         mime_type = get_mime_type(f_path)
-                        if mime_type not in ("video/mp4", "video/x-matroska", "video/webm"):
+                        if mime_type not in ("video/mp4", "video/x-matroska", "video/webm", "video/avi", "video/MP2T", "application/octet-stream"):
                             continue
                         #if (await get_document_type(f_path))[0]:
                         #    if not checked:

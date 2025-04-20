@@ -51,6 +51,7 @@ from bot.modules.auto_mirror import AutoMirror
 from bot.modules.video_editor import VideEditor
 from urllib.parse import urlparse
 from bot.modules.sourceforge_extract import sourceforgeExtract
+from bot.modules.terabox_extract import teraboxExtract
 
 urlregex = r"^(https?:\/\/)([a-zA-Z0-9-]+\.)*([a-zA-Z0-9-]+\.[a-zA-Z]{2,})(\/[^#\s]*)?(\?[^#\s]*)?(#.*)?$"
 magnetregex = r"magnet:\?xt=urn:(btih|btmh):[a-zA-Z0-9]*\s*"
@@ -470,7 +471,36 @@ class Mirror(TaskListener):
             and not is_gdrive_id(self.link)
         ):
             content_type = await get_content_type(self.link)
-            if content_type is None or "application/zip" and "bigota" in self.link or "application/zip" and "hugeota" in self.link or re_match(r"text/html|text/plain", content_type) or "https://sourceforge.net/" in self.link:
+            tera = False
+            if any(
+                x in self.link
+                for x in [
+                    "terabox.com",
+                    "nephobox.com",
+                    "4funbox.com",
+                    "mirrobox.com",
+                    "momerybox.com",
+                    "teraboxapp.com",
+                    "1024tera.com",
+                    "terabox.app",
+                    "gibibox.com",
+                    "goaibox.com",
+                    "terasharelink.com",
+                    "teraboxlink.com",
+                    "freeterabox.com",
+                    "1024terabox.com",
+                    "teraboxshare.com"
+                        ]
+                    ):
+                tera = True
+            if (content_type is None 
+                or "application/zip" and "bigota" in self.link 
+                or "application/zip" and "hugeota" in self.link 
+                or re_match(r"text/html|text/plain", content_type) 
+                or "sourceforge.net" in self.link
+                or tera
+                ):
+
                 if "uptobox" in self.link:
                     ddl = await sendMessage(
                         self.message,
@@ -487,13 +517,19 @@ class Mirror(TaskListener):
                         f"<b>Generating Direct Link :</b>\n<code>{self.link}</code>"
                     )
                 try:
-                    if "https://sourceforge.net/" in self.link:
+                    if "sourceforge.net" in self.link:
                         self.link = await sourceforgeExtract(self).main(self.link)
                         if self.link is None:
                             self.removeFromSameDir()
                             await deleteMessage(ddl)
                             return
-                        #ddl = await sendMessage(self.message, f"<b>Memeriksa link sourceforge. . .</b>")
+                        ddl = await sendMessage(self.message, f"<b>Memeriksa link sourceforge. . .</b>")
+                    elif tera:
+                        self.link = await teraboxExtract(self).main(self.link)
+                        if self.link is None:
+                            self.removeFromSameDir()
+                            await deleteMessage(ddl)
+                            return
                     else:
                         self.link = await sync_to_async(direct_link_generator, self.link)
                     if isinstance(self.link, tuple):
@@ -536,7 +572,7 @@ class Mirror(TaskListener):
                 )
             await add_aria2c_download(self, path, headers, ratio, seed_time)
 
-        self.removeFromSameDir()
+        #self.removeFromSameDir()
 
 async def mirror(client, message):
     Mirror(client, message).newEvent()

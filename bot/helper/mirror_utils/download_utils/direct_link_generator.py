@@ -123,7 +123,7 @@ def direct_link_generator(link: str):
     elif any(
         x in domain
         for x in [
-            "dood.watch",
+             "dood.watch",
             "doodstream.com",
             "dood.to",
             "dood.so",
@@ -171,28 +171,27 @@ def direct_link_generator(link: str):
         return streamtape(link)
     elif any(x in domain for x in ["wetransfer.com", "we.tl"]):
         return wetransfer(link)
-    elif any(
-        x in domain
-        for x in [
-            "terabox.com",
-            "nephobox.com",
-            "4funbox.com",
-            "mirrobox.com",
-            "momerybox.com",
-            "teraboxapp.com",
-            "1024tera.com",
-            "terabox.app",
-            "gibibox.com",
-            "goaibox.com",
-            "terasharelink.com",
-            "teraboxlink.com",
-            "freeterabox.com",
-            "1024terabox.com",
-            "teraboxshare.com",
-            "terasharelink.com"
-        ]
-    ):
-        return terabox(link)
+    #elif any(
+    #    x in domain
+    #    for x in [
+    #        "terabox.com",
+    #        "nephobox.com",
+    #        "4funbox.com",
+    #        "mirrobox.com",
+    #        "momerybox.com",
+    #        "teraboxapp.com",
+    #        "1024tera.com",
+    #        "terabox.app",
+    #        "gibibox.com",
+    #        "goaibox.com",
+    #        "terasharelink.com",
+    #        "teraboxlink.com",
+    #        "freeterabox.com",
+    #        "1024terabox.com",
+    #        "teraboxshare.com"
+    #    ]
+    #):
+    #    return terabox(link)
     elif any(
         x in domain
         for x in [
@@ -2327,11 +2326,11 @@ def lulacloud(url):
      @param url: URL from www.lulacloud.com
      @return: Direct download link
      """
-     session = Session()
-     try:
-         res = session.post(url, headers={'Referer': url}, allow_redirects=False)
-         return res.headers['location']
-     except Exception as e:
-         raise DirectDownloadLinkException(f"ERROR: {str(e)}") from e
-     finally:
-         session.close()
+    session = Session()
+    try:
+        res = session.post(url, headers={'Referer': url}, allow_redirects=False)
+        return res.headers['location']
+    except Exception as e:
+        raise DirectDownloadLinkException(f"ERROR: {str(e)}") from e
+    finally:
+        session.close()

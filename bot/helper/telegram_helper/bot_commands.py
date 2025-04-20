@@ -58,8 +58,6 @@ class _BotCommands:
         self.CekQuotaCommand = f"cek{CMD_SUFFIX}"
         self.GenTokenCommand = [f"gentoken{CMD_SUFFIX}", f"gnt{CMD_SUFFIX}"]
         self.GetTokenCommand = [f"gettoken{CMD_SUFFIX}", f"gtt{CMD_SUFFIX}"]
-        self.TebakangkaCommand = f"tebakangka{CMD_SUFFIX}"
         self.LanguageCommand = [f"language{CMD_SUFFIX}", f"lang{CMD_SUFFIX}"]
-        self.list_commands_handler = [f"commands{CMD_SUFFIX}", f"cmds{CMD_SUFFIX}"]
         
 BotCommands = _BotCommands()

@@ -154,15 +154,14 @@ async def status_pages(_, query):
                     tasks["SamVid"] += 1
 
         msg = f"""DL : {tasks['Download']} | UP : {tasks['Upload']} | SD : {tasks['Seed']} | AR : {tasks['Archive']}
-EX : {tasks['Extract']} | SP : {tasks['Split']} | QD : {tasks['QueueDl']} | QU : {tasks['QueueUp']}
-CL : {tasks['Clone']} | CH : {tasks['CheckUp']} | PA : {tasks['Pause']} | SV : {tasks['SamVid']}
+        EX : {tasks['Extract']} | SP : {tasks['Split']} | QD : {tasks['QueueDl']} | QU : {tasks['QueueUp']}
+        CL : {tasks['Clone']} | CH : {tasks['CheckUp']} | PA : {tasks['Pause']} | SV : {tasks['SamVid']}
 
-Kec. Seed : {get_readable_file_size(seed_speed)}/s
-Kec. Unduh : {get_readable_file_size(dl_speed)}/s
-Kec. Unggah : {get_readable_file_size(up_speed)}/s
+        Kec. Seed : {get_readable_file_size(seed_speed)}/s
+        Kec. Unduh : {get_readable_file_size(dl_speed)}/s
+        Kec. Unggah : {get_readable_file_size(up_speed)}/s
 
-{botusername}
-"""
+    {botusername}"""
         await query.answer(msg, show_alert=True)
 
 

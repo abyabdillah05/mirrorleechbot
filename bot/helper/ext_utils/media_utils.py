@@ -733,7 +733,7 @@ async def PerformVideoEditor(
         else:
             if audio_codec == "default":
                 audio_codec = "aac"
-            cmd.extend(["-c:a", f"{audio_codec}"])
+            cmd.extend(["-c:a", f"{audio_codec}", "-ac", "2"])
             if audio_bitrate != "default":
                 cmd.extend(["-b:a", f"{audio_bitrate}"])
         cmd.extend(["-preset", f"{preset}", "-crf", f"{crf}", "-movflags", "+faststart", "-pix_fmt", "yuv420p"])

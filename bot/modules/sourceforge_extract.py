@@ -1,10 +1,14 @@
+import random
 from time import time
 from asyncio import (
     wait_for,
     Event,
     wrap_future
     )
-from re import findall
+from re import (
+    findall,
+    match
+    )
 from functools import partial
 from bs4 import BeautifulSoup
 from aiohttp import ClientSession
@@ -45,6 +49,9 @@ async def main_select(_, query, obj):
     
     if data[1] == "start":
         await obj.start(data[2])
+    if data[1] == "random":
+        await obj.random_server()
+    
     elif data[1] == "cancel":
         await editMessage(message, "<b>❌ Tugas dibatalkan oleh User!</b>")
         obj.is_cancelled = True
@@ -52,21 +59,18 @@ async def main_select(_, query, obj):
         
 @new_task
 async def sourceforge_extract(url):
+    cek = r"^(http:\/\/|https:\/\/)?(www\.)?sourceforge\.net\/.*"
+    if not match(cek, url):
+        raise DirectDownloadLinkException(
+            "ERROR: Link anda salah, gunakan link sourceforge Non_Ddl !\n\n<blockquote><code>Contoh: https://sourceforge.net/projects/xxx/files/xxx/xxx.zip</code></blockquote>"
+        )
     async with ClientSession() as session:
         try:
-            if url.endswith("/download"):
-                url = url.split("/download")[0]
-                
-            try:
-                link = findall(r"\bhttps?://sourceforge\.net\S+", url)[0]
-            except IndexError:
-                raise DirectDownloadLinkException(
-                    "⚠️ ERROR: Link SourceForge tidak ditemukan!"
-                )
-            
-            file_id = findall(r"files(.*)", link)[0]
-            project = findall(r"projects?/(.*?)/files", link)[0]
-            
+            if not url.endswith("/download"):
+                url += "/download"
+            project = findall(r"projects?/(.*?)/files", url)[0]
+            file_id = findall(r"files(.*?)(?:/download|\?)", url)[0]
+            if file_id.startswith("files/") or file_id.startswith("/files"): file_id = file_id[6:]
             async with session.get(
                 f"https://sourceforge.net/settings/mirror_choices?projectname={project}&filename={file_id}"
             ) as response:
@@ -139,6 +143,7 @@ class sourceforgeExtract:
             for i in self._servers:
                 butt.ibutton(f"🌐{i}", f"sourceforge start {i}")
                 
+            butt.ibutton("🔄 Pilih Server Random", f"sourceforge random", position="header")
             butt.ibutton("❌ Batal", f"sourceforge cancel", position="footer")
             butts = butt.build_menu(3)
             
@@ -165,6 +170,7 @@ class sourceforgeExtract:
     async def start(self, server):
         try:
             file_id = findall(r"files(.*)", self._link)[0].replace("/download", "")
+            if file_id.startswith("files/") or file_id.startswith("/files"): file_id = file_id[6:]
             project = findall(r"projects?/(.*?)/files", self._link)[0]
             
             self._final_link = f"https://{server}.dl.sourceforge.net/project/{project}{file_id}?viasf=1"
@@ -179,6 +185,10 @@ class sourceforgeExtract:
             await editMessage(self._reply_to, f"<b>⚠️ Error memproses server:</b> <code>{str(e)}</code>")
             self.is_cancelled = True
             self.event.set()
+            
+    async def random_server(self):
+        server = random.choice(self._servers)
+        await self.start(server)
 
 ## Big thanks to @aenulrofik for this awesome feature ##
 ## Please don't remove the credits — respect the creator! ##
