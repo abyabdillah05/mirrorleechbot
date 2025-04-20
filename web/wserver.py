@@ -250,7 +250,7 @@ function s_validate() {
         </a>
       </div>
       <div class="social">
-        <a href="https://t.me/pikachukocak"><i class="fab fa-telegram"></i></a>
+        <a href="https://t.me/IgnoredProjectXcl"><i class="fab fa-telegram"></i></a>
       </div>
     </header>
     <div id="sticks">
@@ -641,7 +641,7 @@ section span{
         </a>
       </div>
       <div class="social">
-        <a href="https://t.me/pikachukocak"><i class="fab fa-telegram"></i></a>
+        <a href="https://t.me/IgnoredProjectXcl"><i class="fab fa-telegram"></i></a>
       </div>
     </header>
     <section>
