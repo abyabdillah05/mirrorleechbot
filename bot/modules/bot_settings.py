@@ -998,7 +998,7 @@ bot.add_handler(
         bot_settings, 
         filters=command(
             BotCommands.BotSetCommand
-        ) & CustomFilters.sudo
+        ) & CustomFilters.owner
     )
 )
 bot.add_handler(
@@ -1006,6 +1006,6 @@ bot.add_handler(
         edit_bot_settings, 
         filters=regex(
             "^botset"
-        ) & CustomFilters.sudo
+        ) & CustomFilters.owner
     )
 )

@@ -38,7 +38,7 @@ class SafeLinkU:
         except Exception as e:
             LOGGER.error(f"Error creating SafelinkU short link: {str(e)}")
             return url
-        
+
 ## You can make another class for other short link generator in here ##
 ## Thanks :) ##
 ## You can edit this file but don't remove the credits ##

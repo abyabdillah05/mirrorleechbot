@@ -56,7 +56,7 @@ async def cancel_task(_, message):
 async def cancel_multi(_, query):
     data = query.data.split()
     user_id = query.from_user.id
-    if user_id != int(data[1]) and not await CustomFilters.sudo("", query):
+    if user_id != int(data[1]) and not await CustomFilters.owner("", query):
         await query.answer("Bukan Tugas darimu!", show_alert=True)
         return
     tag = int(data[2])
@@ -132,7 +132,7 @@ bot.add_handler(
         cancell_all_buttons,
         filters=command(
             BotCommands.CancelAllCommand
-        ) & CustomFilters.sudo,
+        ) & CustomFilters.owner,
     )
 )
 bot.add_handler(
@@ -140,7 +140,7 @@ bot.add_handler(
         cancel_all_update, 
         filters=regex(
             "^canall"
-        ) & CustomFilters.sudo
+        ) & CustomFilters.owner
     )
 )
 bot.add_handler(

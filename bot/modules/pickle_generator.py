@@ -25,7 +25,7 @@ from pyrogram.handlers import MessageHandler
 ####################################
 
 from bot.helper.ext_utils.db_handler import DbManger
-from bot.helper.ext_utils.safelinku_utils import SafeLinkU
+from bot.helper.ext_utils.shortenedurl_utils import SafeLinkU
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.telegram_helper.bot_commands import BotCommands

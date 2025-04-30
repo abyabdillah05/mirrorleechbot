@@ -47,7 +47,7 @@ async def editMessage(message, text, buttons=None, block=True):
     except Exception as e:
         LOGGER.error(str(e))
         return str(e)
-   
+
 ## Copy Message ##
 
 async def copyMessage(chat_id:int, from_chat_id:int, message_id=int, message_thread_id=None, is_media_group=False):

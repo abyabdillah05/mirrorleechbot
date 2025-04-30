@@ -1,6 +1,4 @@
-
-
-
+import time
 from uuid import uuid4
 from requests import Session
 
@@ -14,7 +12,7 @@ from bot import (bot,
                  LOGGER,
                  OWNER_ID)
 from bot.helper.ext_utils.db_handler import DbManger
-from bot.helper.ext_utils.safelinku_utils import SafeLinkU
+from bot.helper.ext_utils.shortenedurl_utils import SafeLinkU
 from bot.helper.ext_utils.bot_utils import update_user_ldata
 from bot.helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.ext_utils.status_utils import get_readable_file_size
@@ -65,6 +63,23 @@ async def quota_check(listener, size):
 #################################################
 
 async def create_token(id):
+    current_time = int(time.time())
+    
+    can_add_quota = True
+    if id in user_data and user_data[id].get("last_quota_add"):
+        last_add = user_data[id]["last_quota_add"]
+        time_passed = current_time - last_add
+        if time_passed < 86400: 
+            can_add_quota = False
+    
+    if not can_add_quota:
+        hours_remaining = 24 - ((current_time - user_data[id]["last_quota_add"]) // 3600)
+        butt = ButtonMaker()
+        butt.ubutton("❓ TUTORIAL", "https://t.me/IgnoredProjectXcl/67")
+        butt.ubutton("💰 DONATE", "https://telegra.ph/Donate-and-Support-Us-03-21")
+        butt.ubutton("🔧 REPORT", "tg://user?id=7146954165", "footer")
+        return butt, hours_remaining
+    
     random_id = str(uuid4())
     user_generate_token[id] = random_id
     token_url = f"https://t.me/{bot.me.username}?start=token_{random_id}"
@@ -76,7 +91,7 @@ async def create_token(id):
     butt.ubutton("❓ TUTORIAL", "https://t.me/IgnoredProjectXcl/67")
     butt.ubutton("💰 DONATE", "https://telegra.ph/Donate-and-Support-Us-03-21")
     butt.ubutton("🔧 REPORT", "tg://user?id=7146954165", "footer")
-    return butt
+    return butt, 0
 
 #############################################
 ## Token Verification | Credit @aenulrofik ##
@@ -94,12 +109,17 @@ async def token_verify(id, token):
     if id in user_generate_token:
         if user_generate_token[id] == token:
             user_generate_token.pop(id)
-            added_quota = 20 * 1024 * 1024 * 1024
+            added_quota = 15 * 1024 * 1024 * 1024
             new_quota = quota + added_quota
+            
             update_user_ldata(id, "quota", new_quota)
+            
+            current_time = int(time.time())
+            update_user_ldata(id, "last_quota_add", current_time)
+            
             if DATABASE_URL:
                 await DbManger().update_user_data(id)
-                
+            
             try:
                 user = await bot.get_users(id)
                 user_name = user.first_name
@@ -144,7 +164,7 @@ async def token_verify(id, token):
                 f"<code>Powered by {bot_nickname}</code>"
             )
             
-            butt = await create_token(id)
+            butt, _ = await create_token(id)
             return success_message, butt.build_menu(2)
 
 ####################################################################

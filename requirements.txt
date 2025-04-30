@@ -42,5 +42,3 @@ curl_cffi
 httpx[http2]
 quoters
 certifi
-deep-translator
-langdetect
