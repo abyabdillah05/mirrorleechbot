@@ -390,7 +390,7 @@ bot.add_handler(
         authorize, 
         filters=command(
             BotCommands.AuthorizeCommand
-        ) & CustomFilters.sudo
+        ) & CustomFilters.owner
     )
 )
 bot.add_handler(
@@ -398,7 +398,7 @@ bot.add_handler(
         unauthorize,
         filters=command(
             BotCommands.UnAuthorizeCommand
-        ) & CustomFilters.sudo,
+        ) & CustomFilters.owner
     )
 )
 bot.add_handler(
@@ -406,7 +406,7 @@ bot.add_handler(
         addSudo, 
         filters=command(
             BotCommands.AddSudoCommand
-        ) & CustomFilters.sudo
+        ) & CustomFilters.owner
     )
 )
 bot.add_handler(
@@ -414,7 +414,7 @@ bot.add_handler(
         removeSudo, 
         filters=command(
             BotCommands.RmSudoCommand
-        ) & CustomFilters.sudo
+        ) & CustomFilters.owner
     )
 )
 bot.add_handler(

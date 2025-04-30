@@ -70,6 +70,7 @@ from bot.modules import (
     pikachu_feature,
     query,
     shell,
+    sourceforge,
     speedtest,
     status,
     tiktok,
@@ -680,7 +681,7 @@ async def main():
             log, 
             filters=command(
                 BotCommands.LogCommand
-            ) & CustomFilters.sudo
+            ) & CustomFilters.owner
         )
     )
     bot.add_handler(
@@ -688,7 +689,7 @@ async def main():
             restart, 
             filters=command(
                 BotCommands.RestartCommand
-            ) & CustomFilters.sudo
+            ) & CustomFilters.owner
         )
     )
     bot.add_handler(

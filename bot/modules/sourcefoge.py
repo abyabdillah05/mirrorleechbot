@@ -23,11 +23,16 @@ from pyrogram.handlers import CallbackQueryHandler
 ## Import Variables From Project ##
 ###################################
 
-from bot import botname
-from bot.helper.ext_utils.status_utils import get_readable_time
+from bot.helper.ext_utils.status_utils import get_readable_time,get_readable_file_size
 from bot.helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.ext_utils.exceptions import DirectDownloadLinkException
 
+from bot import (
+    botname,
+    LOGGER,
+    LOG_CHAT_ID,
+    OWNER_ID
+    )
 from bot.helper.ext_utils.bot_utils import (
     new_task,
     new_thread
@@ -69,15 +74,16 @@ async def sourceforge_extract(url):
             if not url.endswith("/download"):
                 url += "/download"
             project = findall(r"projects?/(.*?)/files", url)[0]
-            file_id = findall(r"files(.*?)(?:/download|\?)", url)[0]
-            if file_id.startswith("files/") or file_id.startswith("/files"): file_id = file_id[6:]
-            async with session.get(
-                f"https://sourceforge.net/settings/mirror_choices?projectname={project}&filename={file_id}"
-            ) as response:
-                content = await response.text()
-                
-            soup = BeautifulSoup(content, "html.parser")
-            mirror_list = soup.find("ul", {"id": "mirrorList"})
+            file_id = findall(r"/files/(.*?)(?:/download|\?|$)", url)[0]
+            try:
+                mirror_url = f"https://sourceforge.net/settings/mirror_choices?projectname={project}&filename={file_id}"
+                async with session.get(mirror_url) as response:
+                    content = await response.text()
+                soup = BeautifulSoup(content, "html.parser")
+                mirror_list = soup.find("ul", {"id": "mirrorList"}).findAll("li")
+                servers = []
+            except:
+                raise DirectDownloadLinkException(f"Mirror server tidak ditemukan atau file sudah dihapus.")
             
             if not mirror_list:
                 raise DirectDownloadLinkException("⚠️ ERROR: Tidak dapat menemukan daftar mirror server!")
@@ -169,8 +175,7 @@ class sourceforgeExtract:
     
     async def start(self, server):
         try:
-            file_id = findall(r"files(.*)", self._link)[0].replace("/download", "")
-            if file_id.startswith("files/") or file_id.startswith("/files"): file_id = file_id[6:]
+            file_id = findall(r"/files(.*?)(?:/download|\?|$)", self._link)[0].replace("/download", "")
             project = findall(r"projects?/(.*?)/files", self._link)[0]
             
             self._final_link = f"https://{server}.dl.sourceforge.net/project/{project}{file_id}?viasf=1"

@@ -471,7 +471,8 @@ def mediafire(url, session=None):
         try:
             c = async_to_sync(get_content_type, final_link[0])
             if c is None or re.match(r"text/html|text/plain", c):
-                html = HTML(cf_bypass(url))
+                with create_scraper() as session:
+                    html = HTML(cf_bypass(url).text)
                 if html is None:
                     raise DirectDownloadLinkException(f"ERROR: Error saat coba request url {e.__class__.__name__}")
                 if new_link := html.xpath('//a[@id="continue-btn"]/@href'):
@@ -483,7 +484,8 @@ def mediafire(url, session=None):
             raise DirectDownloadLinkException (f"ERROR: Error saat cek ddl mediafire {e}")
         
     def _repair_download(url):
-        html = HTML(cf_bypass(url))
+        with create_scraper() as session:
+            html = HTML(session.get(url).text)
         if html is None:
             raise DirectDownloadLinkException(f"ERROR: Error saat coba request url {e.__class__.__name__}")
         if new_link := html.xpath('//a[@id="continue-btn"]/@href'):
@@ -498,7 +500,8 @@ def mediafire(url, session=None):
     #except Exception as e:
     #    session.close()
     #    raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}")
-    html = HTML(cf_bypass(url))
+    with create_scraper() as session:
+        html = HTML(session.get(url).text)
     if html is None:
         raise DirectDownloadLinkException(f"ERROR: Error saat coba request url {e.__class__.__name__}")
     if error:= html.xpath("//p[@class='notranslate']/text()"):
@@ -2311,7 +2314,7 @@ def devuploads(url):
     if not randpost:
         raise DirectDownloadLinkException("ERROR: Unable to find xd value")
     data['xd'] = randpost.text.strip()
-    proxy = "http://hsakalu2:hsakalu2@45.151.162.198:6600"
+    proxy = "http://hsakalu1:hsakalu1@161.123.152.115:6360"
     res = session.post(url, data=data, proxies={'http': proxy, 'https': proxy})
     html = HTML(res.text)
     if not html.xpath("//input[@name='orilink']/@value"):
