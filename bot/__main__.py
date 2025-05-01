@@ -277,7 +277,7 @@ async def start(client, message):
     buttons.ubutton("Channel", "https://t.me/IgnoredProjectXcl")
     buttons.ubutton("Group", "https://t.me/TranssionCore5")
     buttons.ubutton("Donate", "https://telegra.ph/Donate-and-Support-Us-03-21")
-    buttons.ubutton("Add me to Group", f"https://t.me/{bot.me.username}?startgroup=true&admin=change_info+delete_messages+invite_users+manage_stories+manage_video_chats", "footer")
+    buttons.ubutton("Add me to Group", f"https://t.me/{bot.me.username}?startgroup=true&admin=change_info+delete_messages+invite_users+manage_video_chats+manage_stories", "footer")
     reply_markup = buttons.build_menu(2)
 
     user_id = message.from_user.id
