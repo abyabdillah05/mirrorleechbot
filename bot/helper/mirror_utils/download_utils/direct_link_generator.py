@@ -1338,8 +1338,10 @@ def send_cm(url):
         file_id = url.split("/")[-1]
         return send_cm_file(url, file_id)
     splitted_url = url.split("/")
-    details = {"contents": [], "title": "", "total_size": 0,
-               "header": "Referer: https://send.cm/"}
+    details = {
+        "contents": [], "title": "", "total_size": 0,
+        "header": "Referer: https://send.cm/"
+    }
     if len(splitted_url) == 5:
         url += "/"
         splitted_url = url.split("/")
