@@ -292,55 +292,29 @@ class SourceforgeExtract:
         finally:
             self._listener.client.remove_handler(*handler)
             
-    async def main(self, link, select_server=False):
+    async def main(self, link):
         """Main entry point for the SourceForge handler"""
         self._link = link
         future = self._event_handler()
         
         try:
-            # Special shortcut for direct download links
-            if "/download" in link:
-                try:
-                    # If select_server is True, we'll just get the available servers but not choose one
-                    if select_server:
-                        project = findall(r"projects?/(.*?)/files", link)[0]
-                        file_path = link.split("/download")[0].split(f"/projects/{project}/files/")[1]
-                        
-                        mirror_url = f"https://sourceforge.net/settings/mirror_choices?projectname={project}&filename={file_path}"
-                        async with ClientSession() as session:
-                            async with session.get(mirror_url) as response:
-                                content = await response.text()
-                        soup = BeautifulSoup(content, "html.parser")
-                        mirror_list = soup.find("ul", {"id": "mirrorList"})
-                        if not mirror_list:
-                            raise DirectDownloadLinkException("No mirrors found")
-                        
-                        mirrors = mirror_list.find_all("li")
-                        servers = []
-                        for mirror in mirrors:
-                            servers.append(mirror['id'])
-                        if servers and servers[0] == "autoselect":
-                            servers.pop(0)
-                            
-                        self._servers = servers
-                        self._project = project
-                        self._file_path = file_path
-                        await self._show_server_selection()
-                        return None
-                    else:
-                        self._final_link = sourceforge(link)
-                        self.event.set()
-                        await wrap_future(future)
-                        return self._final_link
-                except Exception as e:
-                    LOGGER.info(f"Using standard flow: {str(e)}")
-                    link = link.split("/download")[0]
-            
-            # Create initial loading message
+            # Create initial loading message first, so it's always available
             self._reply_to = await sendMessage(
                 self._listener.message, 
                 f"<b>Processing SourceForge link...</b>"
             )
+            
+            # Special shortcut for direct download links
+            if "/download" in link:
+                try:
+                    self._final_link = sourceforge(link)
+                    self.event.set()
+                    await wrap_future(future)
+                    await deleteMessage(self._reply_to)
+                    return self._final_link
+                except Exception as e:
+                    LOGGER.info(f"Using standard flow for direct link: {str(e)}")
+                    link = link.split("/download")[0]
             
             # Check if the link is a file or directory
             result = await sourceforge_extract(link)
