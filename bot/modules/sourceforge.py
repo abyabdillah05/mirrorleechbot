@@ -171,7 +171,7 @@ class sourceforgeExtract:
                 
             butt.ibutton("Pilih server acak", f"sourceforge random", position="header")
             butt.ibutton("Batal", f"sourceforge cancel", position="footer")
-            butts = butt.build_menu(2)
+            butts = butt.build_menu(3)
             
             # Format file information
             file_info = self._filename
@@ -182,7 +182,7 @@ class sourceforgeExtract:
             msg += f"<b>Project:</b> <code>{self._project}</code>\n"
             msg += f"<b>File:</b> <code>{file_info}</code>\n\n"
             msg += f"<b>Waktu tersisa:</b> <code>{get_readable_time(self._timeout)}</code>\n"
-            msg += f"<i>Powered By {botname}</i>"
+            msg += f"𝙿𝚘𝚠𝚎𝚛𝚎𝚍 𝙱𝚢 {botname}"
             
             self._reply_to = await sendMessage(self._listener.message, msg, butts)
             

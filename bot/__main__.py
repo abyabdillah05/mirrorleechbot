@@ -273,146 +273,87 @@ async def start(client, message):
             return await waifu.download_anime_hd(client, message, None, file_id)
 
     buttons = ButtonMaker()
-    buttons.ubutton("👤 Maintainer", "https://t.me/WzdDizzyFlasherr", "header")
-    buttons.ubutton("📢 Channel", "https://t.me/IgnoredProjectXcl")
-    buttons.ubutton("👥 Group", "https://t.me/TranssionCore5")
-    buttons.ubutton("💰 Donate", "https://telegra.ph/Donate-and-Support-Us-03-21")
-    buttons.ubutton("➕ Add me to Group", f"https://t.me/{bot.me.username}?startgroup=true", "footer")
+    buttons.ubutton("Maintainer", "https://t.me/WzdDizzyFlasherr", "header")
+    buttons.ubutton("Channel", "https://t.me/IgnoredProjectXcl")
+    buttons.ubutton("Group", "https://t.me/TranssionCore5")
+    buttons.ubutton("Donate", "https://telegra.ph/Donate-and-Support-Us-03-21")
+    buttons.ubutton("Add me to Group", f"https://t.me/{bot.me.username}?startgroup=true&admin=change_info+delete_messages+invite_users+manage_stories+manage_video_chats", "footer")
     reply_markup = buttons.build_menu(2)
 
     user_id = message.from_user.id
-    is_in_auth_group = message.chat.type.name != "PRIVATE" and await CustomFilters.authorized(client, message)
+    is_in_group = message.chat.type.name != "PRIVATE"
     
-    ################################
-    ## Start For Authorized Group ##
-    ################################
-
-    if is_in_auth_group:
+    # Start For Group
+    if is_in_group:
         start_string = f'''
-<b>Selamat Datang di {botname}! 🎉</b>
+<b>Welcome to {botname}</b>
 
-Halo {uname}, Senang melihat Anda di grup ini!
+Hello {uname},
 
-Bot ini telah dikonfigurasi dan siap membantu Anda dengan berbagai kebutuhan mirror, leech, dan manajemen file. Nikmati semua fitur yang tersedia untuk anggota grup ini.
+This bot is configured to help with mirror, leech, and file management tasks in this group.
 
-<b>Cara Menggunakan Bot:</b>
-• Gunakan <code>/{BotCommands.HelpCommand[0]}</code> untuk melihat daftar lengkap perintah
-• Balas ke file/link dengan perintah mirror/leech untuk memulai tugas
-• Pantau progres tugas dengan <code>/{BotCommands.StatusCommand[0]}</code>
+Use <code>/{BotCommands.HelpCommand[0]}</code> to see available commands.
+Reply to files/links with mirror/leech commands to start tasks.
+Monitor progress with <code>/{BotCommands.StatusCommand[0]}</code>.
 
-<b>Fitur Utama:</b>
-• Mirror ke Google Drive
-• Leech ke Telegram
-• Unduh dari berbagai sumber (Direct Link, Torrent, Mega, dll)
-• Pengaturan upload custom
-• Fitur pencarian yang kuat
-
-<i>Jika membutuhkan bantuan lebih lanjut, jangan ragu untuk bertanya kepada admin grup!</i>
+Key features:
+• Mirror to Google Drive
+• Leech to Telegram
+• Download from various sources
+• Custom upload settings
+• Search functionality
 '''
         
-    #####################
-    ## Start For Owner ##
-    #####################
+    # Start For Owner #
     elif user_id == config_dict['OWNER_ID']:
         start_string = f'''
-<b>Halo Boss {uname}! 👑</b>
+<b>Welcome, Owner {uname}</b>
 
-Selamat datang kembali di panel kontrol {botname}!
+{botname} is ready for your commands.
 
-Sebagai pemilik bot, Anda memiliki akses penuh ke semua fitur dan pengaturan. Bot siap menerima perintah Anda dan berfungsi optimal.
+As the owner, you have full access to all features and settings.
 
-<b>Status Bot:</b>
-• Bot aktif dan berjalan normal
-• Semua sistem dalam keadaan baik
-• Siap menerima tugas baru
+Quick access:
+• <code>/{BotCommands.BotSetCommand[0]}</code> - Configure bot
+• <code>/{BotCommands.StatsCommand[0]}</code> - Check server stats
+• <code>/{BotCommands.RestartCommand[0]}</code> - Restart bot
 
-<b>Pengaturan Cepat:</b>
-• <code>/{BotCommands.BotSetCommand[0]}</code> - Konfigurasi bot
-• <code>/{BotCommands.StatsCommand[0]}</code> - Cek statistik server
-• <code>/{BotCommands.RestartCommand[0]}</code> - Restart bot jika diperlukan
-
-<i>Untuk daftar lengkap perintah, gunakan <code>/{BotCommands.HelpCommand[0]}</code></i>
-
-<b>Semoga harimu menyenangkan, Boss! 🚀</b>
+For complete command list: <code>/{BotCommands.HelpCommand[0]}</code>
 '''
 
-    #########################
-    ## Start For Sudo User ##
-    #########################
-
+    # Start For Sudo User #
     elif user_id in user_data and user_data[user_id].get('is_sudo', False):
         start_string = f'''
-<b>Halo Admin {uname}! ⭐</b>
+<b>Welcome, Admin {uname}</b>
 
-Selamat datang di panel administrasi {botname}!
+{botname} administration panel.
 
-Sebagai SUDO user, Anda memiliki akses ke sebagian besar fitur dan pengaturan bot. Bot siap membantu Anda mengelola pengguna dan tugas.
+As a SUDO user, you have unlimited quota and access to admin commands.
 
-<b>Tugas Admin:</b>
-• Mengelola pengguna dengan <code>/{BotCommands.AuthorizeCommand[0]}</code> dan <code>/{BotCommands.UnAuthorizeCommand[0]}</code>
-• Memantau kinerja bot dengan <code>/{BotCommands.StatsCommand[0]}</code>
-• Restart bot jika diperlukan dengan <code>/{BotCommands.RestartCommand[0]}</code>
+Admin privileges:
+• Manage users with <code>/{BotCommands.AuthorizeCommand[0]}</code> and <code>/{BotCommands.UnAuthorizeCommand[0]}</code>
+• And Unlimited quota for mirror and leeching.
 
-<b>Fitur Tambahan:</b>
-• Akses ke semua fitur mirror dan leech
-• Kemampuan membatalkan tugas semua pengguna
-• Melihat dan mengelola status server
+Note: Configuration settings are restricted to owner only.
 
-<i>Gunakan kekuatan Anda dengan bijak! Untuk daftar lengkap perintah, ketik <code>/{BotCommands.HelpCommand[0]}</code></i>
-
-<b>Terima kasih atas bantuan Anda dalam mengelola bot ini! 👏</b>
+For full command list: <code>/{BotCommands.HelpCommand[0]}</code>
 '''
         
-    ###############################
-    ## Start For Authorized User ##
-    ###############################
-
-    elif await CustomFilters.authorized(client, message):
-        start_string = f'''
-<b>Halo {uname}! 🌟</b>
-
-Selamat datang di {botname}! Anda adalah pengguna yang diotorisasi dan memiliki akses ke fitur-fitur bot ini.
-
-<b>Apa yang dapat Anda lakukan:</b>
-• Mirror file ke Google Drive dengan <code>/{BotCommands.MirrorCommand[0]}</code>
-• Leech file ke Telegram dengan <code>/{BotCommands.LeechCommand[0]}</code>
-• Unduh video YouTube dan platform lain dengan <code>/{BotCommands.YtdlCommand[0]}</code>
-• Clone file Google Drive dengan <code>/{BotCommands.CloneCommand[0]}</code>
-• Cari file di Drive dengan <code>/{BotCommands.ListCommand[0]}</code>
-
-<b>Tips Penggunaan:</b>
-• Gunakan <code>/{BotCommands.HelpCommand[0]}</code> untuk panduan lengkap
-• Pantau progres dengan <code>/{BotCommands.StatusCommand[0]}</code>
-• Batalkan tugas dengan <code>/{BotCommands.CancelTaskCommand[0]}</code>
-
-<i>Jika Anda mengalami masalah atau memiliki pertanyaan, silakan hubungi admin!</i>
-
-<b>Selamat menggunakan! 🚀</b>
-'''
-
-    #################################
-    ## Start For Unauthorized User ##
-    #################################
-
+    # Start For User #
     else:
         start_string = f'''
-<b>Halo {uname}! 👋</b>
+<b>Welcome to {botname}</b>
 
-Terima kasih telah menyapa {botname}. Saat ini, Anda belum memiliki akses untuk menggunakan bot ini secara pribadi.
+Hello {uname},
 
-<b>Beberapa hal yang perlu Anda ketahui:</b>
+This bot provides file mirroring and leeching capabilities.
 
-• Bot ini adalah alat premium untuk mirror dan leech file
-• Akses diberikan oleh admin kepada pengguna tertentu
-• Anda dapat menggunakan bot ini di grup resmi kami
-• Untuk mendapatkan akses, silakan hubungi admin atau berikan donasi
+What you can do:
+• Use the bot in our official group
+• Get access by contacting admins
 
-<b>Cara mendapatkan akses:</b>
-• Bergabung dengan grup resmi kami melalui tombol di bawah
-• Hubungi maintainer untuk informasi lebih lanjut
-• Dukung pengembangan bot dengan donasi
-
-<i>Terima kasih atas pengertian Anda. Kami berharap dapat melayani Anda segera!</i>
+Join our group through the buttons below.
+Thank you for your interest in our service.
 '''
     
     await sendMessage(message, start_string, reply_markup)

@@ -41,7 +41,6 @@ async def authorize(_, message):
         msg = "😉 <b>Berhasil diautorisasi!</b>"
     await sendMessage(message, msg)
 
-
 async def unauthorize(_, message):
     msg = message.text.split()
     if len(msg) > 1:
@@ -58,7 +57,6 @@ async def unauthorize(_, message):
     else:
         msg = "🙃 <b>Sudah diunautorisasi!</b>"
     await sendMessage(message, msg)
-
 
 async def addSudo(_, message):
     id_ = ""
@@ -78,7 +76,6 @@ async def addSudo(_, message):
     else:
         msg = "<b>Berikan ID atau balas pesan dari User yang ingin dinaikan menjadi Sudo User!</b>"
     await sendMessage(message, msg)
-
 
 async def removeSudo(_, message):
     id_ = ""
