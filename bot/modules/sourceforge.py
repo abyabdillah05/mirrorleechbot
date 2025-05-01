@@ -372,23 +372,34 @@ class SourceforgeExtract:
         butt = ButtonMaker()
         
         # Add navigation buttons
+        header_btns = []
         if self._path_stack:
-            butt.ibutton("Back", "sourceforge back", position="header")
+            header_btns.append(("⬅️ Back", "sourceforge back"))
+        if self._selected_files:
+            header_btns.append(("⬇️ Download Selected", "sourceforge download"))
         
-        # Add folders
+        # Add header buttons with proper positioning
+        for text, callback in header_btns:
+            butt.ibutton(text, callback, position="header")
+        
+        # Add folders - use more descriptive emoji
         for folder in folders:
             folder_name = folder["name"]
             path = folder["path"]
             path_id = self._get_short_id(path)
-            butt.ibutton(f"📁 {folder_name}", f"sourceforge navigate {path_id}")
+            # Limit folder name length if needed
+            disp_name = folder_name if len(folder_name) < 30 else folder_name[:27] + "..."
+            butt.ibutton(f"📁 {disp_name}", f"sourceforge navigate {path_id}")
         
         # Add files with selection option
         for file in files:
             file_name = file["name"]
             path = file["path"]
             path_id = self._get_short_id(path)
-            selected = "✓ " if path in self._selected_files else ""
-            butt.ibutton(f"{selected}{file_name}", f"sourceforge select {path_id}")
+            selected = "✓ " if path in self._selected_files else "📄 "
+            # Limit file name length if needed
+            disp_name = file_name if len(file_name) < 30 else file_name[:27] + "..."
+            butt.ibutton(f"{selected}{disp_name}", f"sourceforge select {path_id}")
             
             # Store file data for later use
             self._file_data[path] = {
@@ -397,18 +408,20 @@ class SourceforgeExtract:
                 "size": file.get("size", "Unknown")
             }
         
-        # Add download button if files are selected
-        if self._selected_files:
-            butt.ibutton("Download Selected", "sourceforge download", position="footer")
+        # Always add cancel button in footer
+        butt.ibutton("❌ Cancel", "sourceforge cancel", position="footer")
         
-        butt.ibutton("Cancel", "sourceforge cancel", position="footer")
+        # For better organization:
+        # - Use 2 buttons per row for files and folders (small screens)
+        # - Use 1 button per row when items have long names
+        has_long_names = any(len(f["name"]) > 20 for f in folders + files)
+        col_width = 1 if has_long_names else 2
         
-        # Change from 1 to 2 for folders and files to make it more compact
-        butts = butt.build_menu(2)  # Changed from 1 to 2 buttons per row
+        butts = butt.build_menu(col_width, 2, 1)  # columns, header cols, footer cols
         
         current_path_display = f"/{self._current_path}" if self._current_path else "/"
         
-        msg = f"<b>SourceForge Directory Browser</b>\n\n"
+        msg = f"<b>📂 SourceForge Directory Browser</b>\n\n"
         msg += f"<b>Project:</b> <code>{self._project}</code>\n"
         msg += f"<b>Current Path:</b> <code>{current_path_display}</code>\n\n"
         
@@ -544,11 +557,34 @@ class SourceforgeExtract:
                 sample_file = self._selected_files[0]
                 sample_url = f"https://sourceforge.net/projects/{self._project}/files/{sample_file}"
                 
-                LOGGER.info(f"Getting server info for sample file: {sample_url}")
-                result = await sourceforge_extract(sample_url)
+                LOGGER.info(f"Trying to get mirror info for sample file: {sample_url}")
                 
-                if isinstance(result, dict) and "servers" in result:
-                    server = random.choice(result["servers"])
+                try:
+                    # First verify if this is a valid file by getting mirror choices
+                    mirror_url = f"https://sourceforge.net/settings/mirror_choices?projectname={self._project}&filename={sample_file}"
+                    LOGGER.info(f"Getting mirror choices from: {mirror_url}")
+                    
+                    async with ClientSession() as session:
+                        async with session.get(mirror_url) as response:
+                            content = await response.text()
+                    
+                    soup = BeautifulSoup(content, "html.parser")
+                    mirror_list = soup.find("ul", {"id": "mirrorList"})
+                    
+                    if not mirror_list:
+                        raise DirectDownloadLinkException(f"Mirror servers not found, the item may not be a direct downloadable file")
+                    
+                    mirrors = mirror_list.find_all("li")
+                    servers = []
+                    
+                    for mirror in mirrors:
+                        servers.append(mirror['id'])
+                        
+                    if servers and servers[0] == "autoselect":
+                        servers.pop(0)
+                    
+                    # Select a random server from available mirrors
+                    server = random.choice(servers)
                     LOGGER.info(f"Selected random server: {server}")
                     
                     # Create links for all selected files
@@ -560,13 +596,15 @@ class SourceforgeExtract:
                         links.append({"name": file_name, "url": direct_link})
                         LOGGER.info(f"Created link for {file_name}: {direct_link}")
                     
+                    # Set the final link and complete the process
                     self._final_link = links
                     await editMessage(self._reply_to, f"<b>Server selected:</b> <code>{server}</code>\n<b>Processing download for {len(links)} files...</b>")
-                    # Make sure to set the event to finish processing
-                    self.event.set()
-                else:
-                    LOGGER.error(f"Failed to get server info: {result}")
-                    raise DirectDownloadLinkException("Failed to get server information")
+                    self.event.set() # Ensure the event is set to complete processing
+                    
+                except Exception as e:
+                    LOGGER.error(f"Error in mirror selection: {str(e)}")
+                    raise DirectDownloadLinkException(f"Failed to get mirror information: {str(e)}")
+                    
         except Exception as e:
             LOGGER.error(f"Error in download_selected: {str(e)}")
             await editMessage(self._reply_to, f"<b>Error processing download:</b> <code>{str(e)}</code>")
