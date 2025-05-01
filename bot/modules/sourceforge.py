@@ -85,41 +85,99 @@ async def get_sf_content(url, current_path=""):
                 
         soup = BeautifulSoup(content, "html.parser")
         
-        # Find all table rows containing files and folders
-        rows = soup.find_all("tr", class_="folder") + soup.find_all("tr", class_="file")
-        
+        # Check for different HTML structures that SourceForge might use
         folders = []
         files = []
         
-        for row in rows:
-            name_td = row.find("th", class_="name") or row.find("td", class_="name")
-            if not name_td:
-                continue
-                
-            name_a = name_td.find("a")
-            if not name_a:
-                continue
-                
-            name = name_a.text.strip()
-            href = name_a.get("href", "")
-            
-            # Extract path from href
-            if "/files/" in href:
-                item_path = href.split("/files/")[1]
-            else:
-                # If path cannot be extracted correctly, use current path + name
-                if current_path:
-                    item_path = f"{current_path}/{name}"
-                else:
-                    item_path = name
-            
-            if "folder" in row.get("class", []):
-                folders.append({"name": name, "path": item_path})
-            else:
-                size_td = row.find("td", class_="size")
-                size = size_td.text.strip() if size_td else "Unknown"
-                files.append({"name": name, "path": item_path, "size": size})
+        # Method 1: Standard table rows
+        rows = soup.find_all("tr", class_="folder") + soup.find_all("tr", class_="file")
         
+        if not rows:
+            # Method 2: Try alternate structure - div based
+            folder_divs = soup.select(".folder-name")
+            file_divs = soup.select(".file-name")
+            
+            for div in folder_divs:
+                a_tag = div.find("a")
+                if a_tag:
+                    name = a_tag.text.strip()
+                    href = a_tag.get("href", "")
+                    if "/files/" in href:
+                        item_path = href.split("/files/")[1]
+                    else:
+                        item_path = f"{current_path}/{name}" if current_path else name
+                    folders.append({"name": name, "path": item_path})
+            
+            for div in file_divs:
+                a_tag = div.find("a")
+                if a_tag:
+                    name = a_tag.text.strip()
+                    href = a_tag.get("href", "")
+                    if "/files/" in href:
+                        item_path = href.split("/files/")[1]
+                    else:
+                        item_path = f"{current_path}/{name}" if current_path else name
+                    
+                    size_span = div.find_next("span", class_="size")
+                    size = size_span.text.strip() if size_span else "Unknown"
+                    files.append({"name": name, "path": item_path, "size": size})
+        else:
+            # Process standard table rows
+            for row in rows:
+                name_td = row.find("th", class_="name") or row.find("td", class_="name")
+                if not name_td:
+                    continue
+                    
+                name_a = name_td.find("a")
+                if not name_a:
+                    continue
+                    
+                name = name_a.text.strip()
+                href = name_a.get("href", "")
+                
+                # Extract path from href
+                if "/files/" in href:
+                    item_path = href.split("/files/")[1]
+                else:
+                    # If path cannot be extracted correctly, use current path + name
+                    if current_path:
+                        item_path = f"{current_path}/{name}"
+                    else:
+                        item_path = name
+                
+                if "folder" in row.get("class", []):
+                    folders.append({"name": name, "path": item_path})
+                else:
+                    size_td = row.find("td", class_="size")
+                    size = size_td.text.strip() if size_td else "Unknown"
+                    files.append({"name": name, "path": item_path, "size": size})
+        
+        # Method 3: Try to find items in the general structure
+        if not folders and not files:
+            # Look for any link that has a path structure indicating a file or folder
+            all_links = soup.find_all("a")
+            for link in all_links:
+                href = link.get("href", "")
+                if "/files/" in href and project in href:
+                    # Extract the path
+                    try:
+                        path_part = href.split(f"/projects/{project}/files/")[1]
+                        # Determine if it's likely a folder or file
+                        name = link.text.strip()
+                        if not name:
+                            continue
+                            
+                        if href.endswith("/download") or any(path_part.endswith(ext) for ext in ['.zip', '.tar', '.gz', '.rar', '.7z', '.apk', '.img']):
+                            # Likely a file
+                            path_part = path_part.replace("/download", "")
+                            files.append({"name": name, "path": path_part, "size": "Unknown"})
+                        else:
+                            # Likely a folder
+                            folders.append({"name": name, "path": path_part})
+                    except:
+                        continue
+
+        LOGGER.info(f"Found {len(folders)} folders and {len(files)} files")
         return {"folders": folders, "files": files, "project": project}
     except Exception as e:
         LOGGER.error(f"Error getting SourceForge content: {str(e)}")
@@ -357,9 +415,22 @@ class SourceforgeExtract:
             
             # Get contents of the new path
             project_url = f"https://sourceforge.net/projects/{self._project}/files"
-            content = await get_sf_content(project_url, path)
-            
-            await self._show_directory_contents(content)
+            try:
+                content = await get_sf_content(project_url, path)
+                await self._show_directory_contents(content)
+            except Exception as e:
+                LOGGER.error(f"Navigation error: {str(e)}")
+                # Try direct URL as fallback for some SourceForge projects
+                try:
+                    # Some SourceForge projects require direct URL structure
+                    direct_url = f"https://sourceforge.net/projects/{self._project}/files/{path}/"
+                    LOGGER.info(f"Trying direct URL: {direct_url}")
+                    content = await get_sf_content(direct_url, path)
+                    await self._show_directory_contents(content)
+                except Exception as e2:
+                    await editMessage(self._reply_to, f"<b>Error navigating to directory:</b> <code>{str(e)}</code>")
+                    self.is_cancelled = True
+                    self.event.set()
         except Exception as e:
             await editMessage(self._reply_to, f"<b>Error navigating to directory:</b> <code>{str(e)}</code>")
             self.is_cancelled = True
