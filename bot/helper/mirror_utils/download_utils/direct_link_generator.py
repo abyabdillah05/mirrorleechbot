@@ -2191,8 +2191,8 @@ def sharemods(url):
             session.close()
             raise DirectDownloadLinkException(f"ERROR: Link file tidak ditemukan")
         
-def sourceforge(url: str):
-    """Get a direct download link from SourceForge"""
+def sourceforge(url: str, chosen_server=None):
+    """Get a direct download link from SourceForge with server selection option"""
     with Session() as session:
         try:
             if "master.dl.sourceforge.net" in url:
@@ -2215,9 +2215,16 @@ def sourceforge(url: str):
             list_mirror = []
             for i in mirror:
                 list_mirror.append(f"{i['id']}")
-            server = choice(list_mirror)
             if 'autoselect' in list_mirror:
                 list_mirror.remove('autoselect')
+                
+            # If a specific server is chosen and it's in the mirror list
+            if chosen_server and chosen_server in list_mirror:
+                server = chosen_server
+            else:
+                # If no server specified or invalid server, use random selection
+                server = choice(list_mirror)
+                
             direct_link = f"https://{server}.dl.sourceforge.net/project/{project}/{file_id}?viasf=1"
             return direct_link
         except Exception as e:

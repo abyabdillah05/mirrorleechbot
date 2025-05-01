@@ -26,6 +26,7 @@ from pyrogram.handlers import CallbackQueryHandler
 from bot.helper.ext_utils.status_utils import get_readable_time, get_readable_file_size
 from bot.helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.ext_utils.exceptions import DirectDownloadLinkException
+from bot.helper.mirror_utils.download_utils.direct_link_generator import sourceforge
 
 from bot import (
     botname,
@@ -291,7 +292,7 @@ class SourceforgeExtract:
         finally:
             self._listener.client.remove_handler(*handler)
             
-    async def main(self, link):
+    async def main(self, link, select_server=False):
         """Main entry point for the SourceForge handler"""
         self._link = link
         future = self._event_handler()
@@ -300,13 +301,39 @@ class SourceforgeExtract:
             # Special shortcut for direct download links
             if "/download" in link:
                 try:
-                    from bot.helper.mirror_utils.download_utils.direct_link_generator import sourceforge
-                    self._final_link = sourceforge(link)
-                    self.event.set()
-                    await wrap_future(future)
-                    return self._final_link
+                    # If select_server is True, we'll just get the available servers but not choose one
+                    if select_server:
+                        project = findall(r"projects?/(.*?)/files", link)[0]
+                        file_path = link.split("/download")[0].split(f"/projects/{project}/files/")[1]
+                        
+                        mirror_url = f"https://sourceforge.net/settings/mirror_choices?projectname={project}&filename={file_path}"
+                        async with ClientSession() as session:
+                            async with session.get(mirror_url) as response:
+                                content = await response.text()
+                        soup = BeautifulSoup(content, "html.parser")
+                        mirror_list = soup.find("ul", {"id": "mirrorList"})
+                        if not mirror_list:
+                            raise DirectDownloadLinkException("No mirrors found")
+                        
+                        mirrors = mirror_list.find_all("li")
+                        servers = []
+                        for mirror in mirrors:
+                            servers.append(mirror['id'])
+                        if servers and servers[0] == "autoselect":
+                            servers.pop(0)
+                            
+                        self._servers = servers
+                        self._project = project
+                        self._file_path = file_path
+                        await self._show_server_selection()
+                        return None
+                    else:
+                        self._final_link = sourceforge(link)
+                        self.event.set()
+                        await wrap_future(future)
+                        return self._final_link
                 except Exception as e:
-                    LOGGER.info(f"Using standard flow for direct link: {str(e)}")
+                    LOGGER.info(f"Using standard flow: {str(e)}")
                     link = link.split("/download")[0]
             
             # Create initial loading message
@@ -357,14 +384,14 @@ class SourceforgeExtract:
             for server in self._servers:
                 butt.ibutton(f"{server}", f"sourceforge start {server}")
                 
-            butt.ibutton("Select Random Server", f"sourceforge random", position="header")
+            butt.ibutton("Random Server", f"sourceforge random", position="header")
             butt.ibutton("Cancel", f"sourceforge cancel", position="footer")
             butts = butt.build_menu(3)
             
-            msg = f"<b>SourceForge Mirror Server Selection</b>\n\n"
+            msg = f"<b>Select SourceForge Mirror Server</b>\n\n"
             msg += f"<b>Project:</b> <code>{self._project}</code>\n"
-            msg += f"<b>Please select a mirror server:</b>\n"
-            msg += f"<i>Tip: Choose a server closest to your location for optimal speed</i>\n\n"
+            msg += f"<b>File:</b> <code>{self._file_path.split('/')[-1]}</code>\n\n"
+            msg += f"<b>Choose a server close to your location for better speed</b>\n\n"
             msg += f"<b>Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
             
             await editMessage(self._reply_to, msg, butts)
