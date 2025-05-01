@@ -523,7 +523,7 @@ class Mirror(TaskListener):
                             self.removeFromSameDir()
                             await deleteMessage(ddl)
                             return
-                        ddl = await sendMessage(self.message, f"<b>Memeriksa link sourceforge. . .</b>")
+                        #ddl = await sendMessage(self.message, f"<b>Memeriksa link sourceforge. . .</b>")
                     elif tera:
                         self.link = await teraboxExtract(self).main(self.link)
                         if self.link is None:

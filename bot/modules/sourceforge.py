@@ -23,15 +23,13 @@ from pyrogram.handlers import CallbackQueryHandler
 ## Import Variables From Project ##
 ###################################
 
-from bot.helper.ext_utils.status_utils import get_readable_time,get_readable_file_size
+from bot.helper.ext_utils.status_utils import get_readable_time, get_readable_file_size
 from bot.helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.ext_utils.exceptions import DirectDownloadLinkException
 
 from bot import (
     botname,
-    LOGGER,
-    LOG_CHAT_ID,
-    OWNER_ID
+    LOGGER
     )
 from bot.helper.ext_utils.bot_utils import (
     new_task,
@@ -44,7 +42,8 @@ from bot.helper.telegram_helper.message_utils import (
     )
 
 ## Credit @aenulrofik ##
-## Minor Modifications By Tg @IgnoredProjectXcl ##
+## Enhancement by Tg @IgnoredProjectXcl ##
+## Please don't remove the credits — respect the creator! ##
 
 @new_task
 async def main_select(_, query, obj):
@@ -57,7 +56,7 @@ async def main_select(_, query, obj):
     elif data[1] == "random":
         await obj.random_server()
     elif data[1] == "navigate":
-        await obj.navigate(data[2], data[3] if len(data) > 3 else None)
+        await obj.navigate(data[2])
     elif data[1] == "select":
         await obj.select_file(data[2])
     elif data[1] == "download":
@@ -65,7 +64,7 @@ async def main_select(_, query, obj):
     elif data[1] == "back":
         await obj.navigate_back()
     elif data[1] == "cancel":
-        await editMessage(message, "<b>Task canceled by user!</b>")
+        await editMessage(message, "<b>Task canceled by user</b>")
         obj.is_cancelled = True
         obj.event.set()
 
@@ -77,6 +76,8 @@ async def get_sf_content(url, current_path=""):
         project = findall(r"projects?/(.*?)/files", url)[0]
         base_url = f"https://sourceforge.net/projects/{project}/files"
         path_url = f"{base_url}/{current_path}" if current_path else base_url
+        
+        LOGGER.info(f"Fetching directory contents from: {path_url}")
         
         async with ClientSession() as session:
             async with session.get(path_url) as response:
@@ -100,7 +101,17 @@ async def get_sf_content(url, current_path=""):
                 continue
                 
             name = name_a.text.strip()
-            item_path = name_a.get("href").split("/files/")[1] if "/files/" in name_a.get("href", "") else name_a.get("href", "")
+            href = name_a.get("href", "")
+            
+            # Extract path from href
+            if "/files/" in href:
+                item_path = href.split("/files/")[1]
+            else:
+                # If path cannot be extracted correctly, use current path + name
+                if current_path:
+                    item_path = f"{current_path}/{name}"
+                else:
+                    item_path = name
             
             if "folder" in row.get("class", []):
                 folders.append({"name": name, "path": item_path})
@@ -116,7 +127,7 @@ async def get_sf_content(url, current_path=""):
 
 @new_task
 async def sourceforge_extract(url):
-    """Extract mirror servers from a SourceForge download URL"""
+    """Extract mirror servers from a SourceForge download URL or get directory contents"""
     cek = r"^(http:\/\/|https:\/\/)?(www\.)?sourceforge\.net\/.*"
     if not match(cek, url):
         raise DirectDownloadLinkException(
@@ -132,13 +143,18 @@ async def sourceforge_extract(url):
             project = findall(r"projects?/(.*?)/files", url)[0]
             file_path = url.split(f"/projects/{project}/files/")[1] if f"/projects/{project}/files/" in url else ""
             
-            # Check if URL points to a directory
-            if not any(url.endswith(ext) for ext in ['.zip', '.tar', '.gz', '.rar', '.7z', '.exe', '.msi', '.deb', '.rpm']):
-                # It might be a directory, return content instead
-                return await get_sf_content(url, file_path)
+            # First try to get directory contents
+            try:
+                content = await get_sf_content(url, file_path)
+                # If we got here, it's most likely a directory
+                return content
+            except Exception as dir_err:
+                LOGGER.info(f"URL doesn't point to directory, trying as file: {str(dir_err)}")
                 
-            # For files, get mirror servers
+            # If failed to get directory contents, try to get mirror servers
             mirror_url = f"https://sourceforge.net/settings/mirror_choices?projectname={project}&filename={file_path}"
+            LOGGER.info(f"Getting mirror choices from: {mirror_url}")
+            
             async with session.get(mirror_url) as response:
                 content = await response.text()
                 
@@ -173,6 +189,7 @@ class SourceforgeExtract:
         self._reply_to = None
         self.is_cancelled = False
         self._project = ""
+        self._file_path = ""
         self._current_path = ""  # Current directory path
         self._path_stack = []  # Stack for back navigation
         self._selected_files = []  # Selected files for download
@@ -191,7 +208,8 @@ class SourceforgeExtract:
         try:
             await wait_for(self.event.wait(), timeout=self._timeout)
         except:
-            await editMessage(self._reply_to, "<b>Timeout, task canceled!</b>")
+            if self._reply_to:
+                await editMessage(self._reply_to, "<b>Timeout, task canceled!</b>")
             self.is_cancelled = True
             self.event.set()
         finally:
@@ -203,6 +221,12 @@ class SourceforgeExtract:
         future = self._event_handler()
         
         try:
+            # Create initial loading message
+            self._reply_to = await sendMessage(
+                self._listener.message, 
+                f"<b>Processing SourceForge link...</b>"
+            )
+            
             # Check if the link is a file or directory
             result = await sourceforge_extract(link)
             
@@ -218,12 +242,15 @@ class SourceforgeExtract:
                 self._current_path = self._link.split("/files/")[1] if "/files/" in self._link else ""
                 await self._show_directory_contents(result)
             else:
-                await sendMessage(self._listener.message, "Invalid SourceForge URL")
+                await editMessage(self._reply_to, "<b>Invalid SourceForge URL</b>")
                 self.is_cancelled = True
                 self.event.set()
                 return
         except DirectDownloadLinkException as e:
-            await sendMessage(self._listener.message, str(e))
+            if self._reply_to:
+                await editMessage(self._reply_to, str(e))
+            else:
+                self._reply_to = await sendMessage(self._listener.message, str(e))
             self.is_cancelled = True
             self.event.set()
             return
@@ -251,11 +278,10 @@ class SourceforgeExtract:
             msg += f"<b>Please select a mirror server:</b>\n"
             msg += f"<i>Tip: Choose a server closest to your location for optimal speed</i>\n\n"
             msg += f"<b>Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
-            msg += f"\n\n<b>Powered By {botname}</b>"
             
-            self._reply_to = await sendMessage(self._listener.message, msg, butts)
+            await editMessage(self._reply_to, msg, butts)
         else:
-            await sendMessage(self._listener.message, "ERROR: No mirror servers available!")
+            await editMessage(self._reply_to, "ERROR: No mirror servers available!")
             self.is_cancelled = True
             self.event.set()
             return
@@ -282,7 +308,7 @@ class SourceforgeExtract:
             file_name = file["name"]
             encoded_path = file["path"].replace(" ", "%20")
             selected = "✓ " if encoded_path in self._selected_files else ""
-            butt.ibutton(f"{selected}📄 {file_name}", f"sourceforge select {encoded_path}")
+            butt.ibutton(f"{selected}{file_name}", f"sourceforge select {encoded_path}")
             
             # Store file data for later use
             self._file_data[encoded_path] = {
@@ -314,16 +340,15 @@ class SourceforgeExtract:
             msg += f"<b>Contents:</b> {len(folders)} folders, {len(files)} files\n"
         
         msg += f"\n<b>Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
-        msg += f"\n\n<b>Powered By {botname}</b>"
         
-        if self._reply_to:
-            self._reply_to = await editMessage(self._reply_to, msg, butts)
-        else:
-            self._reply_to = await sendMessage(self._listener.message, msg, butts)
+        await editMessage(self._reply_to, msg, butts)
     
-    async def navigate(self, path, subfolder=None):
+    async def navigate(self, path):
         """Navigate to a directory"""
         try:
+            # Update message to show loading state
+            await editMessage(self._reply_to, f"<b>Navigating to directory...</b>")
+            
             # Push current path to stack for back navigation
             if self._current_path:
                 self._path_stack.append(self._current_path)
@@ -342,34 +367,43 @@ class SourceforgeExtract:
     
     async def navigate_back(self):
         """Navigate back to previous directory"""
-        if self._path_stack:
-            self._current_path = self._path_stack.pop()
+        try:
+            # Update message to show loading state
+            await editMessage(self._reply_to, f"<b>Going back to previous directory...</b>")
             
-            # Get contents of the previous path
+            if self._path_stack:
+                self._current_path = self._path_stack.pop()
+            else:
+                self._current_path = ""
+                
+            # Get contents of the previous/root path
             project_url = f"https://sourceforge.net/projects/{self._project}/files"
             content = await get_sf_content(project_url, self._current_path)
             
             await self._show_directory_contents(content)
-        else:
-            # If at root directory, show root contents
-            self._current_path = ""
-            project_url = f"https://sourceforge.net/projects/{self._project}/files"
-            content = await get_sf_content(project_url)
-            
-            await self._show_directory_contents(content)
+        except Exception as e:
+            await editMessage(self._reply_to, f"<b>Error navigating back:</b> <code>{str(e)}</code>")
+            self.is_cancelled = True
+            self.event.set()
     
     async def select_file(self, file_path):
         """Select or deselect a file"""
-        if file_path in self._selected_files:
-            self._selected_files.remove(file_path)
-        else:
-            self._selected_files.append(file_path)
-        
-        # Update UI to reflect selection
-        project_url = f"https://sourceforge.net/projects/{self._project}/files"
-        content = await get_sf_content(project_url, self._current_path)
-        
-        await self._show_directory_contents(content)
+        try:
+            # Toggle file selection
+            if file_path in self._selected_files:
+                self._selected_files.remove(file_path)
+            else:
+                self._selected_files.append(file_path)
+            
+            # Update UI to reflect selection
+            project_url = f"https://sourceforge.net/projects/{self._project}/files"
+            content = await get_sf_content(project_url, self._current_path)
+            
+            await self._show_directory_contents(content)
+        except Exception as e:
+            await editMessage(self._reply_to, f"<b>Error selecting file:</b> <code>{str(e)}</code>")
+            self.is_cancelled = True
+            self.event.set()
     
     async def download_selected(self):
         """Process all selected files for download"""
@@ -377,12 +411,14 @@ class SourceforgeExtract:
             await editMessage(self._reply_to, "<b>No files selected for download.</b>")
             return
         
-        # If only one file is selected, handle it directly
-        if len(self._selected_files) == 1:
-            file_path = self._selected_files[0]
-            file_url = f"https://sourceforge.net/projects/{self._project}/files/{file_path}"
+        try:
+            await editMessage(self._reply_to, f"<b>Processing {len(self._selected_files)} selected files...</b>")
             
-            try:
+            # If only one file is selected, handle it directly
+            if len(self._selected_files) == 1:
+                file_path = self._selected_files[0]
+                file_url = f"https://sourceforge.net/projects/{self._project}/files/{file_path}"
+                
                 result = await sourceforge_extract(file_url)
                 if isinstance(result, dict) and "servers" in result:
                     self._servers = result["servers"]
@@ -391,41 +427,32 @@ class SourceforgeExtract:
                     await self._show_server_selection()
                 else:
                     raise DirectDownloadLinkException("Failed to get server information")
-            except Exception as e:
-                await editMessage(self._reply_to, f"<b>Error processing download:</b> <code>{str(e)}</code>")
-                self.is_cancelled = True
-                self.event.set()
-        else:
-            # Multiple files selected
-            # For multiple files, we'll use a random server for all
-            links = []
-            
-            # First, get servers for one file to use for all
-            sample_file = self._selected_files[0]
-            sample_url = f"https://sourceforge.net/projects/{self._project}/files/{sample_file}"
-            
-            try:
+            else:
+                # Multiple files selected - use a random server for all
+                sample_file = self._selected_files[0]
+                sample_url = f"https://sourceforge.net/projects/{self._project}/files/{sample_file}"
+                
                 result = await sourceforge_extract(sample_url)
                 if isinstance(result, dict) and "servers" in result:
                     server = random.choice(result["servers"])
                     
                     # Create links for all selected files
+                    links = []
                     for file_path in self._selected_files:
                         file_data = self._file_data.get(file_path, {})
                         file_name = file_data.get("name", "Unknown")
                         direct_link = f"https://{server}.dl.sourceforge.net/project/{self._project}/{file_path}?viasf=1"
                         links.append({"name": file_name, "url": direct_link})
                     
-                    # This will require modification in the caller to handle multiple links
                     self._final_link = links
                     await editMessage(self._reply_to, f"<b>Server selected:</b> <code>{server}</code>\n<b>Processing download for {len(links)} files...</b>")
                     self.event.set()
                 else:
                     raise DirectDownloadLinkException("Failed to get server information")
-            except Exception as e:
-                await editMessage(self._reply_to, f"<b>Error processing download:</b> <code>{str(e)}</code>")
-                self.is_cancelled = True
-                self.event.set()
+        except Exception as e:
+            await editMessage(self._reply_to, f"<b>Error processing download:</b> <code>{str(e)}</code>")
+            self.is_cancelled = True
+            self.event.set()
     
     async def start(self, server):
         """Start download with selected server"""
