@@ -50,7 +50,7 @@ from bot.helper.listeners.task_listener import TaskListener
 from bot.modules.auto_mirror import AutoMirror
 from bot.modules.video_editor import VideEditor
 from urllib.parse import urlparse
-from bot.modules.sourceforge import SourceforgeExtract
+from bot.modules.sourceforge import sourceforgeExtract
 from bot.modules.terabox_extract import teraboxExtract
 
 urlregex = r"^(https?:\/\/)([a-zA-Z0-9-]+\.)*([a-zA-Z0-9-]+\.[a-zA-Z]{2,})(\/[^#\s]*)?(\?[^#\s]*)?(#.*)?$"
@@ -518,56 +518,12 @@ class Mirror(TaskListener):
                     )
                 try:
                     if "sourceforge.net" in self.link:
-                        # For direct file links that end with /download, use the direct_link_generator
-                        if self.link.endswith("/download"):
-                            try:
-                                # Get available servers but don't choose one yet
-                                result = await SourceforgeExtract(self).main(self.link, select_server=True)
-                                if isinstance(result, dict) and "available_servers" in result:
-                                    # If we have available servers, show selection UI
-                                    await editMessage(ddl, "<b>Please select a mirror server...</b>")
-                                    self.link = result
-                                    return
-                                elif result:
-                                    self.link = result  # This will be the direct link
-                                    return
-                                else:
-                                    self.removeFromSameDir()
-                                    await deleteMessage(ddl)
-                                    return
-                            except DirectDownloadLinkException:
-                                # If direct generation fails, try the interactive approach
-                                pass
-                                
-                        result = await SourceforgeExtract(self).main(self.link)
-                        if result is None:
+                        self.link = await sourceforgeExtract(self).main(self.link)
+                        if self.link is None:
                             self.removeFromSameDir()
                             await deleteMessage(ddl)
                             return
-                        
-                        # Handle multiple files download
-                        if isinstance(result, list):
-                            # Process multiple downloads
-                            await editMessage(ddl, f"<b>Starting download for {len(result)} selected files...</b>")
-                            await deleteMessage(ddl)
-                            
-                            # Add each file link to the download queue separately
-                            for file_item in result:
-                                file_name = file_item.get("name", "Unknown")
-                                file_url = file_item.get("url", "")
-                                if file_url:
-                                    # Create a new command for this file and process it
-                                    cmd_msg = await sendMessage(
-                                        self.message,
-                                        f"<b>Downloading from SourceForge:</b>\n<code>{file_name}</code>"
-                                    )
-                                    
-                                    # Create mirror parameters similar to the original request
-                                    mirror_msg = cmd_msg
-                                    mirror_msg.text = f"/mirror {file_url}"
-                            return
-                        else:
-                            self.link = result
+                        #ddl = await sendMessage(self.message, f"<b>Memeriksa link sourceforge. . .</b>")
                     elif tera:
                         self.link = await teraboxExtract(self).main(self.link)
                         if self.link is None:

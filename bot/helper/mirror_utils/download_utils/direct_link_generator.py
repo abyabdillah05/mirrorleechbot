@@ -19,7 +19,7 @@ from lxml.etree import HTML
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from bot import config_dict
+from bot import config_dict, LOGGER
 from bot.helper.ext_utils.bot_utils import async_to_sync, get_content_type
 from bot.helper.ext_utils.status_utils import speed_string_to_bytes, get_readable_time
 from bot.helper.ext_utils.links_utils import is_share_link
@@ -309,7 +309,7 @@ def direct_link_generator(link: str):
     elif "lulacloud.com" in domain:
         return lulacloud(link)
     #elif 'sourceforge.net' in domain:
-        #return sourceforge(link)
+    #    return sourceforge(link)
     elif 'database.s3cr3t.workers.dev' in domain:
         return index(link)
     elif 'buzzheavier.com' in domain:
@@ -471,8 +471,7 @@ def mediafire(url, session=None):
         try:
             c = async_to_sync(get_content_type, final_link[0])
             if c is None or re.match(r"text/html|text/plain", c):
-                with create_scraper() as session:
-                    html = HTML(cf_bypass(url).text)
+                html = HTML(cf_bypass(url))
                 if html is None:
                     raise DirectDownloadLinkException(f"ERROR: Error saat coba request url {e.__class__.__name__}")
                 if new_link := html.xpath('//a[@id="continue-btn"]/@href'):
@@ -484,8 +483,7 @@ def mediafire(url, session=None):
             raise DirectDownloadLinkException (f"ERROR: Error saat cek ddl mediafire {e}")
         
     def _repair_download(url):
-        with create_scraper() as session:
-            html = HTML(session.get(url).text)
+        html = HTML(cf_bypass(url))
         if html is None:
             raise DirectDownloadLinkException(f"ERROR: Error saat coba request url {e.__class__.__name__}")
         if new_link := html.xpath('//a[@id="continue-btn"]/@href'):
@@ -500,8 +498,7 @@ def mediafire(url, session=None):
     #except Exception as e:
     #    session.close()
     #    raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}")
-    with create_scraper() as session:
-        html = HTML(session.get(url).text)
+    html = HTML(cf_bypass(url))
     if html is None:
         raise DirectDownloadLinkException(f"ERROR: Error saat coba request url {e.__class__.__name__}")
     if error:= html.xpath("//p[@class='notranslate']/text()"):
@@ -1294,7 +1291,7 @@ def cf_bypass(url):
                 "url": url,
                 "maxTimeout": 60000
             }
-            _json = session.post("http://bejir.pika.web.id:8191/v1", headers={"Content-Type": "application/json"}, json=data).json()
+            _json = session.post("http://vpn.pika.web.id:8191/v1", headers={"Content-Type": "application/json"}, json=data).json()
             if _json["status"] == "ok":
                 return _json["solution"]["response"]
         except Exception as e:
@@ -2191,8 +2188,7 @@ def sharemods(url):
             session.close()
             raise DirectDownloadLinkException(f"ERROR: Link file tidak ditemukan")
         
-def sourceforge(url: str, chosen_server=None):
-    """Get a direct download link from SourceForge with server selection option"""
+def sourceforge(url: str):
     with Session() as session:
         try:
             if "master.dl.sourceforge.net" in url:
@@ -2200,10 +2196,10 @@ def sourceforge(url: str, chosen_server=None):
             if url.endswith("/download"):
                 url = url.split("/download")[0]
             try:
-                link = findall(r"\bhttps?://.*sourceforge\.net\S+", url)[0]
+                link = findall(r"\bhttps?://sourceforge\.net\S+", url)[0]
             except IndexError:
                 raise DirectDownloadLinkException(
-                    "ERROR: SourceForge link not found!"
+                    "ERROR: Link SourceForge tidak ditemukan!"
                 )
             file_id = findall(r"files(.*)", link)[0]
             project = findall(r"projects?/(.*?)/files", link)[0]
@@ -2215,20 +2211,15 @@ def sourceforge(url: str, chosen_server=None):
             list_mirror = []
             for i in mirror:
                 list_mirror.append(f"{i['id']}")
+            server = choice(list_mirror)
             if 'autoselect' in list_mirror:
                 list_mirror.remove('autoselect')
-                
-            # If a specific server is chosen and it's in the mirror list
-            if chosen_server and chosen_server in list_mirror:
-                server = chosen_server
-            else:
-                # If no server specified or invalid server, use random selection
-                server = choice(list_mirror)
-                
+            if 'ixpeering' in list_mirror:
+                server = 'ixpeering'
             direct_link = f"https://{server}.dl.sourceforge.net/project/{project}/{file_id}?viasf=1"
             return direct_link
-        except Exception as e:
-            raise DirectDownloadLinkException(f"ERROR: File not found! {str(e)}")
+        except Exception:
+            raise DirectDownloadLinkException("ERROR: Link File tidak ditemukan!")
 
 def buzzheavier(url):
     pattern = r'^https?://buzzheavier\.com/[a-zA-Z0-9]+$'
@@ -2320,7 +2311,7 @@ def devuploads(url):
     if not randpost:
         raise DirectDownloadLinkException("ERROR: Unable to find xd value")
     data['xd'] = randpost.text.strip()
-    proxy = "http://hsakalu1:hsakalu1@161.123.152.115:6360"
+    proxy = check_proxy(url)
     res = session.post(url, data=data, proxies={'http': proxy, 'https': proxy})
     html = HTML(res.text)
     if not html.xpath("//input[@name='orilink']/@value"):
@@ -2329,17 +2320,43 @@ def devuploads(url):
     session.close()
     return direct_link[0]
 
-def lulacloud(url):
-    """
-    Generate a direct download link for www.lulacloud.com URLs.
-    @param url: URL from www.lulacloud.com
-    @return: Direct download link
-    """
-    session = Session()
+def check_proxy(url):
+    if not path.exists("proxy.txt"):
+        raise DirectDownloadLinkException("ERROR: File proxy.txt tidak ditemukan")
     try:
-        res = session.post(url, headers={'Referer': url}, allow_redirects=False)
-        return res.headers['location']
+        with open("proxy.txt", 'r') as f:
+            proxies = [line.strip() for line in f if line.strip() and ':' in line]
+            if not proxies:
+                raise DirectDownloadLinkException("ERROR: Tidak ada proxy valid dalam file")
     except Exception as e:
-        raise DirectDownloadLinkException(f"ERROR: {str(e)}") from e
-    finally:
-        session.close()
+        raise DirectDownloadLinkException(f"ERROR: {type(e).__name__} - {str(e)}")
+
+    timeout = (3.05, 5)
+    session = Session()
+    for proxy in proxies:
+        try:
+            if not proxy.startswith(('http://', 'https://')):
+                proxy = f"http://{proxy}"
+            req = session.get(url,
+                             proxies={"http": proxy, "https": proxy},
+                             timeout=timeout)
+            if req.status_code == 200:
+                return proxy
+        except Exception as e:
+            LOGGER.error(f"Proxy {proxy} gagal: {str(e) or 'Tidak ada respon'}")
+    raise DirectDownloadLinkException("ERROR: Semua proxy tidak berfungsi. Lihat log untuk detail.")
+
+def lulacloud(url):
+     """
+     Generate a direct download link for www.lulacloud.com URLs.
+     @param url: URL from www.lulacloud.com
+     @return: Direct download link
+     """
+     session = Session()
+     try:
+         res = session.post(url, headers={'Referer': url}, allow_redirects=False)
+         return res.headers['location']
+     except Exception as e:
+         raise DirectDownloadLinkException(f"ERROR: {str(e)}") from e
+     finally:
+         session.close()
