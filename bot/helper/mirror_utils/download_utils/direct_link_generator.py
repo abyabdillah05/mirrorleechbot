@@ -308,8 +308,8 @@ def direct_link_generator(link: str):
         return devuploads(link)
     elif "lulacloud.com" in domain:
         return lulacloud(link)
-    elif 'sourceforge.net' in domain:
-        return sourceforge(link)
+    #elif 'sourceforge.net' in domain:
+        #return sourceforge(link)
     elif 'database.s3cr3t.workers.dev' in domain:
         return index(link)
     elif 'buzzheavier.com' in domain:
