@@ -518,12 +518,35 @@ class Mirror(TaskListener):
                     )
                 try:
                     if "sourceforge.net" in self.link:
-                        self.link = await SourceforgeExtract(self).main(self.link)
-                        if self.link is None:
+                        result = await SourceforgeExtract(self).main(self.link)
+                        if result is None:
                             self.removeFromSameDir()
                             await deleteMessage(ddl)
                             return
-                        #ddl = await sendMessage(self.message, f"<b>Memeriksa link sourceforge. . .</b>")
+                        
+                        # Handle multiple files download
+                        if isinstance(result, list):
+                            await editMessage(ddl, f"<b>Adding {len(result)} files to download queue</b>")
+                            
+                            # Process each file separately
+                            for file_item in result:
+                                file_name = file_item.get("name", "Unknown")
+                                file_url = file_item.get("url", "")
+                                
+                                if file_url:
+                                    # Create a new mirror instance for each file
+                                    new_msg = await sendMessage(
+                                        self.message,
+                                        f"/mirror {file_url}"
+                                    )
+                                    # Set the text so the bot will process it as a command
+                                    new_msg.text = f"/mirror {file_url}"
+                                    await Mirror().new_task(new_msg)
+                            
+                            await deleteMessage(ddl)
+                            return
+                        else:
+                            self.link = result
                     elif tera:
                         self.link = await teraboxExtract(self).main(self.link)
                         if self.link is None:

@@ -56,11 +56,9 @@ async def main_select(_, query, obj):
     elif data[1] == "random":
         await obj.random_server()
     elif data[1] == "navigate":
-        path_id = data[2]
-        await obj.navigate_by_id(path_id)
+        await obj.navigate_by_id(data[2])
     elif data[1] == "select":
-        file_id = data[2]
-        await obj.select_file_by_id(file_id)
+        await obj.select_file_by_id(data[2])
     elif data[1] == "download":
         await obj.download_selected()
     elif data[1] == "back":
@@ -169,7 +167,7 @@ async def get_sf_content(url, current_path=""):
                         if not name:
                             continue
                             
-                        if href.endswith("/download") or any(path_part.endswith(ext) for ext in ['.zip', '.tar', '.gz', '.rar', '.7z', '.apk', '.img']):
+                        if href.endswith("/download"):
                             # Likely a file
                             path_part = path_part.replace("/download", "")
                             files.append({"name": name, "path": path_part, "size": "Unknown"})
@@ -191,7 +189,7 @@ async def sourceforge_extract(url):
     cek = r"^(http:\/\/|https:\/\/)?(www\.)?sourceforge\.net\/.*"
     if not match(cek, url):
         raise DirectDownloadLinkException(
-            "ERROR: Invalid link, use SourceForge non-DDL link!\n\n<blockquote><code>Example: https://sourceforge.net/projects/xxx/files/xxx/xxx.zip</code></blockquote>"
+            "ERROR: Invalid link, use SourceForge non-DDL link"
         )
     
     # Clean URL format
@@ -209,7 +207,7 @@ async def sourceforge_extract(url):
                 # If we got here, it's most likely a directory
                 return content
             except Exception as dir_err:
-                LOGGER.info(f"URL doesn't point to directory, trying as file: {str(dir_err)}")
+                LOGGER.info(f"URL might be a direct file, trying mirror choices")
                 
             # If failed to get directory contents, try to get mirror servers
             mirror_url = f"https://sourceforge.net/settings/mirror_choices?projectname={project}&filename={file_path}"
@@ -222,7 +220,7 @@ async def sourceforge_extract(url):
             mirror_list = soup.find("ul", {"id": "mirrorList"})
             
             if not mirror_list:
-                raise DirectDownloadLinkException(f"Mirror servers not found or file has been removed.")
+                raise DirectDownloadLinkException(f"Mirror servers not found or file has been removed")
             
             mirrors = mirror_list.find_all("li")
             servers = []
@@ -241,7 +239,7 @@ class SourceforgeExtract:
     def __init__(self, listener):
         self._listener = listener
         self._time = time()
-        self._timeout = 300  # Increased timeout
+        self._timeout = 300
         self.event = Event()
         self._servers = []
         self._link = ""
@@ -250,12 +248,12 @@ class SourceforgeExtract:
         self.is_cancelled = False
         self._project = ""
         self._file_path = ""
-        self._current_path = ""  # Current directory path
-        self._path_stack = []  # Stack for back navigation
-        self._selected_files = []  # Selected files for download
-        self._file_data = {}  # Store file data for final download
-        self._path_map = {}  # Map of short IDs to paths
-        self._next_id = 1  # Next ID to assign
+        self._current_path = ""
+        self._path_stack = []
+        self._selected_files = []
+        self._file_data = {}
+        self._path_map = {}
+        self._next_id = 1
 
     def _get_short_id(self, path):
         """Get a short ID for a path or create one if it doesn't exist"""
@@ -287,7 +285,7 @@ class SourceforgeExtract:
             await wait_for(self.event.wait(), timeout=self._timeout)
         except:
             if self._reply_to:
-                await editMessage(self._reply_to, "<b>Timeout, task canceled!</b>")
+                await editMessage(self._reply_to, "<b>Timeout, task canceled</b>")
             self.is_cancelled = True
             self.event.set()
         finally:
@@ -299,6 +297,18 @@ class SourceforgeExtract:
         future = self._event_handler()
         
         try:
+            # Special shortcut for direct download links
+            if "/download" in link:
+                try:
+                    from bot.helper.mirror_utils.download_utils.direct_link_generator import sourceforge
+                    self._final_link = sourceforge(link)
+                    self.event.set()
+                    await wrap_future(future)
+                    return self._final_link
+                except Exception as e:
+                    LOGGER.info(f"Using standard flow for direct link: {str(e)}")
+                    link = link.split("/download")[0]
+            
             # Create initial loading message
             self._reply_to = await sendMessage(
                 self._listener.message, 
@@ -359,7 +369,7 @@ class SourceforgeExtract:
             
             await editMessage(self._reply_to, msg, butts)
         else:
-            await editMessage(self._reply_to, "ERROR: No mirror servers available!")
+            await editMessage(self._reply_to, "ERROR: No mirror servers available")
             self.is_cancelled = True
             self.event.set()
             return
@@ -371,24 +381,24 @@ class SourceforgeExtract:
         
         butt = ButtonMaker()
         
-        # Add navigation buttons
+        # Add navigation buttons in header
         header_btns = []
         if self._path_stack:
-            header_btns.append(("⬅️ Back", "sourceforge back"))
+            header_btns.append(("Back", "sourceforge back"))
         if self._selected_files:
-            header_btns.append(("⬇️ Download Selected", "sourceforge download"))
+            header_btns.append(("Download Selected", "sourceforge download"))
         
-        # Add header buttons with proper positioning
+        # Add header buttons
         for text, callback in header_btns:
             butt.ibutton(text, callback, position="header")
         
-        # Add folders - use more descriptive emoji
+        # Add folders
         for folder in folders:
             folder_name = folder["name"]
             path = folder["path"]
             path_id = self._get_short_id(path)
             # Limit folder name length if needed
-            disp_name = folder_name if len(folder_name) < 30 else folder_name[:27] + "..."
+            disp_name = folder_name if len(folder_name) < 25 else folder_name[:22] + "..."
             butt.ibutton(f"📁 {disp_name}", f"sourceforge navigate {path_id}")
         
         # Add files with selection option
@@ -396,9 +406,9 @@ class SourceforgeExtract:
             file_name = file["name"]
             path = file["path"]
             path_id = self._get_short_id(path)
-            selected = "✓ " if path in self._selected_files else "📄 "
+            selected = "✓ " if path in self._selected_files else ""
             # Limit file name length if needed
-            disp_name = file_name if len(file_name) < 30 else file_name[:27] + "..."
+            disp_name = file_name if len(file_name) < 25 else file_name[:22] + "..."
             butt.ibutton(f"{selected}{disp_name}", f"sourceforge select {path_id}")
             
             # Store file data for later use
@@ -409,19 +419,14 @@ class SourceforgeExtract:
             }
         
         # Always add cancel button in footer
-        butt.ibutton("❌ Cancel", "sourceforge cancel", position="footer")
+        butt.ibutton("Cancel", "sourceforge cancel", position="footer")
         
-        # For better organization:
-        # - Use 2 buttons per row for files and folders (small screens)
-        # - Use 1 button per row when items have long names
-        has_long_names = any(len(f["name"]) > 20 for f in folders + files)
-        col_width = 1 if has_long_names else 2
-        
-        butts = butt.build_menu(col_width, 2, 1)  # columns, header cols, footer cols
+        # For better organization, use 2 buttons per row
+        butts = butt.build_menu(2)
         
         current_path_display = f"/{self._current_path}" if self._current_path else "/"
         
-        msg = f"<b>📂 SourceForge Directory Browser</b>\n\n"
+        msg = f"<b>SourceForge Directory Browser</b>\n\n"
         msg += f"<b>Project:</b> <code>{self._project}</code>\n"
         msg += f"<b>Current Path:</b> <code>{current_path_display}</code>\n\n"
         
@@ -429,7 +434,7 @@ class SourceforgeExtract:
             msg += f"<b>Selected Files:</b> {len(self._selected_files)}\n\n"
         
         if not folders and not files:
-            msg += "<b>This directory is empty.</b>\n"
+            msg += "<b>This directory is empty</b>\n"
         else:
             msg += f"<b>Contents:</b> {len(folders)} folders, {len(files)} files\n"
         
@@ -476,17 +481,16 @@ class SourceforgeExtract:
                 LOGGER.error(f"Navigation error: {str(e)}")
                 # Try direct URL as fallback for some SourceForge projects
                 try:
-                    # Some SourceForge projects require direct URL structure
                     direct_url = f"https://sourceforge.net/projects/{self._project}/files/{path}/"
                     LOGGER.info(f"Trying direct URL: {direct_url}")
-                    content = await get_sf_content(direct_url, path)
+                    content = await get_sf_content(direct_url, "")
                     await self._show_directory_contents(content)
                 except Exception as e2:
-                    await editMessage(self._reply_to, f"<b>Error navigating to directory:</b> <code>{str(e)}</code>")
+                    await editMessage(self._reply_to, f"<b>Error navigating to directory</b>")
                     self.is_cancelled = True
                     self.event.set()
         except Exception as e:
-            await editMessage(self._reply_to, f"<b>Error navigating to directory:</b> <code>{str(e)}</code>")
+            await editMessage(self._reply_to, f"<b>Error navigating to directory</b>")
             self.is_cancelled = True
             self.event.set()
     
@@ -507,7 +511,7 @@ class SourceforgeExtract:
             
             await self._show_directory_contents(content)
         except Exception as e:
-            await editMessage(self._reply_to, f"<b>Error navigating back:</b> <code>{str(e)}</code>")
+            await editMessage(self._reply_to, f"<b>Error navigating back</b>")
             self.is_cancelled = True
             self.event.set()
     
@@ -526,14 +530,14 @@ class SourceforgeExtract:
             
             await self._show_directory_contents(content)
         except Exception as e:
-            await editMessage(self._reply_to, f"<b>Error selecting file:</b> <code>{str(e)}</code>")
+            await editMessage(self._reply_to, f"<b>Error selecting file</b>")
             self.is_cancelled = True
             self.event.set()
     
     async def download_selected(self):
         """Process all selected files for download"""
         if not self._selected_files:
-            await editMessage(self._reply_to, "<b>No files selected for download.</b>")
+            await editMessage(self._reply_to, "<b>No files selected for download</b>")
             return
         
         try:
@@ -555,59 +559,50 @@ class SourceforgeExtract:
             else:
                 # Multiple files selected - use a random server for all
                 sample_file = self._selected_files[0]
-                sample_url = f"https://sourceforge.net/projects/{self._project}/files/{sample_file}"
                 
-                LOGGER.info(f"Trying to get mirror info for sample file: {sample_url}")
+                # Get mirror choices for first file
+                mirror_url = f"https://sourceforge.net/settings/mirror_choices?projectname={self._project}&filename={sample_file}"
+                LOGGER.info(f"Getting mirror choices from: {mirror_url}")
                 
-                try:
-                    # First verify if this is a valid file by getting mirror choices
-                    mirror_url = f"https://sourceforge.net/settings/mirror_choices?projectname={self._project}&filename={sample_file}"
-                    LOGGER.info(f"Getting mirror choices from: {mirror_url}")
+                async with ClientSession() as session:
+                    async with session.get(mirror_url) as response:
+                        content = await response.text()
+                
+                soup = BeautifulSoup(content, "html.parser")
+                mirror_list = soup.find("ul", {"id": "mirrorList"})
+                
+                if not mirror_list:
+                    raise DirectDownloadLinkException(f"Mirror servers not found")
+                
+                mirrors = mirror_list.find_all("li")
+                servers = []
+                
+                for mirror in mirrors:
+                    servers.append(mirror['id'])
                     
-                    async with ClientSession() as session:
-                        async with session.get(mirror_url) as response:
-                            content = await response.text()
-                    
-                    soup = BeautifulSoup(content, "html.parser")
-                    mirror_list = soup.find("ul", {"id": "mirrorList"})
-                    
-                    if not mirror_list:
-                        raise DirectDownloadLinkException(f"Mirror servers not found, the item may not be a direct downloadable file")
-                    
-                    mirrors = mirror_list.find_all("li")
-                    servers = []
-                    
-                    for mirror in mirrors:
-                        servers.append(mirror['id'])
-                        
-                    if servers and servers[0] == "autoselect":
-                        servers.pop(0)
-                    
-                    # Select a random server from available mirrors
-                    server = random.choice(servers)
-                    LOGGER.info(f"Selected random server: {server}")
-                    
-                    # Create links for all selected files
-                    links = []
-                    for file_path in self._selected_files:
-                        file_data = self._file_data.get(file_path, {})
-                        file_name = file_data.get("name", "Unknown")
-                        direct_link = f"https://{server}.dl.sourceforge.net/project/{self._project}/{file_path}?viasf=1"
-                        links.append({"name": file_name, "url": direct_link})
-                        LOGGER.info(f"Created link for {file_name}: {direct_link}")
-                    
-                    # Set the final link and complete the process
-                    self._final_link = links
-                    await editMessage(self._reply_to, f"<b>Server selected:</b> <code>{server}</code>\n<b>Processing download for {len(links)} files...</b>")
-                    self.event.set() # Ensure the event is set to complete processing
-                    
-                except Exception as e:
-                    LOGGER.error(f"Error in mirror selection: {str(e)}")
-                    raise DirectDownloadLinkException(f"Failed to get mirror information: {str(e)}")
-                    
+                if servers and servers[0] == "autoselect":
+                    servers.pop(0)
+                
+                # Select a random server from available mirrors
+                server = random.choice(servers)
+                LOGGER.info(f"Selected random server: {server}")
+                
+                # Create links for all selected files
+                links = []
+                for file_path in self._selected_files:
+                    file_data = self._file_data.get(file_path, {})
+                    file_name = file_data.get("name", "Unknown")
+                    direct_link = f"https://{server}.dl.sourceforge.net/project/{self._project}/{file_path}?viasf=1"
+                    links.append({"name": file_name, "url": direct_link})
+                    LOGGER.info(f"Created link for {file_name}: {direct_link}")
+                
+                # Set the final link and complete the process
+                self._final_link = links
+                await editMessage(self._reply_to, f"<b>Server selected:</b> <code>{server}</code>\n<b>Processing download for {len(links)} files...</b>")
+                self.event.set() # Ensure the event is set to complete processing
         except Exception as e:
             LOGGER.error(f"Error in download_selected: {str(e)}")
-            await editMessage(self._reply_to, f"<b>Error processing download:</b> <code>{str(e)}</code>")
+            await editMessage(self._reply_to, f"<b>Error processing download</b>")
             self.is_cancelled = True
             self.event.set()  # Make sure to set the event even on error
     
@@ -623,7 +618,7 @@ class SourceforgeExtract:
             
             self.event.set()
         except Exception as e:
-            await editMessage(self._reply_to, f"<b>Error processing server:</b> <code>{str(e)}</code>")
+            await editMessage(self._reply_to, f"<b>Error processing server</b>")
             self.is_cancelled = True
             self.event.set()
             

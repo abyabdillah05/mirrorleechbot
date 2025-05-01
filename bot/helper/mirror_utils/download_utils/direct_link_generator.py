@@ -308,8 +308,8 @@ def direct_link_generator(link: str):
         return devuploads(link)
     elif "lulacloud.com" in domain:
         return lulacloud(link)
-    #elif 'sourceforge.net' in domain:
-    #    return sourceforge(link)
+    elif 'sourceforge.net' in domain:
+        return sourceforge(link)
     elif 'database.s3cr3t.workers.dev' in domain:
         return index(link)
     elif 'buzzheavier.com' in domain:
@@ -2192,6 +2192,7 @@ def sharemods(url):
             raise DirectDownloadLinkException(f"ERROR: Link file tidak ditemukan")
         
 def sourceforge(url: str):
+    """Get a direct download link from SourceForge"""
     with Session() as session:
         try:
             if "master.dl.sourceforge.net" in url:
@@ -2199,7 +2200,7 @@ def sourceforge(url: str):
             if url.endswith("/download"):
                 url = url.split("/download")[0]
             try:
-                link = findall(r"\bhttps?://sourceforge\.net\S+", url)[0]
+                link = findall(r"\bhttps?://.*sourceforge\.net\S+", url)[0]
             except IndexError:
                 raise DirectDownloadLinkException(
                     "ERROR: SourceForge link not found!"
@@ -2217,8 +2218,6 @@ def sourceforge(url: str):
             server = choice(list_mirror)
             if 'autoselect' in list_mirror:
                 list_mirror.remove('autoselect')
-            if 'ixpeering' in list_mirror:
-                server = 'ixpeering'
             direct_link = f"https://{server}.dl.sourceforge.net/project/{project}/{file_id}?viasf=1"
             return direct_link
         except Exception as e:
