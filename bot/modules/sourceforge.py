@@ -56,9 +56,11 @@ async def main_select(_, query, obj):
     elif data[1] == "random":
         await obj.random_server()
     elif data[1] == "navigate":
-        await obj.navigate(data[2])
+        path_id = data[2]
+        await obj.navigate_by_id(path_id)
     elif data[1] == "select":
-        await obj.select_file(data[2])
+        file_id = data[2]
+        await obj.select_file_by_id(file_id)
     elif data[1] == "download":
         await obj.download_selected()
     elif data[1] == "back":
@@ -252,6 +254,24 @@ class SourceforgeExtract:
         self._path_stack = []  # Stack for back navigation
         self._selected_files = []  # Selected files for download
         self._file_data = {}  # Store file data for final download
+        self._path_map = {}  # Map of short IDs to paths
+        self._next_id = 1  # Next ID to assign
+
+    def _get_short_id(self, path):
+        """Get a short ID for a path or create one if it doesn't exist"""
+        for id_str, stored_path in self._path_map.items():
+            if stored_path == path:
+                return id_str
+                
+        # Create a new short ID
+        id_str = str(self._next_id)
+        self._path_map[id_str] = path
+        self._next_id += 1
+        return id_str
+
+    def _get_path_from_id(self, id_str):
+        """Get the path associated with an ID"""
+        return self._path_map.get(id_str)
 
     @new_thread
     async def _event_handler(self):
@@ -358,20 +378,22 @@ class SourceforgeExtract:
         # Add folders
         for folder in folders:
             folder_name = folder["name"]
-            encoded_path = folder["path"].replace(" ", "%20")
-            butt.ibutton(f"📁 {folder_name}", f"sourceforge navigate {encoded_path}")
+            path = folder["path"]
+            path_id = self._get_short_id(path)
+            butt.ibutton(f"📁 {folder_name}", f"sourceforge navigate {path_id}")
         
         # Add files with selection option
         for file in files:
             file_name = file["name"]
-            encoded_path = file["path"].replace(" ", "%20")
-            selected = "✓ " if encoded_path in self._selected_files else ""
-            butt.ibutton(f"{selected}{file_name}", f"sourceforge select {encoded_path}")
+            path = file["path"]
+            path_id = self._get_short_id(path)
+            selected = "✓ " if path in self._selected_files else ""
+            butt.ibutton(f"{selected}{file_name}", f"sourceforge select {path_id}")
             
             # Store file data for later use
-            self._file_data[encoded_path] = {
+            self._file_data[path] = {
                 "name": file_name,
-                "path": encoded_path,
+                "path": path,
                 "size": file.get("size", "Unknown")
             }
         
@@ -400,6 +422,24 @@ class SourceforgeExtract:
         msg += f"\n<b>Timeout:</b> <code>{get_readable_time(self._timeout-(time()-self._time))}</code>"
         
         await editMessage(self._reply_to, msg, butts)
+    
+    async def navigate_by_id(self, path_id):
+        """Navigate to a directory using its ID"""
+        path = self._get_path_from_id(path_id)
+        if not path:
+            await editMessage(self._reply_to, f"<b>Error: Invalid path ID</b>")
+            return
+        
+        await self.navigate(path)
+        
+    async def select_file_by_id(self, file_id):
+        """Select a file using its ID"""
+        path = self._get_path_from_id(file_id)
+        if not path:
+            await editMessage(self._reply_to, f"<b>Error: Invalid file ID</b>")
+            return
+        
+        await self.select_file(path)
     
     async def navigate(self, path):
         """Navigate to a directory"""
