@@ -2202,7 +2202,7 @@ def sourceforge(url: str):
                 link = findall(r"\bhttps?://sourceforge\.net\S+", url)[0]
             except IndexError:
                 raise DirectDownloadLinkException(
-                    "ERROR: Link SourceForge tidak ditemukan!"
+                    "ERROR: SourceForge link not found!"
                 )
             file_id = findall(r"files(.*)", link)[0]
             project = findall(r"projects?/(.*?)/files", link)[0]
@@ -2221,8 +2221,8 @@ def sourceforge(url: str):
                 server = 'ixpeering'
             direct_link = f"https://{server}.dl.sourceforge.net/project/{project}/{file_id}?viasf=1"
             return direct_link
-        except Exception:
-            raise DirectDownloadLinkException("ERROR: Link File tidak ditemukan!")
+        except Exception as e:
+            raise DirectDownloadLinkException(f"ERROR: File not found! {str(e)}")
 
 def buzzheavier(url):
     pattern = r'^https?://buzzheavier\.com/[a-zA-Z0-9]+$'

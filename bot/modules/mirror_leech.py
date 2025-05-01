@@ -50,7 +50,7 @@ from bot.helper.listeners.task_listener import TaskListener
 from bot.modules.auto_mirror import AutoMirror
 from bot.modules.video_editor import VideEditor
 from urllib.parse import urlparse
-from bot.modules.sourcefoge import sourceforgeExtract
+from bot.modules.sourceforge import sourceforgeExtract
 from bot.modules.terabox_extract import teraboxExtract
 
 urlregex = r"^(https?:\/\/)([a-zA-Z0-9-]+\.)*([a-zA-Z0-9-]+\.[a-zA-Z]{2,})(\/[^#\s]*)?(\?[^#\s]*)?(#.*)?$"

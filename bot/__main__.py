@@ -70,7 +70,7 @@ from bot.modules import (
     pikachu_feature,
     query,
     shell,
-    sourcefoge,
+    sourceforge,
     speedtest,
     status,
     tiktok,
