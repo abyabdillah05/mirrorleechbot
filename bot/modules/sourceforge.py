@@ -403,7 +403,8 @@ class SourceforgeExtract:
         
         butt.ibutton("Cancel", "sourceforge cancel", position="footer")
         
-        butts = butt.build_menu(1)  # One button per row for better readability
+        # Change from 1 to 2 for folders and files to make it more compact
+        butts = butt.build_menu(2)  # Changed from 1 to 2 buttons per row
         
         current_path_display = f"/{self._current_path}" if self._current_path else "/"
         
@@ -543,9 +544,12 @@ class SourceforgeExtract:
                 sample_file = self._selected_files[0]
                 sample_url = f"https://sourceforge.net/projects/{self._project}/files/{sample_file}"
                 
+                LOGGER.info(f"Getting server info for sample file: {sample_url}")
                 result = await sourceforge_extract(sample_url)
+                
                 if isinstance(result, dict) and "servers" in result:
                     server = random.choice(result["servers"])
+                    LOGGER.info(f"Selected random server: {server}")
                     
                     # Create links for all selected files
                     links = []
@@ -554,16 +558,20 @@ class SourceforgeExtract:
                         file_name = file_data.get("name", "Unknown")
                         direct_link = f"https://{server}.dl.sourceforge.net/project/{self._project}/{file_path}?viasf=1"
                         links.append({"name": file_name, "url": direct_link})
+                        LOGGER.info(f"Created link for {file_name}: {direct_link}")
                     
                     self._final_link = links
                     await editMessage(self._reply_to, f"<b>Server selected:</b> <code>{server}</code>\n<b>Processing download for {len(links)} files...</b>")
+                    # Make sure to set the event to finish processing
                     self.event.set()
                 else:
+                    LOGGER.error(f"Failed to get server info: {result}")
                     raise DirectDownloadLinkException("Failed to get server information")
         except Exception as e:
+            LOGGER.error(f"Error in download_selected: {str(e)}")
             await editMessage(self._reply_to, f"<b>Error processing download:</b> <code>{str(e)}</code>")
             self.is_cancelled = True
-            self.event.set()
+            self.event.set()  # Make sure to set the event even on error
     
     async def start(self, server):
         """Start download with selected server"""
