@@ -1,4 +1,4 @@
-FROM pikachuproject/mltbpika:beta
+FROM abyabdillah05/foxmirror:latest
 
 WORKDIR /usr/src/app
 RUN chmod 777 /usr/src/app
