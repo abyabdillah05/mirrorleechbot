@@ -26,7 +26,7 @@ python-dotenv
 python-magic
 qbittorrent-api
 requests==2.32.5
-urllib3==2.4.0
+urllib3==2.6.3
 speedtest-cli
 telegraph
 tenacity
